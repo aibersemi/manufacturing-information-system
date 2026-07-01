@@ -178,11 +178,8 @@ class Command(BaseCommand):
         ):
             raise CommandError("Data referensi UOM/COA belum bootstrap dengan benar.")
 
-        warehouse = Warehouse.objects.filter(tenant=tenant).first()
-        if not warehouse:
-            warehouse = Warehouse.objects.create(
-                tenant=tenant, name="Gudang Utama", code="WH"
-            )
+        if not Warehouse.objects.filter(tenant=tenant).exists():
+            Warehouse.objects.create(tenant=tenant, name="Gudang Utama", code="WH")
 
         with transaction.atomic():
             self.stdout.write("Memulai seeding business data...")

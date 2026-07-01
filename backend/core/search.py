@@ -189,7 +189,7 @@ def delete_document(index_uid: str, document_id: str) -> None:
     try:
         _run_meilisearch(lambda: index.delete_document(document_id), path=path)
     except FileNotFoundError:
-        pass
+        return
 
 
 def delete_all_documents(index_uid: str) -> None:
@@ -198,7 +198,7 @@ def delete_all_documents(index_uid: str) -> None:
     try:
         _run_meilisearch(index.delete_all_documents, path=path)
     except FileNotFoundError:
-        pass
+        return
 
 
 def upsert_documents(index_uid: str, documents: list[dict[str, Any]]) -> None:

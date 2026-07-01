@@ -21,11 +21,16 @@ def a4_document(title: str, lines: list[str]) -> bytes:
         commands.extend(("0 -17 Td", "/F1 10 Tf", f"({_escape_pdf_text(line)}) Tj"))
     commands.append("ET")
     stream = "\n".join(commands).encode("latin-1")
+    page_object = b" ".join(
+        [
+            b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842]",
+            b"/Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+        ]
+    )
     objects = [
         b"<< /Type /Catalog /Pages 2 0 R >>",
         b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] "
-        b"/Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+        page_object,
         b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
         b"<< /Length "
         + str(len(stream)).encode()
