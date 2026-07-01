@@ -1,0 +1,21 @@
+name: MIS CodeQL Config
+
+queries:
+  - uses: security-extended
+  - uses: security-and-quality
+
+paths:
+  - backend
+  - frontend/src
+  - scripts
+  - package.json
+  - pyproject.toml
+  - vite.config.ts
+  - orval.config.ts
+
+paths-ignore:
+  - frontend/dist
+  - frontend/src/api/generated
+  - node_modules
+  - .venv
+  - staticfiles

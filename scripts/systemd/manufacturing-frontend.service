@@ -1,0 +1,20 @@
+[Unit]
+Description=Manufacturing IS - Frontend Static Origin (Granian WSGI)
+Wants=network-online.target wg-quick@wg0.service
+After=network-online.target wg-quick@wg0.service
+
+[Service]
+Type=simple
+User=mrdev
+Group=mrmads-group
+WorkingDirectory=/opt/services/manufacturing-information-system
+EnvironmentFile=/opt/services/manufacturing-information-system/.env
+
+ExecStartPre=/usr/bin/test -f /opt/services/manufacturing-information-system/frontend/dist/index.html
+ExecStart=/opt/services/manufacturing-information-system/.venv/bin/granian --interface wsgi --host ${FRONTEND_BIND_HOST} --port ${FRONTEND_PORT} --workers 2 --no-ws scripts.frontend_wsgi:application
+
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

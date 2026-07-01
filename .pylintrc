@@ -1,0 +1,27 @@
+[MASTER]
+load-plugins=pylint_django
+django-settings-module=backend.settings
+
+[MESSAGES CONTROL]
+disable=too-many-locals,
+        too-many-statements,
+        too-many-positional-arguments,
+        too-many-lines,
+        redefined-outer-name,
+        unused-argument,
+        protected-access,
+        line-too-long,
+        import-outside-toplevel,
+        wrong-import-order,
+        missing-module-docstring,
+        missing-class-docstring,
+        missing-function-docstring,
+        invalid-name,
+        duplicate-code,
+        too-many-arguments,
+        too-few-public-methods,
+        too-many-return-statements,
+        too-many-branches,
+        too-many-instance-attributes,
+        unused-variable,
+        raise-missing-from

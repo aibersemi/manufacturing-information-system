@@ -1,0 +1,12 @@
+[Unit]
+Description=Manufacturing IS - Scheduled Maintenance
+After=network.target postgresql.service redis-server.service meilisearch.service
+
+[Service]
+Type=oneshot
+User=mrdev
+Group=mrmads-group
+WorkingDirectory=/opt/services/manufacturing-information-system
+EnvironmentFile=/opt/services/manufacturing-information-system/.env
+
+ExecStart=/opt/services/manufacturing-information-system/.venv/bin/python backend/manage.py run_scheduled_maintenance

@@ -1,0 +1,36 @@
+changelog:
+  exclude:
+    labels:
+      - skip-changelog
+      - dependencies
+  categories:
+    - title: Breaking Changes
+      labels:
+        - breaking-change
+        - semver-major
+    - title: Security
+      labels:
+        - security
+    - title: Backend
+      labels:
+        - backend
+        - api
+        - django
+    - title: Frontend
+      labels:
+        - frontend
+        - ui
+        - vite
+    - title: Data and Integration
+      labels:
+        - database
+        - migration
+        - contract
+        - integration
+    - title: Documentation and Operations
+      labels:
+        - documentation
+        - operations
+    - title: Other Changes
+      labels:
+        - "*"

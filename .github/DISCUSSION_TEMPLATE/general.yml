@@ -1,0 +1,37 @@
+title: "[Discussion]: "
+labels:
+  - discussion
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gunakan diskusi untuk pertanyaan umum atau desain awal. Jangan sertakan secret, credential, data produksi, IP internal, domain internal, atau detail infrastruktur privat.
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Topic
+      options:
+        - Backend/API
+        - Frontend/UI
+        - Domain manufaktur
+        - Data dan reporting
+        - Deployment/operations
+        - Security
+        - Developer experience
+        - Lainnya
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Jelaskan pertanyaan atau topik diskusi.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal or options
+      description: Isi jika sudah ada pendekatan yang ingin dibahas.
+    validations:
+      required: false

@@ -1,0 +1,90 @@
+version: 2
+
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "02:00"
+      timezone: Asia/Jakarta
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - backend
+    commit-message:
+      prefix: "deps"
+      include: scope
+    groups:
+      python-runtime:
+        dependency-type: production
+        patterns:
+          - "Django"
+          - "django-*"
+          - "pydantic"
+          - "dramatiq*"
+          - "channels*"
+          - "granian"
+          - "psycopg*"
+          - "python-dotenv"
+          - "PyYAML"
+      python-dev:
+        dependency-type: development
+        patterns:
+          - "ruff"
+          - "pytest*"
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "02:30"
+      timezone: Asia/Jakarta
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - frontend
+    commit-message:
+      prefix: "deps"
+      include: scope
+    groups:
+      react-ui:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react*"
+          - "@vitejs/plugin-react"
+          - "vite"
+      tanstack:
+        patterns:
+          - "@tanstack/*"
+      radix-shadcn:
+        patterns:
+          - "@radix-ui/*"
+          - "shadcn"
+          - "lucide-react"
+      tooling:
+        dependency-type: development
+        patterns:
+          - "@biomejs/biome"
+          - "typescript"
+          - "vitest"
+          - "playwright"
+          - "@playwright/test"
+          - "orval"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "03:00"
+      timezone: Asia/Jakarta
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: "deps"
+      include: scope

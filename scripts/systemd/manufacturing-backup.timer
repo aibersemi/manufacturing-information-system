@@ -1,0 +1,11 @@
+[Unit]
+Description=Manufacturing IS - Daily PostgreSQL Backup
+
+[Timer]
+OnCalendar=*-*-* 18:30:00 UTC
+Persistent=true
+RandomizedDelaySec=15m
+Unit=manufacturing-backup.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,23 @@
+# CODEOWNERS for Manufacturing Information System.
+# If branch protection enables Code Owners review, changes to the following
+# paths will request review from the repository owner account.
+
+* @aibersemi
+
+/.github/ @aibersemi
+/AGENTS.md @aibersemi
+/.env.example @aibersemi
+
+/backend/ @aibersemi
+/frontend/ @aibersemi
+/docs/ @aibersemi
+/scripts/ @aibersemi
+
+/pyproject.toml @aibersemi
+/package.json @aibersemi
+/package-lock.json @aibersemi
+/biome.json @aibersemi
+/orval.config.ts @aibersemi
+/vite.config.ts @aibersemi
+/tsconfig.json @aibersemi
+/tsconfig.node.json @aibersemi

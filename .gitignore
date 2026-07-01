@@ -1,0 +1,132 @@
+# ========================
+# OS & IDE
+# ========================
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+*.swo
+
+# ========================
+# Temporary, Cache & Local Logs
+# ========================
+*~
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+.tmp/
+.temp/
+tmp/
+temp/
+.cache/
+*.cache
+*.log
+*.log.*
+logs/
+
+# ========================
+# Environment
+# ========================
+.env
+.env.*
+!.env.example
+.venv/
+env/
+venv/
+
+# ========================
+# Node & Frontend (Vite/React)
+# ========================
+node_modules/
+dist/
+dist-ssr/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+.biome/
+*.tsbuildinfo
+vite.config.ts.timestamp-*
+vite.config.js.timestamp-*
+playwright-report/
+blob-report/
+
+# ========================
+# Python & Backend (Django)
+# ========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/*
+!frontend/src/lib/
+!frontend/src/lib/**
+lib64/*
+!frontend/src/lib64/
+!frontend/src/lib64/**
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Django stuff
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# ========================
+# Testing & Tools
+# ========================
+.coverage
+htmlcov/
+.tox/
+.nox/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyre/
+.pytype/
+.hypothesis/
+.testmondata
+coverage.xml
+test-results/
+
+# ========================
+# System / Services
+# ========================
+*.pid
+/run/
+
+# ========================
+# Runtime Uploads & Local Artifacts
+# ========================
+media/
+uploads/
+staticfiles/
+
+# ========================
+# Local Backups & Dumps
+# ========================
+backups/
+*.sql
+*.sql.gz
+*.dump
+
+# ========================
+# Planning Drafts / Artifacts
+# ========================
+plan/

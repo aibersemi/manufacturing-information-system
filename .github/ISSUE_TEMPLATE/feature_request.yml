@@ -1,0 +1,65 @@
+name: Feature request
+description: Usulkan fitur, workflow, laporan, permission, atau perbaikan UX.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Jelaskan kebutuhan bisnis dan dampak pengguna. Hindari data produksi atau informasi sensitif.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Master Data
+        - Production
+        - Inventory
+        - Sales
+        - Finance/Accounting
+        - Labor
+        - Reports
+        - Authentication/RBAC
+        - Operations
+        - Developer Experience
+        - Tidak yakin
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: Jelaskan workflow atau hambatan yang ada saat ini.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Jelaskan perilaku atau UI/API yang diharapkan.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: |
+        - User dengan role ... dapat ...
+        - Perubahan tercatat di audit trail jika ...
+        - Validasi menolak ...
+    validations:
+      required: false
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Security check
+      options:
+        - label: Saya tidak menyertakan secret, credential, DSN lengkap, IP internal, domain internal, atau data produksi.
+          required: true

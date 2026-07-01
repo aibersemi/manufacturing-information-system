@@ -1,0 +1,13 @@
+# Deployment Topology MIS
+
+Sistem tidak menggunakan **Docker** dan bertumpu pada instalasi *native* **Ubuntu** dengan pemisahan *node*.
+
+- **Topologi Server**: Aplikasi dan database berjalan di server aplikasi privat, sedangkan *reverse proxy* berada di node publik privat yang terhubung melalui tunnel/WireGuard. Hostname, IP publik, dan IP internal disimpan di `.env` privat atau dokumentasi deployment privat.
+- **Database dan Infrastruktur Native**: **PostgreSQL**, **Redis**, dan **Meilisearch** diinstal secara *system-wide* di server lokal Ubuntu.
+- **Reverse Proxy (Caddy)**: Berjalan terpisah dari server aplikasi untuk HTTPS otomatis, *security headers*, dan *reverse proxy* melalui tunnel privat. Origin frontend memakai `FRONTEND_BIND_HOST:FRONTEND_PORT`, sedangkan origin backend memakai `BACKEND_BIND_HOST:BACKEND_PORT`; URL publiknya dikelola melalui `PUBLIC_FRONTEND_URL` dan `PUBLIC_API_URL`.
+- **Process Manager (systemd)**: Mengelola static origin frontend, Granian ASGI, worker **Dramatiq**, scheduler, **Redis**, **PostgreSQL**, dan **Meilisearch** sebagai layanan terpisah. Template aplikasi berada di `scripts/systemd/`.
+- **Task Scheduler**: **systemd timer** `manufacturing-scheduler.timer` menjalankan maintenance domain terjadwal: rekonsiliasi jurnal/outbox/search, eskalasi notifikasi, serta retry pekerjaan yang aman.
+- **Static dan Media Files**: Build frontend dilayani oleh static origin Granian WSGI dan dipublikasikan melalui **Caddy** tanpa *directory listing*. Seluruh file bisnis yang dibuat aplikasi, diunggah pengguna, atau diambil dari kamera/perangkat tetap disimpan pada `MEDIA_ROOT` lokal terproteksi di `/data/services/manufacturing-information-system`, dengan path dan metadata yang menerapkan scope tenant. Storage tidak diekspos langsung; akses file bisnis hanya boleh ditambahkan melalui endpoint backend yang menerapkan autentikasi, otorisasi tenant, permission, dan audit. Upload V1 menggunakan allowlist tipe file dan batas ukuran sesuai PRD.
+- **Health Checks**: Endpoint *liveness*, *readiness*, dan *dependency health* tersedia untuk pemantauan layanan.
+- **Observability**: Mencakup *structured logging* JSON ke journald, Request ID, *error tracking*, metrics, *queue monitoring*, dan pemantauan *database slow query*.
+- **Backup**: `manufacturing-backup.timer` menjalankan `scripts/backup_postgres.sh`; base backup PostgreSQL disimpan di `/data/backups/manufacturing-information-system/postgres/<YYYYMMDD-HHMMSS>/` dan WAL archiving kontinu berada di `/data/backups/manufacturing-information-system/postgres/wal`. Base backup diverifikasi dengan `pg_verifybackup`; restore drill dan PITR terisolasi dijalankan melalui `scripts/verify_postgres_restore.sh`.

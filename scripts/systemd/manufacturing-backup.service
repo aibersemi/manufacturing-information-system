@@ -1,0 +1,18 @@
+[Unit]
+Description=Manufacturing IS - PostgreSQL Base Backup
+After=postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+User=postgres
+Group=postgres
+Environment=BACKUP_ROOT=/data/backups/manufacturing-information-system/postgres
+Environment=WAL_ARCHIVE_DIR=/data/backups/manufacturing-information-system/postgres/wal
+Environment=RETENTION_DAYS=30
+ExecStart=/opt/services/manufacturing-information-system/scripts/backup_postgres.sh
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+PrivateTmp=true
+NoNewPrivileges=true

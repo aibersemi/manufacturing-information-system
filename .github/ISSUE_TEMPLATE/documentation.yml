@@ -1,0 +1,44 @@
+name: Documentation
+description: Laporkan dokumentasi yang kurang, usang, atau membingungkan.
+title: "[Docs]: "
+labels:
+  - documentation
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Documentation area
+      options:
+        - README root
+        - Backend README
+        - Frontend README
+        - Architecture
+        - Data platform
+        - Deployment
+        - Domain model
+        - Operations
+        - Permission matrix
+        - Security
+        - Lainnya
+    validations:
+      required: true
+  - type: textarea
+    id: issue
+    attributes:
+      label: Documentation issue
+      description: Jelaskan bagian yang salah, kurang lengkap, atau perlu diperjelas.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected change
+    validations:
+      required: true
+  - type: input
+    id: reference
+    attributes:
+      label: File or page reference
+      placeholder: docs/operations.md, backend/README.md, dan seterusnya
+    validations:
+      required: false

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Build Web Apps MIS"
+  short_description: "Build, debug, and QA frontend MIS workflows"
+  default_prompt: "Use frontend-build-web-apps-mis for this frontend MIS task."

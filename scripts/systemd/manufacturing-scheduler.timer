@@ -1,0 +1,10 @@
+[Unit]
+Description=Manufacturing IS - Scheduled Maintenance Timer
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+Unit=manufacturing-scheduler.service
+
+[Install]
+WantedBy=timers.target

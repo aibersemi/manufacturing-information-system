@@ -1,0 +1,4 @@
+interface:
+  display_name: "Security Codex Review MIS"
+  short_description: "Review and fix MIS security issues with Codex Security workflow"
+  default_prompt: "Use security-codex-review-mis for this MIS security review or fix."

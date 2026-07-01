@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=82.0.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "manufacturing-information-system"
+version = "1.0.0"
+description = "Manufacturing Information System Backend"
+requires-python = ">=3.12"
+dependencies = [
+    "Django==6.0.6",
+    "django-ninja==1.6.2",
+    "pydantic==2.13.4",
+    "dramatiq[redis]==2.2.0",
+    "channels==4.3.2",
+    "channels-redis==4.3.0",
+    "django-cors-headers==4.9.0",
+    "granian==2.7.6",
+    "meilisearch==0.41.1",
+    "psycopg[binary]==3.3.4",
+    "python-dotenv==1.2.2",
+    "PyYAML==6.0.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff==0.15.18",
+    "pytest==9.1.1",
+    "pytest-django==4.12.0",
+    "pytest-testmon==2.2.0",
+]
+
+[tool.setuptools]
+packages = { find = { include = ["backend*"] } }
+
+[tool.ruff.lint]
+extend-select = ["DJ"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "backend.settings"
+pythonpath = ["."]
+testpaths = ["backend"]
+python_files = ["test_*.py", "tests.py"]
+
+[tool.pylint.messages_control]
+disable = [
+    "too-many-locals",
+    "too-many-statements",
+    "too-many-positional-arguments",
+    "too-many-lines",
+    "redefined-outer-name",
+    "unused-argument",
+    "protected-access",
+    "line-too-long",
+]
