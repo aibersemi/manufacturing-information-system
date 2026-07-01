@@ -33,6 +33,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate Paraglide
+        run: |
+          npx paraglide-js compile --project ./frontend/project.inlang --outdir ./frontend/src/paraglide --emit-ts-declarations --silent
+          npm run paraglide:security-patch
+
       - name: Biome
         run: npx @biomejs/biome check .
 
