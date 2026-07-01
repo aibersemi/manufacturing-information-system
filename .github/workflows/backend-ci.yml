@@ -65,13 +65,44 @@ jobs:
       PUBLIC_FRONTEND_URL: http://localhost:8015
       PUBLIC_API_URL: http://localhost:8016
       PUBLIC_API_WS_URL: ws://localhost:8016
+      DUMMY_TENANT_NAME: Dummy Konveksi CI
+      DUMMY_TENANT_SLUG: dummy-konveksi-ci
+      DUMMY_TENANT_CODE: DUMMYCI
+      DUMMY_KEPALA_USERNAME: kepala-ci
+      DUMMY_KEPALA_PASSWORD: ci-password-only
+      DUMMY_KEPALA_FIRST_NAME: Kepala
+      DUMMY_KEPALA_LAST_NAME: CI
+      DUMMY_FINANCE_USERNAME: finance-ci
+      DUMMY_FINANCE_PASSWORD: ci-password-only
+      DUMMY_FINANCE_FIRST_NAME: Finance
+      DUMMY_FINANCE_LAST_NAME: CI
+      DUMMY_OPERATOR_POTONG_USERNAME: potong-ci
+      DUMMY_OPERATOR_POTONG_PASSWORD: ci-password-only
+      DUMMY_OPERATOR_POTONG_FIRST_NAME: Operator
+      DUMMY_OPERATOR_POTONG_LAST_NAME: Potong
+      DUMMY_OPERATOR_PENJAHIT_1_USERNAME: jahit1-ci
+      DUMMY_OPERATOR_PENJAHIT_1_PASSWORD: ci-password-only
+      DUMMY_OPERATOR_PENJAHIT_1_FIRST_NAME: Operator
+      DUMMY_OPERATOR_PENJAHIT_1_LAST_NAME: JahitSatu
+      DUMMY_OPERATOR_PENJAHIT_2_USERNAME: jahit2-ci
+      DUMMY_OPERATOR_PENJAHIT_2_PASSWORD: ci-password-only
+      DUMMY_OPERATOR_PENJAHIT_2_FIRST_NAME: Operator
+      DUMMY_OPERATOR_PENJAHIT_2_LAST_NAME: JahitDua
+      DUMMY_OPERATOR_DAPUR_USERNAME: dapur-ci
+      DUMMY_OPERATOR_DAPUR_PASSWORD: ci-password-only
+      DUMMY_OPERATOR_DAPUR_FIRST_NAME: Operator
+      DUMMY_OPERATOR_DAPUR_LAST_NAME: Dapur
+      DUMMY_OPERATOR_GUDANG_USERNAME: gudang-ci
+      DUMMY_OPERATOR_GUDANG_PASSWORD: ci-password-only
+      DUMMY_OPERATOR_GUDANG_FIRST_NAME: Operator
+      DUMMY_OPERATOR_GUDANG_LAST_NAME: Gudang
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
