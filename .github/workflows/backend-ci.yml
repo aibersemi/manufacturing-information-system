@@ -111,6 +111,15 @@ jobs:
           python-version: "3.12"
           cache: pip
 
+      - name: Cache testmon data
+        uses: actions/cache@v4
+        with:
+          path: .testmondata
+          key: testmon-${{ runner.os }}-py312-${{ hashFiles('pyproject.toml') }}-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            testmon-${{ runner.os }}-py312-${{ hashFiles('pyproject.toml') }}-${{ github.ref_name }}-
+            testmon-${{ runner.os }}-py312-${{ hashFiles('pyproject.toml') }}-main-
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -131,4 +140,14 @@ jobs:
           exit 1
 
       - name: Pytest
-        run: python -m pytest --testmon --reuse-db
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "Menjalankan full suite untuk branch main dan memperbarui metadata testmon."
+            python -m pytest --testmon-noselect --reuse-db
+          elif [[ -f .testmondata ]]; then
+            echo "Metadata testmon ditemukan; menjalankan test terdampak."
+            python -m pytest --testmon --reuse-db
+          else
+            echo "Metadata testmon belum tersedia; menjalankan full suite untuk mengisi cache."
+            python -m pytest --testmon-noselect --reuse-db
+          fi
