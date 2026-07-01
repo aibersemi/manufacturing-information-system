@@ -5,7 +5,15 @@ on:
   push:
     branches:
       - main
+  schedule:
+    - cron: "0 20 * * *"
   workflow_dispatch:
+    inputs:
+      full_suite:
+        description: "Jalankan seluruh pytest tanpa seleksi testmon"
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -47,6 +55,7 @@ jobs:
         image: getmeili/meilisearch:v1.15
         env:
           MEILI_NO_ANALYTICS: "true"
+          MEILI_MASTER_KEY: ci-meilisearch-master-key-only
         ports:
           - 7700:7700
 
@@ -65,7 +74,7 @@ jobs:
       REDIS_BROKER_URL: redis://127.0.0.1:6379/0
       REDIS_RUNTIME_URL: redis://127.0.0.1:6379/1
       MEILISEARCH_URL: http://127.0.0.1:7700
-      MEILISEARCH_API_KEY: ""
+      MEILISEARCH_API_KEY: ci-meilisearch-master-key-only
       PUBLIC_FRONTEND_URL: http://localhost:8015
       PUBLIC_API_URL: http://localhost:8016
       PUBLIC_API_WS_URL: ws://localhost:8016
@@ -112,7 +121,7 @@ jobs:
           cache: pip
 
       - name: Cache testmon data
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .testmondata
           key: testmon-${{ runner.os }}-py312-${{ hashFiles('pyproject.toml') }}-${{ github.ref_name }}-${{ github.sha }}
@@ -131,7 +140,7 @@ jobs:
       - name: Wait for Meilisearch
         run: |
           for attempt in {1..30}; do
-            if curl -fsS http://127.0.0.1:7700/health; then
+            if curl -fsS -H "Authorization: Bearer ${MEILISEARCH_API_KEY}" http://127.0.0.1:7700/health; then
               exit 0
             fi
             echo "Menunggu Meilisearch (${attempt}/30)"
@@ -141,8 +150,8 @@ jobs:
 
       - name: Pytest
         run: |
-          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "Menjalankan full suite untuk branch main dan memperbarui metadata testmon."
+          if [[ "${{ github.event_name }}" == "schedule" || "${{ github.event.inputs.full_suite }}" == "true" ]]; then
+            echo "Menjalankan full suite terjadwal/manual dan memperbarui metadata testmon."
             python -m pytest --testmon-noselect --reuse-db
           elif [[ -f .testmondata ]]; then
             echo "Metadata testmon ditemukan; menjalankan test terdampak."
