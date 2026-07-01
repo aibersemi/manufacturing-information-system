@@ -16,7 +16,7 @@ dependencies = [
     "channels-redis==4.3.0",
     "django-cors-headers==4.9.0",
     "granian==2.7.6",
-    "meilisearch==0.41.1",
+    "meilisearch==0.42.0",
     "psycopg[binary]==3.3.4",
     "python-dotenv==1.2.2",
     "PyYAML==6.0.3",
