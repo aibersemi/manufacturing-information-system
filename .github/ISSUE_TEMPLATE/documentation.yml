@@ -4,6 +4,10 @@ title: "[Docs]: "
 labels:
   - documentation
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Jangan sertakan secret, password, token, DSN lengkap, IP internal, domain internal, detail infrastruktur privat, atau data produksi.
   - type: dropdown
     id: area
     attributes:
@@ -42,3 +46,10 @@ body:
       placeholder: docs/operations.md, backend/README.md, dan seterusnya
     validations:
       required: false
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Security check
+      options:
+        - label: Saya tidak menyertakan secret, credential, DSN lengkap, IP internal, domain internal, detail infrastruktur privat, atau data produksi.
+          required: true

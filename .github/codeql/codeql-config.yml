@@ -8,7 +8,9 @@ paths:
   - .github/workflows
   - backend
   - frontend/src
+  - orval.config.ts
   - scripts
+  - vite.config.ts
 
 paths-ignore:
   - frontend/dist

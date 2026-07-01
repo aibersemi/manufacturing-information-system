@@ -44,8 +44,8 @@ di pull request.
 Untuk perubahan React/Vite:
 
 ```bash
-npx @biomejs/biome check
-npx tsc --noEmit
+npx @biomejs/biome check .
+npm run typecheck
 ```
 
 Untuk perubahan UI, routing, build config, atau integrasi frontend yang
@@ -58,7 +58,7 @@ npm run build
 Untuk perubahan unit/component test frontend:
 
 ```bash
-npx vitest
+npm run test:frontend
 ```
 
 ## Documentation

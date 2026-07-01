@@ -18,10 +18,10 @@ Jelaskan perubahan utama dan alasan perubahan.
 
 - [ ] `.venv/bin/ruff check`
 - [ ] `.venv/bin/pytest --testmon --reuse-db`
-- [ ] `npx @biomejs/biome check`
-- [ ] `npx tsc --noEmit`
+- [ ] `npx @biomejs/biome check .`
+- [ ] `npm run typecheck`
+- [ ] `npm run test:frontend`
 - [ ] `npm run build`
-- [ ] `npx vitest`
 - [ ] Tidak relevan, alasan:
 
 ## Checklist
