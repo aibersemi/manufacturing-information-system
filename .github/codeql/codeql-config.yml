@@ -5,13 +5,10 @@ queries:
   - uses: security-and-quality
 
 paths:
+  - .github/workflows
   - backend
   - frontend/src
   - scripts
-  - package.json
-  - pyproject.toml
-  - vite.config.ts
-  - orval.config.ts
 
 paths-ignore:
   - frontend/dist
