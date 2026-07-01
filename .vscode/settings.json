@@ -7,5 +7,6 @@
 		}
 	],
 	"gemini.commitMessagePrompt": "Gunakan Bahasa Indonesia. Jangan gunakan format Conventional Commits (tanpa feat:, fix:, dll).",
-	"antigravity.commitMessagePrompt": "Gunakan Bahasa Indonesia. Jangan gunakan format Conventional Commits (tanpa feat:, fix:, dll)."
+	"antigravity.commitMessagePrompt": "Gunakan Bahasa Indonesia. Jangan gunakan format Conventional Commits (tanpa feat:, fix:, dll).",
+	"git.autofetch": true
 }
