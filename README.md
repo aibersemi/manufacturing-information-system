@@ -4,7 +4,7 @@
   <a href="https://github.com/aibersemi/manufacturing-information-system/actions/workflows/backend-ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/aibersemi/manufacturing-information-system/backend-ci.yml?branch=main&style=flat-square&label=backend%20ci" alt="Backend CI" /></a>
   <a href="https://github.com/aibersemi/manufacturing-information-system/actions/workflows/frontend-ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/aibersemi/manufacturing-information-system/frontend-ci.yml?branch=main&style=flat-square&label=frontend%20ci" alt="Frontend CI" /></a>
   <a href="https://github.com/aibersemi/manufacturing-information-system/actions/workflows/security.yml"><img src="https://img.shields.io/github/actions/workflow/status/aibersemi/manufacturing-information-system/security.yml?branch=main&style=flat-square&label=security" alt="Security" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/aibersemi/manufacturing-information-system?style=flat-square" alt="License" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-proprietary-blue?style=flat-square" alt="Proprietary License" /></a>
   <a href="https://saweria.co/aibersemi"><img src="https://img.shields.io/badge/Support-Saweria-F97316?style=flat-square" alt="Support on Saweria" /></a>
 </p>
 
@@ -92,4 +92,5 @@ Dukung pengembangan MIS melalui [Saweria](https://saweria.co/aibersemi).
 
 ## License
 
-Project ini menggunakan MIT License. Lihat [`LICENSE`](LICENSE) untuk teks lisensi lengkap.
+Project ini bersifat proprietary dan seluruh hak cipta dimiliki oleh AiBersemi.
+Lihat [`LICENSE`](LICENSE) untuk ketentuan lengkap.
