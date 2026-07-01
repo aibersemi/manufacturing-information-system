@@ -5,14 +5,14 @@ queries:
   - uses: security-and-quality
 
 paths:
-  - .github/workflows
-  - backend
-  - frontend/src
-  - orval.config.ts
-  - scripts
-  - vite.config.ts
+  - .
 
 paths-ignore:
+  - .github/agents
+  - .github/instructions
+  - .github/prompts
+  - .github/skills
+  - .github/copilot-instructions.md
   - frontend/dist
   - frontend/src/api/generated
   - node_modules
