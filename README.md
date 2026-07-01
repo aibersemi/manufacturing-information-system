@@ -17,7 +17,7 @@ Sistem ini menggunakan arsitektur monorepo dengan pemisahan _backend_ dan _front
 - [`backend/`](backend/README.md) — Aplikasi backend berbasis **Django** dan **Django Ninja** (REST API), serta **Django Channels** untuk WebSocket. Menangani *business logic*, autentikasi, dan database.
 - [`frontend/`](frontend/README.md) — Aplikasi frontend berbasis **React** dan **Vite**, menggunakan **TanStack Query**, **Router**, **Table**, **Form**, **Virtual**, **Ranger**, dan **Store**, serta **shadcn/ui**.
 - [`docs/`](docs/architecture.md) — Dokumentasi arsitektur dan referensi teknis mendalam lintas-*service*.
-- `scripts/` — Skrip utilitas untuk pengembangan dan operasional.
+- [`scripts/`](scripts/) — Skrip utilitas untuk pengembangan dan operasional.
 
 ## Documentation
 
