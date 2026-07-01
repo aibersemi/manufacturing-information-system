@@ -1,5 +1,9 @@
 # Manufacturing Information System (MIS)
 
+[![Backend CI](https://img.shields.io/github/actions/workflow/status/aibersemi/manufacturing-information-system/backend-ci.yml?branch=main&style=flat-square&label=backend%20ci)](https://github.com/aibersemi/manufacturing-information-system/actions/workflows/backend-ci.yml)
+[![Frontend CI](https://img.shields.io/github/actions/workflow/status/aibersemi/manufacturing-information-system/frontend-ci.yml?branch=main&style=flat-square&label=frontend%20ci)](https://github.com/aibersemi/manufacturing-information-system/actions/workflows/frontend-ci.yml)
+[![Security](https://img.shields.io/github/actions/workflow/status/aibersemi/manufacturing-information-system/security.yml?branch=main&style=flat-square&label=security)](https://github.com/aibersemi/manufacturing-information-system/actions/workflows/security.yml)
+[![License](https://img.shields.io/github/license/aibersemi/manufacturing-information-system?style=flat-square)](LICENSE)
 <a href="https://saweria.co/aibersemi"><img src="https://img.shields.io/badge/Support-Saweria-FF5E8A?style=flat-square" alt="Support on Saweria" /></a>
 
 Sistem Informasi Manufaktur komprehensif yang dirancang untuk mengelola produksi, inventaris, dan operasional bisnis manufaktur (konveksi/garmen).
