@@ -1,16 +1,21 @@
-Proprietary License
+MIT License
 
-Copyright (c) 2026 AiBersemi. All rights reserved.
+Copyright (c) 2026 AiBersemi
 
-Manufacturing Information System (MIS) adalah perangkat lunak proprietary milik
-AiBersemi. Kode sumber, dokumentasi, aset, konfigurasi, dan materi lain dalam
-repositori ini hanya boleh digunakan oleh pihak yang memiliki izin tertulis dari
-AiBersemi atau berdasarkan perjanjian yang berlaku.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-Tanpa izin tertulis dari AiBersemi, pihak mana pun dilarang untuk menyalin,
-memodifikasi, menggabungkan, menerbitkan, mendistribusikan, mensublisensikan,
-menjual, menyewakan, menyediakan akses, melakukan reverse engineering, atau
-membuat karya turunan dari seluruh maupun sebagian materi dalam repositori ini.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-Hak yang tidak diberikan secara tertulis tetap sepenuhnya dimiliki oleh
-AiBersemi.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
