@@ -1,12 +1,12 @@
 {
-	"python.defaultInterpreterPath": "./.venv/bin/python",
-	"python.useEnvironmentsExtension": true,
-	"github.copilot.chat.commitMessageGeneration.instructions": [
-		{
-			"text": "Gunakan Bahasa Indonesia untuk menulis pesan commit. Tulis kalimat deskriptif secara langsung, gunakan huruf kapital di awal. JANGAN gunakan format Conventional Commits seperti feat: atau fix:"
-		}
-	],
-	"gemini.commitMessagePrompt": "Gunakan Bahasa Indonesia. Jangan gunakan format Conventional Commits (tanpa feat:, fix:, dll).",
-	"antigravity.commitMessagePrompt": "Gunakan Bahasa Indonesia. Jangan gunakan format Conventional Commits (tanpa feat:, fix:, dll).",
-	"git.autofetch": true
+    "python.defaultInterpreterPath": "./.venv/bin/python",
+    "python.useEnvironmentsExtension": true,
+    "github.copilot.chat.commitMessageGeneration.instructions": [
+        {
+            "text": "Gunakan Bahasa Indonesia untuk menulis pesan commit. Tulis kalimat deskriptif secara langsung, gunakan huruf kapital di awal. JANGAN gunakan format Conventional Commits seperti feat: atau fix:"
+        }
+    ],
+    "gemini.commitMessagePrompt": "Gunakan Bahasa Indonesia. Jangan gunakan format Conventional Commits (tanpa feat:, fix:, dll).",
+    "antigravity.commitMessagePrompt": "Gunakan Bahasa Indonesia. Jangan gunakan format Conventional Commits (tanpa feat:, fix:, dll).",
+    "git.autofetch": true
 }
