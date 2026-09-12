@@ -24,9 +24,7 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/styles.css"
-            ]
+            "styles": ["src/styles.css"]
           },
           "configurations": {
             "production": {
@@ -57,12 +55,7 @@
           "options": {
             "port": 8015,
             "host": "0.0.0.0",
-            "allowedHosts": [
-              "mis.mrmads.net",
-              "10.50.0.2",
-              "localhost",
-              "127.0.0.1"
-            ]
+            "allowedHosts": ["mis.mrmads.net", "10.50.0.2", "localhost", "127.0.0.1"]
           },
           "configurations": {
             "production": {
@@ -76,6 +69,12 @@
         },
         "test": {
           "builder": "@angular/build:unit-test"
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": ["src/**/*.ts", "src/**/*.html"]
+          }
         }
       }
     }

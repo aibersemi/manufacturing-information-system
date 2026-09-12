@@ -33,5 +33,7 @@ Panduan wajib bagi agen AI saat bekerja di repositori ini.
 ## Runtime And Operations
 
 - Gunakan `sudo` jika terjadi kendala izin.
+- Setelah perubahan source code atau konfigurasi runtime, jalankan: `npm run lint` (perbaiki seluruh error hingga bersih), `npm run build`, lalu `sudo systemctl restart manufacturing-information-system.service`.
 - Jika diminta backup simpan di `/data/backups/manufacturing-information-system/<jenis-backup>/<YYYYMMDD-HHMMSS>/`.
 - Logging mengikuti mekanisme native Ubuntu.
+

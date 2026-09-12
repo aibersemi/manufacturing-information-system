@@ -1,0 +1,23 @@
+[Unit]
+Description=Manufacturing Information System (MIS) Frontend (Production)
+Documentation=file:/opt/services/manufacturing-information-system/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mrdev
+Group=mrmads-group
+WorkingDirectory=/opt/services/manufacturing-information-system
+EnvironmentFile=/opt/services/manufacturing-information-system/.env
+ExecStart=/usr/bin/node scripts/serve-prod.mjs
+Restart=on-failure
+RestartSec=5s
+KillSignal=SIGTERM
+TimeoutStopSec=30s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mis-frontend
+
+[Install]
+WantedBy=multi-user.target

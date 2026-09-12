@@ -12,7 +12,7 @@ Dokumen ini menjelaskan arsitektur frontend Manufacturing Information System (MI
 - **UI Library**: spartan/ui v1.4.1 (Brain primitives + Helm components bergaya Luma)
 - **Styling**: Tailwind CSS v4 dengan CSS design tokens OKLCH
 - **Icons**: `@ng-icons/core` & `@ng-icons/lucide`
-- **Notifications**: `ngx-sonner` & `@spartan-ng/helm/sonner`
+- **Notifications**: `@spartan-ng/brain/sonner` & `@spartan-ng/helm/sonner`
 - **Backend SDK**: `@supabase/supabase-js` dengan schema types otomatis dari PostgreSQL
 
 ---
@@ -57,8 +57,12 @@ src/
 | :--- | :--- |
 | `npm start` | Menjalankan generate environment dan start server development (`ng serve`) |
 | `npm run build` | Melakukan kompilasi bundle produksi aplikasi (`ng build`) |
+| `npm run serve:prod` | Menjalankan web server statis produksi (SPA fallback di port `${APP_PORT}`) |
 | `npm test` | Menjalankan pengujian unit berbasis Vitest (`ng test`) |
+| `npm run lint` | Menjalankan analisis statis kode dan template HTML menggunakan angular-eslint |
 | `npm run types:db` | Meng-generate ulang `src/types/database.types.ts` dari skema database aktif |
+| `sudo systemctl status manufacturing-information-system` | Memeriksa status unit systemd service produksi |
+| `sudo journalctl -u manufacturing-information-system -f` | Memantau log realtime service |
 
 ---
 
