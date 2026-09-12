@@ -3,6 +3,7 @@ import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angula
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
+  lucideAlertCircle,
   lucideEye,
   lucideEyeOff,
   lucideFactory,
@@ -11,6 +12,7 @@ import {
   lucideMail,
   lucideShieldCheck,
 } from '@ng-icons/lucide';
+import { HlmAlertImports } from '@spartan-ng/helm/alert';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmInputImports } from '@spartan-ng/helm/input';
@@ -22,6 +24,7 @@ import { AuthService } from '../../../core/services/auth.service';
   selector: 'app-login',
   imports: [
     ReactiveFormsModule,
+    HlmAlertImports,
     HlmButton,
     HlmCardImports,
     HlmInputImports,
@@ -30,6 +33,7 @@ import { AuthService } from '../../../core/services/auth.service';
   ],
   providers: [
     provideIcons({
+      lucideAlertCircle,
       lucideMail,
       lucideLock,
       lucideEye,

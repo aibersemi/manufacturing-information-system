@@ -1,7 +1,7 @@
 <div class="relative flex min-h-screen items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8">
-  <!-- Subtle Ambient Glow Background -->
+  <!-- Ambient Neutral Glow Accent -->
   <div
-    class="pointer-events-none absolute -top-40 left-1/2 -z-10 h-[32rem] w-[32rem] -translate-x-1/2 rounded-full bg-primary/5 blur-3xl dark:bg-primary/10"
+    class="pointer-events-none absolute -top-40 left-1/2 -z-10 size-[32rem] -translate-x-1/2 rounded-full bg-foreground/5 blur-3xl"
     aria-hidden="true"
   ></div>
 
@@ -9,7 +9,7 @@
     <!-- Branding Header -->
     <div class="mb-6 flex flex-col items-center text-center">
       <div
-        class="mb-3 flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md ring-1 ring-primary/20"
+        class="mb-3 flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm ring-1 ring-border"
       >
         <ng-icon name="lucideFactory" class="size-6" />
       </div>
@@ -21,9 +21,9 @@
       </p>
     </div>
 
-    <!-- Login Card (Luma Style) -->
-    <div hlmCard class="border border-border/80 bg-card shadow-lg ring-1 ring-black/5 dark:ring-white/10">
-      <div hlmCardHeader class="space-y-1 pb-4">
+    <!-- Login Card (Spartan Luma Style) -->
+    <div hlmCard class="w-full">
+      <div hlmCardHeader class="pb-2">
         <h2 hlmCardTitle class="text-xl font-semibold tracking-tight">Masuk ke Akun</h2>
         <p hlmCardDescription class="text-xs text-muted-foreground">
           Masukkan alamat email dan kata sandi Anda untuk melanjutkan
@@ -31,27 +31,31 @@
       </div>
 
       <div hlmCardContent>
-        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-4" novalidate>
-          <!-- Alert Pesan Kesalahan Global -->
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-4" novalidate>
+          <!-- Alert Pesan Kesalahan (Spartan Luma Alert) -->
           @if (errorMessage()) {
-            <div
-              class="rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"
-              role="alert"
-              aria-live="polite"
-            >
-              {{ errorMessage() }}
+            <div hlmAlert variant="destructive">
+              <ng-icon name="lucideAlertCircle" class="size-4" />
+              <h4 hlmAlertTitle>Gagal Masuk</h4>
+              <p hlmAlertDescription>
+                {{ errorMessage() }}
+              </p>
             </div>
           }
 
           <!-- Field Email -->
-          <div class="space-y-1.5">
-            <label hlmLabel for="email" class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <div class="flex flex-col gap-1.5">
+            <label
+              hlmLabel
+              for="email"
+              class="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >
               Email Perusahaan
             </label>
             <div class="relative">
               <ng-icon
                 name="lucideMail"
-                class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                class="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
                 aria-hidden="true"
               />
               <input
@@ -61,7 +65,7 @@
                 formControlName="email"
                 autocomplete="email"
                 placeholder="operator@aibersemi.com"
-                class="w-full pl-10"
+                class="ps-9 w-full"
                 [class.border-destructive]="isFieldInvalid('email')"
                 [attr.aria-invalid]="isFieldInvalid('email')"
                 aria-describedby="email-error"
@@ -79,7 +83,7 @@
           </div>
 
           <!-- Field Password -->
-          <div class="space-y-1.5">
+          <div class="flex flex-col gap-1.5">
             <div class="flex items-center justify-between">
               <label
                 hlmLabel
@@ -92,7 +96,7 @@
             <div class="relative">
               <ng-icon
                 name="lucideLock"
-                class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                class="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
                 aria-hidden="true"
               />
               <input
@@ -102,7 +106,7 @@
                 formControlName="password"
                 autocomplete="current-password"
                 placeholder="••••••••"
-                class="w-full pl-10 pr-10"
+                class="ps-9 pe-10 w-full"
                 [class.border-destructive]="isFieldInvalid('password')"
                 [attr.aria-invalid]="isFieldInvalid('password')"
                 aria-describedby="password-error"
@@ -110,7 +114,7 @@
               <button
                 type="button"
                 (click)="togglePasswordVisibility()"
-                class="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                class="absolute end-2 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 [attr.aria-label]="showPassword() ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'"
               >
                 <ng-icon [name]="showPassword() ? 'lucideEyeOff' : 'lucideEye'" class="size-4" />
@@ -127,13 +131,14 @@
             }
           </div>
 
-          <!-- Tombol Submit (Luma Style) -->
+          <!-- Tombol Submit (Luma Style: Pill rounded-4xl, size lg) -->
           <div class="pt-2">
             <button
               hlmBtn
+              size="lg"
               type="submit"
               [disabled]="isSubmitting()"
-              class="w-full h-11 text-sm font-medium shadow-sm transition-all"
+              class="w-full font-medium"
             >
               @if (isSubmitting()) {
                 <span class="inline-flex items-center gap-2">
@@ -148,10 +153,11 @@
         </form>
       </div>
 
-      <div hlmCardFooter class="flex flex-col items-center justify-center border-t border-border/50 pt-4 text-center text-xs text-muted-foreground">
+      <!-- Card Footer -->
+      <div hlmCardFooter class="flex flex-col items-center justify-center border-t border-border/50 text-center text-xs text-muted-foreground">
         <div class="flex items-center gap-1.5">
-          <ng-icon name="lucideShieldCheck" class="size-3.5 text-primary" />
-          <span>Keamanan Terenkripsi & Row Level Security (RLS)</span>
+          <ng-icon name="lucideShieldCheck" class="size-3.5 text-foreground/70" />
+          <span>Keamanan Terenkripsi &amp; Row Level Security (RLS)</span>
         </div>
       </div>
     </div>
