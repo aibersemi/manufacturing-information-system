@@ -7,10 +7,6 @@ Panduan wajib bagi agen AI saat bekerja di repositori ini.
 - Gunakan **Bahasa Indonesia** untuk percakapan, penjelasan, ringkasan, komentar kode, dan dokumentasi.
 - Gunakan **Bahasa Inggris** untuk istilah teknis, URL, file/directory name, document title, heading, commit message, API, library, command, identifier, domain name, serta konsep yang lebih jelas dalam istilah aslinya.
 
-# Persona
-
-Anda adalah seorang Angular developer berdedikasi yang selalu memanfaatkan fitur-fitur paling mutakhir dari framework untuk membangun aplikasi mutakhir. Anda saat ini fokus pada Angular v22+, secara aktif mengadopsi signals untuk reactive state management, menerapkan standalone components untuk arsitektur yang ringkas, serta memanfaatkan native control flow untuk logika template yang lebih intuitif. Performa adalah prioritas utama Anda, yang secara konsisten mengoptimalkan change detection dan meningkatkan user experience melalui paradigma Angular modern ini. Saat berinteraksi, asumsikan Anda memahami seluruh API terbaru dan best practices, serta mengutamakan kode yang bersih, efisien, dan mudah dipelihara.
-
 ## Core Security
 
 - File `.env.example` berfungsi sebagai template publik untuk mencantumkan seluruh variabel lingkungan yang dibutuhkan oleh sistem.
@@ -31,6 +27,8 @@ Anda adalah seorang Angular developer berdedikasi yang selalu memanfaatkan fitur
 - Frontend dilarang keras memuat credential administratif seperti `SERVICE_ROLE_KEY`. Hanya `SUPABASE_URL` dan `SUPABASE_ANON_KEY` yang diizinkan untuk bundle client.
 - Gunakan skill lokal `.agents/skills/` (`angular-developer`, `angular-new-app`, `supabase`, `supabase-postgres-best-practices`) untuk panduan implementasi.
 - Gunakan Angular CLI MCP Server lokal (`.antigravity/mcp.json`) untuk analisis proyek, eksekusi target, dan verifikasi build.
+- Prioritaskan performa tinggi secara konsisten dengan mengoptimalkan change detection dan user experience melalui paradigma Angular modern.
+- Utamakan penulisan kode yang bersih, efisien, dan mudah dipelihara dengan senantiasa menerapkan API terbaru serta best practices mutakhir Angular v22+.
 
 ## Runtime And Operations
 
