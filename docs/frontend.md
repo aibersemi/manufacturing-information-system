@@ -62,7 +62,7 @@ src/
 ## AI Pair Programming & MCP Tools
 
 Proyek ini telah dikonfigurasi dengan:
-- **Local Agent Skills**: `.agents/skills/angular-developer`, `.agents/skills/angular-new-app`, `.agents/skills/supabase`, dan `.agents/skills/supabase-postgres-best-practices`.
+- **Local Agent Skills**: `.agents/skills/angular-developer`, `.agents/skills/angular-new-app`, `.agents/skills/spartan`, `.agents/skills/supabase`, dan `.agents/skills/supabase-postgres-best-practices`.
 - **Local Angular CLI MCP Server**: `.antigravity/mcp.json` yang memungkinkan agen mengeksekusi `get_best_practices`, `run_target`, dan `devserver` secara terisolasi di dalam proyek.
 - **Frontend Guidelines**: [.agents/rules/angular.md](../.agents/rules/angular.md) untuk memastikan penulisan kode modern bebas dari pola legacy.
 
