@@ -65,3 +65,53 @@ Proyek ini telah dikonfigurasi dengan:
 - **Local Agent Skills**: `.agents/skills/angular-developer`, `.agents/skills/angular-new-app`, `.agents/skills/supabase`, dan `.agents/skills/supabase-postgres-best-practices`.
 - **Local Angular CLI MCP Server**: `.antigravity/mcp.json` yang memungkinkan agen mengeksekusi `get_best_practices`, `run_target`, dan `devserver` secara terisolasi di dalam proyek.
 - **Frontend Guidelines**: [.agents/rules/angular.md](../.agents/rules/angular.md) untuk memastikan penulisan kode modern bebas dari pola legacy.
+
+---
+
+## Examples
+
+Contoh modern standalone component Angular v22+ dengan signals dan native control flow:
+
+```ts
+import { Component, signal } from '@angular/core';
+
+@Component({
+  selector: 'app-server-status',
+  templateUrl: './server-status.component.html',
+  styleUrl: './server-status.component.css',
+})
+export class ServerStatusComponent {
+  protected readonly isServerRunning = signal(true);
+
+  toggleServerStatus(): void {
+    this.isServerRunning.update(running => !running);
+  }
+}
+```
+
+```css
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+
+  button {
+    margin-top: 10px;
+  }
+}
+```
+
+```html
+<section class="container">
+  @if (isServerRunning()) {
+    <span>Yes, the server is running</span>
+  } @else {
+    <span>No, the server is not running</span>
+  }
+  <button type="button" (click)="toggleServerStatus()">Toggle Server Status</button>
+</section>
+```
+
+Saat memperbarui komponen, tempatkan logic di dalam file `.ts`, styles di dalam file `.css`, dan HTML template di dalam file `.html` menggunakan relative paths.
