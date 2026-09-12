@@ -1,0 +1,159 @@
+<div class="relative flex min-h-screen items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8">
+  <!-- Subtle Ambient Glow Background -->
+  <div
+    class="pointer-events-none absolute -top-40 left-1/2 -z-10 h-[32rem] w-[32rem] -translate-x-1/2 rounded-full bg-primary/5 blur-3xl dark:bg-primary/10"
+    aria-hidden="true"
+  ></div>
+
+  <div class="w-full max-w-md">
+    <!-- Branding Header -->
+    <div class="mb-6 flex flex-col items-center text-center">
+      <div
+        class="mb-3 flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md ring-1 ring-primary/20"
+      >
+        <ng-icon name="lucideFactory" class="size-6" />
+      </div>
+      <h1 class="text-2xl font-bold tracking-tight text-foreground">
+        Manufacturing Information System
+      </h1>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Aibersemi Production & Operations Platform
+      </p>
+    </div>
+
+    <!-- Login Card (Luma Style) -->
+    <div hlmCard class="border border-border/80 bg-card shadow-lg ring-1 ring-black/5 dark:ring-white/10">
+      <div hlmCardHeader class="space-y-1 pb-4">
+        <h2 hlmCardTitle class="text-xl font-semibold tracking-tight">Masuk ke Akun</h2>
+        <p hlmCardDescription class="text-xs text-muted-foreground">
+          Masukkan alamat email dan kata sandi Anda untuk melanjutkan
+        </p>
+      </div>
+
+      <div hlmCardContent>
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-4" novalidate>
+          <!-- Alert Pesan Kesalahan Global -->
+          @if (errorMessage()) {
+            <div
+              class="rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"
+              role="alert"
+              aria-live="polite"
+            >
+              {{ errorMessage() }}
+            </div>
+          }
+
+          <!-- Field Email -->
+          <div class="space-y-1.5">
+            <label hlmLabel for="email" class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Email Perusahaan
+            </label>
+            <div class="relative">
+              <ng-icon
+                name="lucideMail"
+                class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <input
+                hlmInput
+                id="email"
+                type="email"
+                formControlName="email"
+                autocomplete="email"
+                placeholder="operator@aibersemi.com"
+                class="w-full pl-10"
+                [class.border-destructive]="isFieldInvalid('email')"
+                [attr.aria-invalid]="isFieldInvalid('email')"
+                aria-describedby="email-error"
+              />
+            </div>
+            @if (isFieldInvalid('email')) {
+              <p id="email-error" class="text-xs text-destructive" role="alert">
+                @if (form.get('email')?.hasError('required')) {
+                  Alamat email wajib diisi.
+                } @else if (form.get('email')?.hasError('email')) {
+                  Format alamat email tidak valid.
+                }
+              </p>
+            }
+          </div>
+
+          <!-- Field Password -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label
+                hlmLabel
+                for="password"
+                class="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+              >
+                Kata Sandi
+              </label>
+            </div>
+            <div class="relative">
+              <ng-icon
+                name="lucideLock"
+                class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <input
+                hlmInput
+                id="password"
+                [type]="showPassword() ? 'text' : 'password'"
+                formControlName="password"
+                autocomplete="current-password"
+                placeholder="••••••••"
+                class="w-full pl-10 pr-10"
+                [class.border-destructive]="isFieldInvalid('password')"
+                [attr.aria-invalid]="isFieldInvalid('password')"
+                aria-describedby="password-error"
+              />
+              <button
+                type="button"
+                (click)="togglePasswordVisibility()"
+                class="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                [attr.aria-label]="showPassword() ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'"
+              >
+                <ng-icon [name]="showPassword() ? 'lucideEyeOff' : 'lucideEye'" class="size-4" />
+              </button>
+            </div>
+            @if (isFieldInvalid('password')) {
+              <p id="password-error" class="text-xs text-destructive" role="alert">
+                @if (form.get('password')?.hasError('required')) {
+                  Kata sandi wajib diisi.
+                } @else if (form.get('password')?.hasError('minlength')) {
+                  Kata sandi minimal 6 karakter.
+                }
+              </p>
+            }
+          </div>
+
+          <!-- Tombol Submit (Luma Style) -->
+          <div class="pt-2">
+            <button
+              hlmBtn
+              type="submit"
+              [disabled]="isSubmitting()"
+              class="w-full h-11 text-sm font-medium shadow-sm transition-all"
+            >
+              @if (isSubmitting()) {
+                <span class="inline-flex items-center gap-2">
+                  <ng-icon name="lucideLoader2" class="size-4 animate-spin" />
+                  Memverifikasi...
+                </span>
+              } @else {
+                Masuk ke Sistem
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div hlmCardFooter class="flex flex-col items-center justify-center border-t border-border/50 pt-4 text-center text-xs text-muted-foreground">
+        <div class="flex items-center gap-1.5">
+          <ng-icon name="lucideShieldCheck" class="size-3.5 text-primary" />
+          <span>Keamanan Terenkripsi & Row Level Security (RLS)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
