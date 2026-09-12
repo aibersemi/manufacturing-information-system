@@ -102,6 +102,7 @@ db.sqlite3-journal
 .biome/
 vite.config.ts.timestamp-*
 vite.config.js.timestamp-*
+.angular/cache
 
 # =========================
 # Build Outputs
