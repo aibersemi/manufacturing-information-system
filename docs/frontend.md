@@ -31,6 +31,11 @@ src/
 │   │   │   └── supabase.service.ts     # Singleton Supabase client wrapper (PKCE Flow)
 │   │   └── utils/
 │   │       └── url.util.ts             # Sanitasi URL & mitigasi Open Redirect
+│   ├── features/
+│   │   ├── auth/login/                 # Komponen halaman masuk login
+│   │   └── dashboard/                  # Komponen overview metrik manufaktur
+│   ├── layout/
+│   │   └── dashboard-layout/           # Layout utama (sidebar navigasi + header profil)
 │   ├── app.config.ts                   # Provider zoneless, router, & error listeners
 │   ├── app.routes.ts                   # Rute modular dengan lazy loading
 │   └── app.ts                          # Root component

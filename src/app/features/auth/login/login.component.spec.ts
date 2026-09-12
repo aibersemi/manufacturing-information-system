@@ -50,8 +50,11 @@ describe('LoginComponent', () => {
     const emailControl = component.form.get('email')!;
     const passwordControl = component.form.get('password')!;
 
-    emailControl.setValue('invalid-email');
-    expect(emailControl.hasError('email')).toBe(true);
+    emailControl.setValue('ab');
+    expect(emailControl.hasError('minlength')).toBe(true);
+
+    emailControl.setValue('e2e_playwright');
+    expect(emailControl.valid).toBe(true);
 
     emailControl.setValue('valid@aibersemi.com');
     expect(emailControl.valid).toBe(true);
@@ -94,6 +97,26 @@ describe('LoginComponent', () => {
     expect(navigateSpy).toHaveBeenCalledWith('/');
     expect(component.errorMessage()).toBeNull();
     expect(component.isSubmitting()).toBe(false);
+  });
+
+  it('should normalize plain username to @mis.mrmads.net when submitted', async () => {
+    mockAuthService.signInWithPassword.mockResolvedValue({
+      user: { id: 'u1', email: 'e2e_playwright@mis.mrmads.net' },
+      session: { access_token: 'token' },
+    });
+    vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+
+    component.form.setValue({
+      email: 'e2e_playwright',
+      password: 'validpassword',
+    });
+
+    await component.onSubmit();
+
+    expect(mockAuthService.signInWithPassword).toHaveBeenCalledWith({
+      email: 'e2e_playwright@mis.mrmads.net',
+      password: 'validpassword',
+    });
   });
 
   it('should navigate to safe returnUrl when valid relative path is provided', async () => {

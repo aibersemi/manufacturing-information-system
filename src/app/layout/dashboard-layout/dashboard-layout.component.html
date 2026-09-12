@@ -1,0 +1,269 @@
+<div class="relative flex min-h-screen bg-background text-foreground">
+  <!-- Backdrop for Mobile Sidebar -->
+  @if (isMobileMenuOpen()) {
+    <div
+      class="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
+      (click)="closeMobileMenu()"
+      aria-hidden="true"
+    ></div>
+  }
+
+  <!-- Sidebar Navigasi Kiri -->
+  <aside
+    class="fixed inset-y-0 start-0 z-50 flex w-72 flex-col border-e border-border bg-card transition-transform duration-300 lg:static lg:translate-x-0"
+    [class.-translate-x-full]="!isMobileMenuOpen()"
+    [class.translate-x-0]="isMobileMenuOpen()"
+  >
+    <!-- Sidebar Header / Branding -->
+    <div class="flex h-16 items-center justify-between border-b border-border/80 px-6">
+      <div class="flex items-center gap-3">
+        <div class="flex size-10 items-center justify-center rounded-xl bg-background p-1.5 shadow-xs ring-1 ring-border">
+          <img
+            ngSrc="images/mis.svg"
+            width="32"
+            height="32"
+            priority
+            alt="Logo MIS"
+            class="size-7 object-contain"
+          />
+        </div>
+        <div class="flex flex-col">
+          <span class="text-sm font-bold tracking-tight text-foreground leading-tight">
+            MIS Platform
+          </span>
+          <span class="text-[11px] font-medium text-muted-foreground">
+            Manufacturing Operations
+          </span>
+        </div>
+      </div>
+
+      <!-- Close Button (Mobile Only) -->
+      <button
+        hlmBtn
+        variant="ghost"
+        size="icon"
+        class="size-8 lg:hidden"
+        (click)="closeMobileMenu()"
+        aria-label="Tutup menu sidebar"
+      >
+        <ng-icon name="lucideX" class="size-4" />
+      </button>
+    </div>
+
+    <!-- Sidebar Navigation Menu -->
+    <div class="flex-1 overflow-y-auto px-4 py-5">
+      <div class="space-y-6">
+        <!-- Grup Navigasi Operasi -->
+        <div>
+          <h3 class="px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+            Operasional Pabrik
+          </h3>
+          <nav class="mt-2.5 flex flex-col gap-1" aria-label="Menu Utama">
+            <a
+              routerLink="/"
+              [routerLinkActiveOptions]="{ exact: true }"
+              routerLinkActive="bg-accent text-accent-foreground font-semibold shadow-xs"
+              class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-accent/60 hover:text-foreground"
+              (click)="closeMobileMenu()"
+            >
+              <ng-icon name="lucideLayoutDashboard" class="size-4.5 text-foreground/70 transition group-hover:text-foreground" />
+              <span>Dashboard Utama</span>
+            </a>
+
+            <a
+              routerLink="/work-orders"
+              routerLinkActive="bg-accent text-accent-foreground font-semibold shadow-xs"
+              class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-accent/60 hover:text-foreground"
+              (click)="closeMobileMenu()"
+            >
+              <ng-icon name="lucideClipboardList" class="size-4.5 text-foreground/70 transition group-hover:text-foreground" />
+              <span>Perintah Kerja (WO)</span>
+            </a>
+
+            <a
+              routerLink="/operations"
+              routerLinkActive="bg-accent text-accent-foreground font-semibold shadow-xs"
+              class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-accent/60 hover:text-foreground"
+              (click)="closeMobileMenu()"
+            >
+              <ng-icon name="lucideFactory" class="size-4.5 text-foreground/70 transition group-hover:text-foreground" />
+              <span>Lini Produksi &amp; Mesin</span>
+            </a>
+
+            <a
+              routerLink="/inventory"
+              routerLinkActive="bg-accent text-accent-foreground font-semibold shadow-xs"
+              class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-accent/60 hover:text-foreground"
+              (click)="closeMobileMenu()"
+            >
+              <ng-icon name="lucideBoxes" class="size-4.5 text-foreground/70 transition group-hover:text-foreground" />
+              <span>Inventaris &amp; Material</span>
+            </a>
+
+            <a
+              routerLink="/quality"
+              routerLinkActive="bg-accent text-accent-foreground font-semibold shadow-xs"
+              class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-accent/60 hover:text-foreground"
+              (click)="closeMobileMenu()"
+            >
+              <ng-icon name="lucideShieldCheck" class="size-4.5 text-foreground/70 transition group-hover:text-foreground" />
+              <span>Kontrol Kualitas (QC)</span>
+            </a>
+          </nav>
+        </div>
+
+        <!-- Grup Navigasi Sistem -->
+        <div>
+          <h3 class="px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+            Administrasi
+          </h3>
+          <nav class="mt-2.5 flex flex-col gap-1" aria-label="Menu Sistem">
+            <a
+              routerLink="/settings"
+              routerLinkActive="bg-accent text-accent-foreground font-semibold shadow-xs"
+              class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-accent/60 hover:text-foreground"
+              (click)="closeMobileMenu()"
+            >
+              <ng-icon name="lucideSettings" class="size-4.5 text-foreground/70 transition group-hover:text-foreground" />
+              <span>Pengaturan Sistem</span>
+            </a>
+          </nav>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar Footer (Status Operasional) -->
+    <div class="border-t border-border/80 p-4">
+      <div class="flex items-center justify-between rounded-xl bg-muted/50 p-3 ring-1 ring-border/50">
+        <div class="flex items-center gap-2.5">
+          <span class="relative flex size-2.5">
+            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex size-2.5 rounded-full bg-emerald-500"></span>
+          </span>
+          <div class="flex flex-col">
+            <span class="text-xs font-semibold text-foreground">Sistem Aktif</span>
+            <span class="text-[10px] text-muted-foreground">Supabase Online</span>
+          </div>
+        </div>
+        <span hlmBadge variant="outline" class="text-[10px] capitalize">
+          {{ userRole() }}
+        </span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Area Konten Utama (Header + Main) -->
+  <div class="flex flex-1 flex-col min-w-0 min-h-screen">
+    <!-- Header Atas (Top Navbar) -->
+    <header class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border/80 bg-background/95 px-4 backdrop-blur-md sm:px-6 lg:px-8">
+      <!-- Sisi Kiri Header: Toggle Mobile & Breadcrumb -->
+      <div class="flex items-center gap-3">
+        <button
+          hlmBtn
+          variant="ghost"
+          size="icon"
+          class="size-9 lg:hidden"
+          (click)="toggleMobileMenu()"
+          aria-label="Buka menu navigasi"
+        >
+          <ng-icon name="lucideMenu" class="size-5" />
+        </button>
+
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-semibold tracking-tight text-foreground sm:text-base">
+            Ringkasan Operasi Pabrik
+          </span>
+          <span class="hidden rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground md:inline-block">
+            Shift 1 (Aktif)
+          </span>
+        </div>
+      </div>
+
+      <!-- Sisi Kanan Header: Status & User Profile Dropdown -->
+      <div class="flex items-center gap-3">
+        <!-- Status Indicator Badge (Desktop) -->
+        <div class="hidden items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs sm:flex">
+          <ng-icon name="lucideActivity" class="size-3.5 text-emerald-500" />
+          <span class="text-muted-foreground">Status:</span>
+          <span class="font-semibold text-foreground">Optimal</span>
+        </div>
+
+        <!-- User Profile Dropdown Menu Trigger -->
+        <button
+          [hlmDropdownMenuTrigger]="userDropdown"
+          class="flex items-center gap-2.5 rounded-full border border-border/80 bg-card p-1 pe-3 transition hover:bg-accent/70 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="Buka menu pengguna"
+          id="user-profile-button"
+        >
+          <hlm-avatar size="sm" class="size-7">
+            <span hlmAvatarFallback class="bg-primary font-bold text-primary-foreground text-[10px]">
+              {{ userInitials() }}
+            </span>
+          </hlm-avatar>
+
+          <div class="hidden flex-col text-start sm:flex">
+            <span class="text-xs font-semibold text-foreground leading-tight max-w-[150px] truncate">
+              {{ userEmail() }}
+            </span>
+            <span class="text-[10px] text-muted-foreground capitalize">
+              {{ userRoleLabel() }}
+            </span>
+          </div>
+
+          <ng-icon name="lucideChevronDown" class="size-3.5 text-muted-foreground" />
+        </button>
+
+        <!-- Dropdown Menu Template -->
+        <ng-template #userDropdown>
+          <div hlmDropdownMenu class="w-64 p-1.5 shadow-lg">
+            <!-- User Header Info -->
+            <div hlmDropdownMenuLabel class="flex flex-col gap-1 pb-2">
+              <span class="text-xs font-semibold text-foreground truncate">
+                {{ userEmail() }}
+              </span>
+              <div class="flex items-center gap-2">
+                <span hlmBadge variant="secondary" class="text-[10px] uppercase font-semibold">
+                  {{ userRole() }}
+                </span>
+                <span class="text-[11px] text-muted-foreground">
+                  Terautentikasi
+                </span>
+              </div>
+            </div>
+
+            <div hlmDropdownMenuSeparator></div>
+
+            <!-- Menu Links -->
+            <button hlmDropdownMenuItem routerLink="/settings">
+              <ng-icon name="lucideUser" class="size-4" />
+              <span>Profil Pengguna</span>
+            </button>
+
+            <button hlmDropdownMenuItem routerLink="/settings">
+              <ng-icon name="lucideSliders" class="size-4" />
+              <span>Pengaturan Sistem</span>
+            </button>
+
+            <div hlmDropdownMenuSeparator></div>
+
+            <!-- Logout Button -->
+            <button
+              hlmDropdownMenuItem
+              variant="destructive"
+              (click)="logout()"
+              id="logout-button"
+            >
+              <ng-icon name="lucideLogOut" class="size-4" />
+              <span>Keluar dari Sistem</span>
+            </button>
+          </div>
+        </ng-template>
+      </div>
+    </header>
+
+    <!-- Main Router Outlet Container -->
+    <main class="flex-1 p-4 sm:p-6 lg:p-8">
+      <router-outlet />
+    </main>
+  </div>
+</div>

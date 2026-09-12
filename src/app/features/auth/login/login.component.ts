@@ -58,7 +58,7 @@ export class LoginComponent {
   readonly errorMessage = signal<string | null>(null);
 
   readonly form = this.fb.group({
-    email: ['', [Validators.required, Validators.email]],
+    email: ['', [Validators.required, Validators.minLength(3)]],
     password: ['', [Validators.required, Validators.minLength(6)]],
   });
 
@@ -81,9 +81,12 @@ export class LoginComponent {
     this.errorMessage.set(null);
 
     const { email, password } = this.form.getRawValue();
+    const normalizedEmail = email.trim().includes('@')
+      ? email.trim()
+      : `${email.trim()}@mis.mrmads.net`;
 
     try {
-      await this.authService.signInWithPassword({ email, password });
+      await this.authService.signInWithPassword({ email: normalizedEmail, password });
       toast.success('Login berhasil! Mengalihkan ke sistem...');
       const rawReturnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
       const returnUrl = getSafeReturnUrl(rawReturnUrl, '/');

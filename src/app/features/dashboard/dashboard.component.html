@@ -1,0 +1,202 @@
+<div class="flex flex-col gap-6 sm:gap-8">
+  <!-- Welcome Banner Card -->
+  <div class="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-card via-card to-muted/40 p-6 shadow-xs sm:p-8">
+    <div
+      class="pointer-events-none absolute -right-12 -top-12 size-64 rounded-full bg-primary/5 blur-3xl"
+      aria-hidden="true"
+    ></div>
+
+    <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-col gap-1.5">
+        <div class="flex items-center gap-2">
+          <span hlmBadge variant="secondary" class="text-[11px] font-semibold uppercase tracking-wider">
+            Hak Akses: {{ userRole() }}
+          </span>
+          <span class="text-xs text-muted-foreground">• Pabrik Semikonduktor Aiber</span>
+        </div>
+        <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+          Selamat Datang, {{ userEmail() }}
+        </h1>
+        <p class="text-sm text-muted-foreground max-w-2xl leading-relaxed">
+          Pemantauan performa manufaktur, lini fabrikasi wafer, dan status kualitas produksi semikonduktor secara real-time.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button hlmBtn variant="outline" size="sm" class="gap-2 rounded-xl">
+          <ng-icon name="lucideRefreshCw" class="size-4" />
+          <span>Segarkan Data</span>
+        </button>
+        <button hlmBtn size="sm" class="gap-2 rounded-xl shadow-xs">
+          <ng-icon name="lucidePlus" class="size-4" />
+          <span>Work Order Baru</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI Metrics Grid (4 Cards) -->
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <!-- Card 1: Output Produksi -->
+    <div hlmCard class="rounded-2xl transition hover:shadow-md">
+      <div hlmCardHeader class="flex flex-row items-center justify-between pb-2">
+        <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Output Produksi Shift
+        </span>
+        <div class="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <ng-icon name="lucideTrendingUp" class="size-4.5" />
+        </div>
+      </div>
+      <div hlmCardContent class="pt-0">
+        <div class="text-2xl font-bold tracking-tight text-foreground">
+          14,280 <span class="text-sm font-normal text-muted-foreground">Unit</span>
+        </div>
+        <div class="mt-2 flex items-center gap-1.5 text-xs">
+          <span class="font-semibold text-emerald-600 dark:text-emerald-400">98.5% Target</span>
+          <span class="text-muted-foreground">• Kuota 14,500</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Efisiensi Mesin (OEE) -->
+    <div hlmCard class="rounded-2xl transition hover:shadow-md">
+      <div hlmCardHeader class="flex flex-row items-center justify-between pb-2">
+        <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Efisiensi Mesin (OEE)
+        </span>
+        <div class="flex size-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <ng-icon name="lucideCpu" class="size-4.5" />
+        </div>
+      </div>
+      <div hlmCardContent class="pt-0">
+        <div class="text-2xl font-bold tracking-tight text-foreground">
+          89.4%
+        </div>
+        <div class="mt-2 flex items-center gap-1.5 text-xs">
+          <span class="font-semibold text-emerald-600 dark:text-emerald-400">+2.1%</span>
+          <span class="text-muted-foreground">Di atas standar industri 85%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Perintah Kerja Aktif -->
+    <div hlmCard class="rounded-2xl transition hover:shadow-md">
+      <div hlmCardHeader class="flex flex-row items-center justify-between pb-2">
+        <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Work Orders Aktif
+        </span>
+        <div class="flex size-9 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400">
+          <ng-icon name="lucideClipboardList" class="size-4.5" />
+        </div>
+      </div>
+      <div hlmCardContent class="pt-0">
+        <div class="text-2xl font-bold tracking-tight text-foreground">
+          18 <span class="text-sm font-normal text-muted-foreground">Aktif</span>
+        </div>
+        <div class="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span class="font-medium text-foreground">4 antrean</span>
+          <span>• 0 kendala lini</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: Quality Pass Rate -->
+    <div hlmCard class="rounded-2xl transition hover:shadow-md">
+      <div hlmCardHeader class="flex flex-row items-center justify-between pb-2">
+        <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Yield Kualitas (QC)
+        </span>
+        <div class="flex size-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+          <ng-icon name="lucideShieldCheck" class="size-4.5" />
+        </div>
+      </div>
+      <div hlmCardContent class="pt-0">
+        <div class="text-2xl font-bold tracking-tight text-foreground">
+          99.2%
+        </div>
+        <div class="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span class="font-semibold text-emerald-600 dark:text-emerald-400">Defect 0.8%</span>
+          <span>• Batas maks 1.5%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Work Orders Table / List Section -->
+  <div hlmCard class="rounded-3xl shadow-xs">
+    <div hlmCardHeader class="border-b border-border/80 pb-4">
+      <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 hlmCardTitle class="text-lg font-bold tracking-tight text-foreground">
+            Status Perintah Kerja Terkini
+          </h2>
+          <p hlmCardDescription class="text-xs text-muted-foreground">
+            Aktivitas lini produksi wafer, pengemasan IC, dan pemantauan operator
+          </p>
+        </div>
+        <button hlmBtn variant="ghost" size="sm" class="gap-1.5 text-xs self-start sm:self-center">
+          <span>Lihat Semua Perintah</span>
+          <ng-icon name="lucideArrowUpRight" class="size-3.5" />
+        </button>
+      </div>
+    </div>
+
+    <div hlmCardContent class="p-0">
+      <div class="overflow-x-auto">
+        <table class="w-full text-start text-sm">
+          <thead>
+            <tr class="border-b border-border/60 bg-muted/30 text-start text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <th scope="col" class="px-6 py-3.5">Kode WO</th>
+              <th scope="col" class="px-6 py-3.5">Lini Produksi &amp; Komponen</th>
+              <th scope="col" class="px-6 py-3.5">Target / Selesai</th>
+              <th scope="col" class="px-6 py-3.5">Operator Bertugas</th>
+              <th scope="col" class="px-6 py-3.5 text-end">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border/50">
+            @for (wo of recentWorkOrders(); track wo.id) {
+              <tr class="transition hover:bg-muted/40">
+                <td class="px-6 py-4 font-mono text-xs font-semibold text-foreground">
+                  {{ wo.code }}
+                </td>
+                <td class="px-6 py-4">
+                  <div class="flex flex-col">
+                    <span class="font-medium text-foreground text-sm">{{ wo.item }}</span>
+                    <span class="text-xs text-muted-foreground">{{ wo.line }}</span>
+                  </div>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="flex flex-col gap-1">
+                    <div class="flex items-center gap-2 text-xs">
+                      <span class="font-semibold text-foreground">{{ wo.completedUnits }}</span>
+                      <span class="text-muted-foreground">/ {{ wo.targetUnits }}</span>
+                    </div>
+                    <!-- Progress Bar Simple -->
+                    <div class="h-1.5 w-32 overflow-hidden rounded-full bg-muted">
+                      <div
+                        class="h-full bg-primary transition-all duration-500"
+                        [style.width.%]="(wo.completedUnits / wo.targetUnits) * 100"
+                      ></div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-xs text-muted-foreground">
+                  {{ wo.operator }}
+                </td>
+                <td class="px-6 py-4 text-end">
+                  <span
+                    hlmBadge
+                    [variant]="getStatusBadgeVariant(wo.status)"
+                    class="text-[11px]"
+                  >
+                    {{ getStatusLabel(wo.status) }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

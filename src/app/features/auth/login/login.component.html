@@ -50,14 +50,14 @@
             </div>
           }
 
-          <!-- Field Email -->
+          <!-- Field Username atau Email -->
           <div class="flex flex-col gap-1.5">
             <label
               hlmLabel
               for="email"
               class="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
             >
-              Email Perusahaan
+              Username atau Email
             </label>
             <div class="relative">
               <ng-icon
@@ -68,9 +68,9 @@
               <input
                 hlmInput
                 id="email"
-                type="email"
+                type="text"
                 formControlName="email"
-                autocomplete="email"
+                autocomplete="username"
                 placeholder="admin@mrmads.net"
                 class="ps-9 w-full"
                 [class.border-destructive]="isFieldInvalid('email')"
@@ -81,9 +81,9 @@
             @if (isFieldInvalid('email')) {
               <p id="email-error" class="text-xs text-destructive" role="alert">
                 @if (form.get('email')?.hasError('required')) {
-                  Alamat email wajib diisi.
-                } @else if (form.get('email')?.hasError('email')) {
-                  Format alamat email tidak valid.
+                  Username atau email wajib diisi.
+                } @else if (form.get('email')?.hasError('minlength')) {
+                  Username atau email minimal 3 karakter.
                 }
               </p>
             }
