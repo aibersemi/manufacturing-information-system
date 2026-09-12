@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { NgOptimizedImage } from '@angular/common';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -6,7 +7,6 @@ import {
   lucideAlertCircle,
   lucideEye,
   lucideEyeOff,
-  lucideFactory,
   lucideLoader2,
   lucideLock,
   lucideMail,
@@ -24,6 +24,7 @@ import { AuthService } from '../../../core/services/auth.service';
   selector: 'app-login',
   imports: [
     ReactiveFormsModule,
+    NgOptimizedImage,
     HlmAlertImports,
     HlmButton,
     HlmCardImports,
@@ -39,7 +40,6 @@ import { AuthService } from '../../../core/services/auth.service';
       lucideEye,
       lucideEyeOff,
       lucideLoader2,
-      lucideFactory,
       lucideShieldCheck,
     }),
   ],

@@ -124,10 +124,16 @@ server.listen(PORT, HOST, () => {
 
 const gracefulShutdown = () => {
   console.log('[MIS Production Server] Received termination signal, shutting down...');
+  if (typeof server.closeAllConnections === 'function') {
+    server.closeAllConnections();
+  }
   server.close(() => {
     console.log('[MIS Production Server] Server closed gracefully.');
     process.exit(0);
   });
+  setTimeout(() => {
+    process.exit(0);
+  }, 2000).unref();
 };
 
 process.on('SIGTERM', gracefulShutdown);
