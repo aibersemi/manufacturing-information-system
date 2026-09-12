@@ -3,7 +3,7 @@
 Dokumen ini menetapkan arsitektur keamanan, standar *defense-in-depth*, dan panduan operasional resmi untuk Manufacturing Information System (MIS). Panduan ini mengintegrasikan standar keamanan resmi dari [Angular Security Guide](https://angular.dev/guide/security) dan [Supabase Production Security Best Practices](https://supabase.com/docs/guides/database/postgres/row-level-security).
 
 > [!IMPORTANT]
-> Seluruh nilai rahasia, kredensial, token administratif, password database, dan alamat IP infrastruktur hanya disimpan di dalam file `.env` dan dilarang keras dicantumkan secara langsung pada dokumentasi maupun kode publik. Dokumen ini hanya merujuk nama variabel lingkungan.
+> Seluruh nilai rahasia, kredensial, token, password, parameter koneksi (URL/port/IP), dan API key sensitif hanya disimpan di dalam file `.env` dan dilarang keras dicantumkan secara langsung pada dokumentasi maupun kode publik. Dokumen ini hanya merujuk nama variabel lingkungan.
 
 ---
 

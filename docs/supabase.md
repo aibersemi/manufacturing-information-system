@@ -2,9 +2,6 @@
 
 Dokumen ini menjelaskan status arsitektur, verifikasi endpoint, konfigurasi variabel lingkungan (*environment variables*), dan operasional stack Supabase *self-hosted* yang digunakan oleh Manufacturing Information System (MIS).
 
-> [!IMPORTANT]
-> Seluruh nilai rahasia, kredensial, user, password, token, URL, port, IP dan API key sensitif hanya disimpan di dalam file `.env` dan dilarang keras dicantumkan secara langsung pada dokumentasi maupun kode publik. Dokumen ini hanya merujuk nama variabel lingkungan tanpa nilai mentah.
-
 ---
 
 ## Container Status & Services

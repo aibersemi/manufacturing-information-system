@@ -2,9 +2,6 @@
 
 Dokumen ini menjelaskan alur routing publik dan reverse proxy edge server untuk Manufacturing Information System (MIS).
 
-> [!IMPORTANT]
-> Seluruh domain, alamat IP publik, IP WireGuard, port, dan host server hanya disimpan di dalam file `.env` dan dilarang keras dicantumkan secara langsung pada dokumentasi maupun kode publik. Dokumen ini hanya merujuk nama variabel lingkungan tanpa nilai mentah.
-
 ---
 
 ## Architecture Overview

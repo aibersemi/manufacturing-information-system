@@ -2,9 +2,6 @@
 
 Dokumen ini adalah panduan operasional (*canonical runbook*) untuk Manufacturing Information System (MIS) yang mencakup manajemen layanan *systemd*, prosedur *deployment & build*, pemantauan *logging*, *health check*, sinkronisasi tipe database, prosedur *backup & disaster recovery*, serta panduan penanganan insiden (*troubleshooting*).
 
-> [!IMPORTANT]
-> Seluruh nilai rahasia, kredensial, user, password, token, URL, port, IP, dan API key sensitif hanya disimpan di dalam file `.env` dan dilarang keras dicantumkan secara langsung pada dokumentasi maupun kode publik. Dokumen ini hanya merujuk nama variabel lingkungan tanpa nilai mentah.
-
 ---
 
 ## Runtime Overview
