@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Angular & Supabase Frontend Development Rules
 
 Pedoman dan batasan wajib untuk pengembangan frontend Angular (v22+) dan integrasi Supabase pada proyek ini.
