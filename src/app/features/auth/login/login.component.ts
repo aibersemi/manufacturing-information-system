@@ -19,6 +19,7 @@ import { HlmInputImports } from '@spartan-ng/helm/input';
 import { HlmLabelImports } from '@spartan-ng/helm/label';
 import { toast } from '@spartan-ng/brain/sonner';
 import { AuthService } from '../../../core/services/auth.service';
+import { getSafeReturnUrl } from '../../../core/utils/url.util';
 
 @Component({
   selector: 'app-login',
@@ -84,7 +85,8 @@ export class LoginComponent {
     try {
       await this.authService.signInWithPassword({ email, password });
       toast.success('Login berhasil! Mengalihkan ke sistem...');
-      const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/';
+      const rawReturnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+      const returnUrl = getSafeReturnUrl(rawReturnUrl, '/');
       await this.router.navigateByUrl(returnUrl);
     } catch (err: unknown) {
       const errorMsg =

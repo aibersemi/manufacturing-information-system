@@ -24,10 +24,13 @@ src/
 ├── app/
 │   ├── core/
 │   │   ├── guards/
-│   │   │   └── auth.guard.ts           # Functional route guard (CanActivateFn)
-│   │   └── services/
-│   │       ├── auth.service.ts         # Reactive session & user state via Signals
-│   │       └── supabase.service.ts     # Singleton Supabase client wrapper
+│   │   │   ├── auth.guard.ts           # Functional route guard (CanActivateFn) dengan returnUrl
+│   │   │   └── guest.guard.ts          # Guard pencegah akses login untuk sesi aktif
+│   │   ├── services/
+│   │   │   ├── auth.service.ts         # Reactive session & user state via Signals + waitForAuthReady()
+│   │   │   └── supabase.service.ts     # Singleton Supabase client wrapper (PKCE Flow)
+│   │   └── utils/
+│   │       └── url.util.ts             # Sanitasi URL & mitigasi Open Redirect
 │   ├── app.config.ts                   # Provider zoneless, router, & error listeners
 │   ├── app.routes.ts                   # Rute modular dengan lazy loading
 │   └── app.ts                          # Root component

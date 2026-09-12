@@ -8,8 +8,10 @@ describe('LoginComponent', () => {
   let fixture: ComponentFixture<LoginComponent>;
   let mockAuthService: { signInWithPassword: ReturnType<typeof vi.fn> };
   let router: Router;
+  let currentReturnUrl: string | null = null;
 
   beforeEach(async () => {
+    currentReturnUrl = null;
     mockAuthService = {
       signInWithPassword: vi.fn(),
     };
@@ -24,7 +26,7 @@ describe('LoginComponent', () => {
           useValue: {
             snapshot: {
               queryParamMap: {
-                get: (key: string) => (key === 'returnUrl' ? null : null),
+                get: (key: string) => (key === 'returnUrl' ? currentReturnUrl : null),
               },
             },
           },
@@ -92,6 +94,42 @@ describe('LoginComponent', () => {
     expect(navigateSpy).toHaveBeenCalledWith('/');
     expect(component.errorMessage()).toBeNull();
     expect(component.isSubmitting()).toBe(false);
+  });
+
+  it('should navigate to safe returnUrl when valid relative path is provided', async () => {
+    currentReturnUrl = '/production/orders';
+    mockAuthService.signInWithPassword.mockResolvedValue({
+      user: { id: 'u1', email: 'valid@aibersemi.com' },
+      session: { access_token: 'token' },
+    });
+    const navigateSpy = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+
+    component.form.setValue({
+      email: 'valid@aibersemi.com',
+      password: 'validpassword',
+    });
+
+    await component.onSubmit();
+
+    expect(navigateSpy).toHaveBeenCalledWith('/production/orders');
+  });
+
+  it('should sanitize returnUrl and fallback to / if external URL is provided (Open Redirect defense)', async () => {
+    currentReturnUrl = 'https://malicious-site.com';
+    mockAuthService.signInWithPassword.mockResolvedValue({
+      user: { id: 'u1', email: 'valid@aibersemi.com' },
+      session: { access_token: 'token' },
+    });
+    const navigateSpy = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+
+    component.form.setValue({
+      email: 'valid@aibersemi.com',
+      password: 'validpassword',
+    });
+
+    await component.onSubmit();
+
+    expect(navigateSpy).toHaveBeenCalledWith('/');
   });
 
   it('should display error message on failed login', async () => {

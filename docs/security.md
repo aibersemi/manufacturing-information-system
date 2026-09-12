@@ -47,6 +47,11 @@ Header CSP dikonfigurasi pada Caddy edge server untuk membatasi asal sumber daya
 - **Kunci Rahasia Terlarang**: Variabel `SUPABASE_SERVICE_ROLE_KEY`, `POSTGRES_PASSWORD`, dan kredensial administratif lainnya **dilarang keras** diimpor atau dibungkus ke dalam file TypeScript frontend (seperti `src/environments/`).
 - File `src/environments/environment.ts` otomatis di-generate saat build dari `.env` lokal dan diabaikan oleh Git (`.gitignore`).
 
+### Autentikasi Klien, PKCE Flow & Mitigasi Open Redirect
+- **PKCE (Proof Key for Code Exchange) Flow**: Client Supabase diinisialisasi secara eksplisit dengan `auth.flowType: 'pkce'` untuk mencegah serangan intersepsi token pada arsitektur Single Page Application (SPA).
+- **Sanitasi `returnUrl` (Proteksi Open Redirect)**: Seluruh pengalihan kembali pasca-login wajib melewati validasi ketat `getSafeReturnUrl()`. Fungsi ini melarang skema eksternal (`http:`, `https:`, `javascript:`, `data:`), protocol-relative URL (`//`), dan karakter backslash (`\`), sehingga rute kembali selalu terbatas pada internal path aplikasi (`/`).
+- **Penanganan Inisialisasi Sesi Deterministik**: Route guards (`authGuard` dan `guestGuard`) bersifat asinkron dan selalu menunggu `authService.waitForAuthReady()` sebelum mengambil keputusan navigasi, mencegah *race condition* atau *false redirect* saat halaman terlindungi di-refresh oleh pengguna yang telah login.
+
 ---
 
 ## Database & Backend Security (Standar Resmi Supabase & PostgreSQL)

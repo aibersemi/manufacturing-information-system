@@ -13,8 +13,21 @@ export class AuthService {
   readonly isAuthenticated = computed<boolean>(() => !!this.session());
   readonly isLoading = signal<boolean>(true);
 
+  private authReadyResolver!: () => void;
+  private readonly authReadyPromise = new Promise<void>((resolve) => {
+    this.authReadyResolver = resolve;
+  });
+
   constructor() {
     this.initializeAuth();
+  }
+
+  /**
+   * Menunggu proses inisialisasi sesi awal Supabase selesai secara deterministik.
+   * Digunakan oleh route guards untuk mencegah race condition saat halaman di-refresh.
+   */
+  async waitForAuthReady(): Promise<void> {
+    return this.authReadyPromise;
   }
 
   private async initializeAuth(): Promise<void> {
@@ -26,6 +39,7 @@ export class AuthService {
       this.session.set(null);
     } finally {
       this.isLoading.set(false);
+      this.authReadyResolver();
     }
 
     this.supabase.client.auth.onAuthStateChange((_event, newSession: AuthSession | null) => {

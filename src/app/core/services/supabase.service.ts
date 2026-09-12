@@ -12,7 +12,15 @@ export class SupabaseService {
   constructor() {
     this.client = createClient<Database>(
       environment.supabaseUrl,
-      environment.supabaseAnonKey
+      environment.supabaseAnonKey,
+      {
+        auth: {
+          flowType: 'pkce',
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: true,
+        },
+      }
     );
   }
 }

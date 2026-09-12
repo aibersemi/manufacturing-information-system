@@ -36,4 +36,9 @@ describe('AuthService', () => {
     expect(res.session).toEqual(mockSession);
     expect(service.session()).toEqual(mockSession);
   });
+
+  it('should resolve waitForAuthReady when session initialization completes', async () => {
+    await expect(service.waitForAuthReady()).resolves.toBeUndefined();
+    expect(service.isLoading()).toBe(false);
+  });
 });
