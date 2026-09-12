@@ -24,6 +24,36 @@ Layanan Supabase berjalan menggunakan Docker Compose pada unit systemd `supabase
 
 ---
 
+## Supabase Storage & Media Management
+
+Sistem manufaktur menggunakan Supabase Storage terintegrasi untuk menyimpan file biner operasional (foto QC, rekaman SOP proses perakitan semikonduktor, diagram skematik, dan laporan kerja PDF).
+
+### Bucket Konfigurasi
+
+| Parameter | Nilai / Konfigurasi | Keterangan |
+| :--- | :--- | :--- |
+| **Bucket ID** | `manufacturing-media` | Bucket privat utama sistem |
+| **Akses Publik** | `false` (Private) | Wajib autentikasi & token JWT / Signed URL |
+| **Batas Ukuran File** | `52428800` bytes (50 MB) | Mencegah beban kapasitas berlebih |
+| **Allowed MIME Types** | `image/png`, `image/jpeg`, `image/webp`, `image/svg+xml`, `video/mp4`, `video/webm`, `application/pdf` | Dibatasi hanya file media dan dokumen teknis yang sah |
+
+### Kebijakan Row Level Security (RLS) Storage
+
+Row Level Security diaktifkan secara ketat pada tabel `storage.objects` dan `storage.buckets`:
+
+1. **SELECT**: Hanya pengguna terautentikasi (`authenticated`) yang dapat membaca atau mengunduh file dari bucket `manufacturing-media`.
+2. **INSERT**: Hanya pengguna terautentikasi (`authenticated`) yang diizinkan mengunggah file baru.
+3. **UPDATE**: Diizinkan untuk pengguna terautentikasi guna mendukung fitur penimpaan file (*upsert*).
+4. **DELETE**: Diizinkan untuk pengguna terautentikasi untuk pembersihan atau penggantian file usang.
+5. **Akses Anonim**: Seluruh permintaan tanpa token ditolak otomatis oleh RLS (`new row violates row-level security policy`).
+
+Inisialisasi bucket dan penegakan kebijakan RLS dilakukan secara terotomatisasi melalui script:
+```bash
+node scripts/setup-storage.mjs
+```
+
+---
+
 ## Endpoint & Network Verification
 
 Hasil pengujian konektivitas endpoint dan jaringan:
