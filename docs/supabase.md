@@ -52,7 +52,7 @@ Hasil pengujian konektivitas endpoint dan jaringan:
 
 Kredensial dan konfigurasi koneksi didefinisikan di dalam file `.env`. Gunakan variabel-variabel berikut untuk menghubungkan modul aplikasi, backend ORM, migrasi skema, atau client SDK:
 
-### 1. Dashboard Web Studio
+### Dashboard Web Studio
 
 | Nama Variabel | Keterangan |
 | :--- | :--- |
@@ -60,7 +60,7 @@ Kredensial dan konfigurasi koneksi didefinisikan di dalam file `.env`. Gunakan v
 | `SUPABASE_DASHBOARD_USERNAME` | Username login Dashboard *(disimpan di `.env`)* |
 | `SUPABASE_DASHBOARD_PASSWORD` | Password login Dashboard *(disimpan di `.env`)* |
 
-### 2. Koneksi Database Langsung (PostgreSQL / ORM / DBeaver)
+### Koneksi Database Langsung (PostgreSQL / ORM / DBeaver)
 
 | Nama Variabel | Keterangan |
 | :--- | :--- |
@@ -72,7 +72,7 @@ Kredensial dan konfigurasi koneksi didefinisikan di dalam file `.env`. Gunakan v
 | `POSTGRES_PASSWORD` | Password database *(disimpan di `.env`)* |
 | `DATABASE_URL` | Format URI koneksi lengkap database: `postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}` |
 
-### 3. API Keys untuk Client / Frontend & Backend Services
+### API Keys untuk Client / Frontend & Backend Services
 
 | Nama Variabel | Scope Akses | Keterangan |
 | :--- | :--- | :--- |
@@ -85,7 +85,7 @@ Kredensial dan konfigurasi koneksi didefinisikan di dalam file `.env`. Gunakan v
 
 ## Application Integration Examples
 
-### 1. Supabase Client SDK (JavaScript / TypeScript)
+### Supabase Client SDK (JavaScript / TypeScript)
 
 ```typescript
 import { createClient } from '@supabase/supabase-js';
@@ -96,7 +96,7 @@ const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 ```
 
-### 2. Database ORM / Driver (Prisma / Drizzle / Node-Postgres)
+### Database ORM / Driver (Prisma / Drizzle / Node-Postgres)
 
 Gunakan variabel `DATABASE_URL` yang tersusun dari variabel database:
 
