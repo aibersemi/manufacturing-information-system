@@ -160,6 +160,7 @@ yarn-error.log*
 pnpm-debug.log*
 backups/
 *.sql
+!supabase/**/*.sql
 *.sql.gz
 *.dump
 

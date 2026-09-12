@@ -9,7 +9,10 @@ Dokumen ini menjelaskan arsitektur frontend Manufacturing Information System (MI
 - **Framework**: Angular v22 (Standalone components, Zoneless change detection)
 - **Language**: TypeScript (Strict mode)
 - **State Management**: Angular Signals (`signal()`, `computed()`, `linkedSignal()`, `resource()`)
-- **Testing**: Vitest dengan browser headless / JSDOM runner
+- **UI Library**: spartan/ui v1.4.1 (Brain primitives + Helm components bergaya Luma)
+- **Styling**: Tailwind CSS v4 dengan CSS design tokens OKLCH
+- **Icons**: `@ng-icons/core` & `@ng-icons/lucide`
+- **Notifications**: `ngx-sonner` & `@spartan-ng/helm/sonner`
 - **Backend SDK**: `@supabase/supabase-js` dengan schema types otomatis dari PostgreSQL
 
 ---

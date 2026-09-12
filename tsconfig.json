@@ -13,7 +13,8 @@
     "module": "preserve",
     "paths": {
       "@spartan-ng/helm/button": ["./libs/ui/button/src/index.ts"],
-      "@spartan-ng/helm/utils": ["./libs/ui/utils/src/index.ts"]
+      "@spartan-ng/helm/utils": ["./libs/ui/utils/src/index.ts"],
+      "@spartan-ng/helm/sonner": ["./libs/ui/sonner/src/index.ts"]
     }
   },
   "angularCompilerOptions": {
