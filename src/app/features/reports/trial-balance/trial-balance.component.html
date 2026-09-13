@@ -1,0 +1,267 @@
+<main class="flex flex-1 flex-col gap-6">
+  <!-- 1. Header Halaman & Filter Tanggal -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Neraca Saldo (Trial Balance)</h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Ringkasan saldo awal, mutasi debit/kredit, dan saldo akhir berpasangan seluruh bagan akun.
+      </p>
+    </div>
+
+    <!-- Filter Tanggal & Aksi Refresh -->
+    <div class="flex flex-wrap items-center gap-2.5">
+      <div class="flex items-center gap-2 rounded-full border border-border/80 bg-card px-3.5 py-1.5 shadow-2xs">
+        <ng-icon name="phosphorCalendarBlank" class="size-4 text-muted-foreground" />
+        <span class="text-xs text-muted-foreground">Dari:</span>
+        <input
+          type="date"
+          [ngModel]="dateFrom()"
+          (ngModelChange)="dateFrom.set($event)"
+          class="bg-transparent text-sm font-medium text-foreground focus:outline-hidden"
+          aria-label="Tanggal Mulai"
+        />
+        <span class="text-xs text-muted-foreground">Sampai:</span>
+        <input
+          type="date"
+          [ngModel]="dateTo()"
+          (ngModelChange)="dateTo.set($event)"
+          class="bg-transparent text-sm font-medium text-foreground focus:outline-hidden"
+          aria-label="Tanggal Selesai"
+        />
+      </div>
+
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        (click)="refreshData()"
+        [disabled]="loading()"
+        class="h-9 gap-1.5 rounded-full border-border/80 bg-card px-4 text-sm font-medium shadow-2xs hover:bg-accent"
+      >
+        <ng-icon
+          name="phosphorArrowsClockwise"
+          class="size-4"
+          [class.animate-spin]="loading()"
+        />
+        <span>Segarkan</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. Kartu Metrik KPI -->
+  @if (trialBalance(); as tb) {
+    <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Metrik Neraca Saldo">
+      <!-- Saldo Awal -->
+      <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+        <span class="text-sm font-medium text-muted-foreground">Total Saldo Awal</span>
+        <div class="mt-2 flex items-baseline justify-between gap-2">
+          <span class="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            {{ formatRupiah(tb.summary.totalOpeningDebit) }}
+          </span>
+        </div>
+        <p class="mt-1 text-xs text-muted-foreground">
+          Debit: {{ formatRupiah(tb.summary.totalOpeningDebit) }} &bull; Kredit: {{ formatRupiah(tb.summary.totalOpeningCredit) }}
+        </p>
+      </div>
+
+      <!-- Mutasi Debit Periode -->
+      <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+        <span class="text-sm font-medium text-muted-foreground">Mutasi Debit Periode</span>
+        <div class="mt-2 flex items-baseline justify-between gap-2">
+          <span class="text-xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-400 sm:text-2xl">
+            {{ formatRupiah(tb.summary.totalPeriodDebit) }}
+          </span>
+        </div>
+        <p class="mt-1 text-xs text-muted-foreground">Total debet transaksi jurnal terpilih</p>
+      </div>
+
+      <!-- Mutasi Kredit Periode -->
+      <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+        <span class="text-sm font-medium text-muted-foreground">Mutasi Kredit Periode</span>
+        <div class="mt-2 flex items-baseline justify-between gap-2">
+          <span class="text-xl font-semibold tracking-tight text-blue-600 dark:text-blue-400 sm:text-2xl">
+            {{ formatRupiah(tb.summary.totalPeriodCredit) }}
+          </span>
+        </div>
+        <p class="mt-1 text-xs text-muted-foreground">Total kredit transaksi jurnal terpilih</p>
+      </div>
+
+      <!-- Status Keseimbangan -->
+      <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+        <span class="text-sm font-medium text-muted-foreground">Keseimbangan (Balance)</span>
+        <div class="mt-2 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            @if (tb.isBalanced) {
+              <div class="flex size-7 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <ng-icon name="phosphorCheckCircle" class="size-4.5" />
+              </div>
+              <span class="text-lg font-semibold tracking-tight text-emerald-600 dark:text-emerald-400 sm:text-xl">
+                Seimbang (&Delta; 0)
+              </span>
+            } @else {
+              <div class="flex size-7 items-center justify-center rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                <ng-icon name="phosphorWarningCircle" class="size-4.5" />
+              </div>
+              <span class="text-lg font-semibold tracking-tight text-rose-600 dark:text-rose-400 sm:text-xl">
+                Selisih: {{ formatRupiah(tb.difference) }}
+              </span>
+            }
+          </div>
+        </div>
+        <p class="mt-1 text-xs text-muted-foreground">
+          Akhir: Debit {{ formatRupiah(tb.summary.totalClosingDebit) }} / Kredit {{ formatRupiah(tb.summary.totalClosingCredit) }}
+        </p>
+      </div>
+    </section>
+  }
+
+  <!-- 3. Filter & Pencarian Akun -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <!-- Search Bar -->
+    <div class="relative w-full sm:w-80">
+      <ng-icon
+        name="phosphorMagnifyingGlass"
+        class="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
+      />
+      <input
+        type="text"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+        placeholder="Cari kode, nama akun, klasifikasi..."
+        class="h-9 w-full rounded-full border border-border/80 bg-card ps-9 pe-3 text-sm text-foreground placeholder:text-muted-foreground shadow-2xs focus:border-primary focus:outline-hidden"
+      />
+    </div>
+
+    <!-- Category Pill Filters -->
+    <div class="flex flex-wrap items-center gap-1.5">
+      <button
+        type="button"
+        (click)="setLevelFilter('ALL')"
+        class="rounded-full px-3 py-1 text-xs font-medium transition"
+        [class.bg-primary]="selectedLevel1() === 'ALL'"
+        [class.text-primary-foreground]="selectedLevel1() === 'ALL'"
+        [class.bg-card]="selectedLevel1() !== 'ALL'"
+        [class.text-muted-foreground]="selectedLevel1() !== 'ALL'"
+        [class.border]="selectedLevel1() !== 'ALL'"
+        [class.border-border/80]="selectedLevel1() !== 'ALL'"
+      >
+        Semua Akun
+      </button>
+      @for (level of availableLevels(); track level) {
+        <button
+          type="button"
+          (click)="setLevelFilter(level)"
+          class="rounded-full px-3 py-1 text-xs font-medium transition"
+          [class.bg-primary]="selectedLevel1() === level"
+          [class.text-primary-foreground]="selectedLevel1() === level"
+          [class.bg-card]="selectedLevel1() !== level"
+          [class.text-muted-foreground]="selectedLevel1() !== level"
+          [class.border]="selectedLevel1() !== level"
+          [class.border-border/80]="selectedLevel1() !== level"
+        >
+          {{ level }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- 4. Tabel Neraca Saldo Berpasangan -->
+  <div class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-start border-collapse">
+        <thead>
+          <tr class="border-b border-border/80 bg-muted/30">
+            <th rowspan="2" class="px-4 py-3 text-start text-xs font-semibold text-muted-foreground uppercase tracking-wider">Kode Akun</th>
+            <th rowspan="2" class="px-4 py-3 text-start text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nama Akun</th>
+            <th rowspan="2" class="px-4 py-3 text-start text-xs font-semibold text-muted-foreground uppercase tracking-wider">Klasifikasi</th>
+            <th colspan="2" class="px-4 py-2 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-s border-b border-border/60">Saldo Awal</th>
+            <th colspan="2" class="px-4 py-2 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-s border-b border-border/60">Mutasi Periode</th>
+            <th colspan="2" class="px-4 py-2 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-s border-b border-border/60">Saldo Akhir</th>
+          </tr>
+          <tr class="border-b border-border/80 bg-muted/20">
+            <th class="px-3 py-1.5 text-end text-xs font-semibold text-muted-foreground border-s border-border/60">Debit</th>
+            <th class="px-3 py-1.5 text-end text-xs font-semibold text-muted-foreground">Kredit</th>
+            <th class="px-3 py-1.5 text-end text-xs font-semibold text-muted-foreground border-s border-border/60">Debit</th>
+            <th class="px-3 py-1.5 text-end text-xs font-semibold text-muted-foreground">Kredit</th>
+            <th class="px-3 py-1.5 text-end text-xs font-semibold text-muted-foreground border-s border-border/60">Debit</th>
+            <th class="px-3 py-1.5 text-end text-xs font-semibold text-muted-foreground">Kredit</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border/60 text-sm">
+          @for (acc of filteredAccounts(); track acc.id) {
+            <tr class="transition hover:bg-accent/40">
+              <td class="px-4 py-2.5 font-mono text-sm font-semibold text-foreground whitespace-nowrap">{{ acc.code }}</td>
+              <td class="px-4 py-2.5 font-medium text-foreground">{{ acc.name }}</td>
+              <td class="px-4 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
+                <span class="rounded-full bg-accent/60 px-2 py-0.5">{{ acc.level1 }}</span>
+                @if (acc.level3) {
+                  <span class="ms-1.5 text-muted-foreground/80">&bull; {{ acc.level3 }}</span>
+                }
+              </td>
+              <td class="px-3 py-2.5 text-end font-mono text-xs border-s border-border/60 text-foreground">
+                {{ acc.openingDebit > 0 ? formatRupiah(acc.openingDebit) : '-' }}
+              </td>
+              <td class="px-3 py-2.5 text-end font-mono text-xs text-foreground">
+                {{ acc.openingCredit > 0 ? formatRupiah(acc.openingCredit) : '-' }}
+              </td>
+              <td class="px-3 py-2.5 text-end font-mono text-xs border-s border-border/60 text-emerald-600 dark:text-emerald-400">
+                {{ acc.periodDebit > 0 ? formatRupiah(acc.periodDebit) : '-' }}
+              </td>
+              <td class="px-3 py-2.5 text-end font-mono text-xs text-blue-600 dark:text-blue-400">
+                {{ acc.periodCredit > 0 ? formatRupiah(acc.periodCredit) : '-' }}
+              </td>
+              <td class="px-3 py-2.5 text-end font-mono text-xs font-medium border-s border-border/60 text-foreground">
+                {{ acc.closingDebit > 0 ? formatRupiah(acc.closingDebit) : '-' }}
+              </td>
+              <td class="px-3 py-2.5 text-end font-mono text-xs font-medium text-foreground">
+                {{ acc.closingCredit > 0 ? formatRupiah(acc.closingCredit) : '-' }}
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="9" class="px-4 py-12 text-center text-muted-foreground">
+                @if (loading()) {
+                  <div class="flex flex-col items-center gap-2">
+                    <ng-icon name="phosphorArrowsClockwise" class="size-6 animate-spin text-primary" />
+                    <span class="text-sm">Memuat data neraca saldo...</span>
+                  </div>
+                } @else {
+                  <div class="flex flex-col items-center gap-1.5">
+                    <ng-icon name="phosphorScales" class="size-8 text-muted-foreground/40" />
+                    <span class="text-sm font-medium">Tidak ada akun yang sesuai kriteria pencarian</span>
+                    <span class="text-xs text-muted-foreground">Ubah kata kunci atau pilih rentang tanggal lain</span>
+                  </div>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+        @if (trialBalance(); as tb) {
+          <tfoot>
+            <tr class="border-t-2 border-border/90 bg-muted/40 font-semibold text-foreground">
+              <td colspan="3" class="px-4 py-3 text-sm text-end uppercase tracking-wider">Total Neraca Saldo</td>
+              <td class="px-3 py-3 text-end font-mono text-xs border-s border-border/60">
+                {{ formatRupiah(tb.summary.totalOpeningDebit) }}
+              </td>
+              <td class="px-3 py-3 text-end font-mono text-xs">
+                {{ formatRupiah(tb.summary.totalOpeningCredit) }}
+              </td>
+              <td class="px-3 py-3 text-end font-mono text-xs border-s border-border/60 text-emerald-600 dark:text-emerald-400">
+                {{ formatRupiah(tb.summary.totalPeriodDebit) }}
+              </td>
+              <td class="px-3 py-3 text-end font-mono text-xs text-blue-600 dark:text-blue-400">
+                {{ formatRupiah(tb.summary.totalPeriodCredit) }}
+              </td>
+              <td class="px-3 py-3 text-end font-mono text-xs border-s border-border/60">
+                {{ formatRupiah(tb.summary.totalClosingDebit) }}
+              </td>
+              <td class="px-3 py-3 text-end font-mono text-xs">
+                {{ formatRupiah(tb.summary.totalClosingCredit) }}
+              </td>
+            </tr>
+          </tfoot>
+        }
+      </table>
+    </div>
+  </div>
+</main>

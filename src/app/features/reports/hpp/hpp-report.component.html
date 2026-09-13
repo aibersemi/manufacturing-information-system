@@ -1,0 +1,529 @@
+<div class="space-y-6">
+  <!-- Top Header & Filter Controls -->
+  <div class="bg-card border border-border/80 rounded-3xl p-6 shadow-xs transition-all">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center justify-center p-2 rounded-xl bg-primary/10 text-primary">
+            <ng-icon name="phosphorFactory" class="text-xl" />
+          </span>
+          <h1 class="text-2xl font-bold tracking-tight text-foreground">
+            Laporan HPP & Biaya Pabrikasi
+          </h1>
+        </div>
+        <p class="text-sm text-muted-foreground mt-1">
+          Rincian biaya bahan baku, upah tenaga kerja langsung 4 tahap SPK, overhead pabrik, dan analisis varians per SKU vs standar BOM.
+        </p>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-wrap items-center gap-2.5">
+        <button
+          type="button"
+          (click)="exportCsv()"
+          [disabled]="loading() || !summaryData()"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-background hover:bg-muted/50 text-sm font-medium text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
+        >
+          <ng-icon name="phosphorDownloadSimple" class="text-base" />
+          <span>Ekspor CSV</span>
+        </button>
+        <button
+          type="button"
+          (click)="printReport()"
+          [disabled]="loading() || !summaryData()"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-background hover:bg-muted/50 text-sm font-medium text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
+        >
+          <ng-icon name="phosphorPrinter" class="text-base" />
+          <span>Cetak</span>
+        </button>
+        <button
+          type="button"
+          (click)="loadHppSummary()"
+          [disabled]="loading()"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium transition-colors disabled:opacity-50 shadow-2xs"
+        >
+          <ng-icon name="phosphorArrowsClockwise" [class.animate-spin]="loading()" class="text-base" />
+          <span>Muat Ulang</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="mt-6 pt-5 border-t border-border/60 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
+      <div>
+        <label for="dateFrom" class="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">
+          Tanggal Mulai
+        </label>
+        <input
+          id="dateFrom"
+          type="date"
+          [ngModel]="dateFrom()"
+          (ngModelChange)="dateFrom.set($event)"
+          class="w-full h-10 px-3 py-2 bg-background border border-border rounded-xl text-sm text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+        />
+      </div>
+
+      <div>
+        <label for="dateTo" class="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">
+          Tanggal Selesai
+        </label>
+        <input
+          id="dateTo"
+          type="date"
+          [ngModel]="dateTo()"
+          (ngModelChange)="dateTo.set($event)"
+          class="w-full h-10 px-3 py-2 bg-background border border-border rounded-xl text-sm text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+        />
+      </div>
+
+      <div class="sm:col-span-2 md:col-span-1 lg:col-span-2 flex items-center gap-2">
+        <button
+          type="button"
+          (click)="loadHppSummary()"
+          class="w-full sm:w-auto h-10 px-5 rounded-xl bg-secondary hover:bg-secondary/80 text-secondary-foreground text-sm font-medium transition-colors"
+        >
+          Terapkan Periode
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Alert -->
+  @if (errorMessage()) {
+    <div class="rounded-3xl border border-destructive/20 bg-destructive/10 p-4 text-destructive flex items-start gap-3">
+      <ng-icon name="phosphorWarningCircle" class="text-xl shrink-0 mt-0.5" />
+      <div>
+        <p class="text-sm font-semibold">Gagal Memuat Laporan</p>
+        <p class="text-sm opacity-90">{{ errorMessage() }}</p>
+      </div>
+    </div>
+  }
+
+  <!-- KPI Summary Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Card 1: Direct Material -->
+    <div class="bg-card border border-border/80 rounded-3xl p-5 shadow-xs">
+      <div class="flex items-center justify-between text-muted-foreground">
+        <span class="text-xs font-medium uppercase tracking-wider">Bahan Baku Langsung</span>
+        <span class="p-2 rounded-xl bg-blue-500/10 text-blue-600">
+          <ng-icon name="phosphorPackage" class="text-lg" />
+        </span>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-bold tracking-tight text-foreground">
+          {{ formatRupiah(directMaterialCost()) }}
+        </div>
+        <p class="text-xs text-muted-foreground mt-1">
+          {{ summaryData()?.materialsBreakdown?.length || 0 }} item bahan terpakai
+        </p>
+      </div>
+    </div>
+
+    <!-- Card 2: Direct Labor (SPK) -->
+    <div class="bg-card border border-border/80 rounded-3xl p-5 shadow-xs">
+      <div class="flex items-center justify-between text-muted-foreground">
+        <span class="text-xs font-medium uppercase tracking-wider">Upah SPK 4 Tahap</span>
+        <span class="p-2 rounded-xl bg-amber-500/10 text-amber-600">
+          <ng-icon name="phosphorUsersThree" class="text-lg" />
+        </span>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-bold tracking-tight text-foreground">
+          {{ formatRupiah(directLaborCost()) }}
+        </div>
+        <p class="text-xs text-muted-foreground mt-1">
+          Cutting, Printing, Sewing, Packing
+        </p>
+      </div>
+    </div>
+
+    <!-- Card 3: Factory Overhead -->
+    <div class="bg-card border border-border/80 rounded-3xl p-5 shadow-xs">
+      <div class="flex items-center justify-between text-muted-foreground">
+        <span class="text-xs font-medium uppercase tracking-wider">Overhead Pabrik (BOP)</span>
+        <span class="p-2 rounded-xl bg-purple-500/10 text-purple-600">
+          <ng-icon name="phosphorFactory" class="text-lg" />
+        </span>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-bold tracking-tight text-foreground">
+          {{ formatRupiah(factoryOverhead()) }}
+        </div>
+        <p class="text-xs text-muted-foreground mt-1">
+          Perlengkapan, Depresiasi, dan BOP Lain
+        </p>
+      </div>
+    </div>
+
+    <!-- Card 4: Total Manufacturing Cost -->
+    <div class="bg-card border border-border/80 rounded-3xl p-5 shadow-xs">
+      <div class="flex items-center justify-between text-muted-foreground">
+        <span class="text-xs font-medium uppercase tracking-wider">Total Biaya Produksi</span>
+        <span class="p-2 rounded-xl bg-emerald-500/10 text-emerald-600">
+          <ng-icon name="phosphorCoins" class="text-lg" />
+        </span>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-bold tracking-tight text-foreground">
+          {{ formatRupiah(totalManufacturingCost()) }}
+        </div>
+        <div class="flex items-center gap-1.5 mt-1">
+          @if (isMatched()) {
+            <span class="inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
+              <ng-icon name="phosphorCheckCircle" class="text-sm" />
+              Sesuai dengan GL COGS
+            </span>
+          } @else {
+            <span class="inline-flex items-center gap-1 text-xs font-medium text-destructive">
+              <ng-icon name="phosphorWarningCircle" class="text-sm" />
+              Selisih GL {{ formatRupiah(cogsDifference()) }}
+            </span>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="flex flex-wrap items-center gap-2 border-b border-border pb-2">
+    <button
+      type="button"
+      (click)="activeDetailTab.set('material')"
+      [class]="activeDetailTab() === 'material'
+        ? 'px-4 py-2 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-xs'
+        : 'px-4 py-2 rounded-full bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground text-xs font-medium transition-colors'"
+    >
+      Bahan Baku Terpakai ({{ summaryData()?.materialsBreakdown?.length || 0 }})
+    </button>
+    <button
+      type="button"
+      (click)="activeDetailTab.set('labor')"
+      [class]="activeDetailTab() === 'labor'
+        ? 'px-4 py-2 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-xs'
+        : 'px-4 py-2 rounded-full bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground text-xs font-medium transition-colors'"
+    >
+      Upah SPK 4 Tahap
+    </button>
+    <button
+      type="button"
+      (click)="activeDetailTab.set('overhead')"
+      [class]="activeDetailTab() === 'overhead'
+        ? 'px-4 py-2 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-xs'
+        : 'px-4 py-2 rounded-full bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground text-xs font-medium transition-colors'"
+    >
+      Overhead Pabrik
+    </button>
+    <button
+      type="button"
+      (click)="activeDetailTab.set('sku')"
+      [class]="activeDetailTab() === 'sku'
+        ? 'px-4 py-2 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-xs'
+        : 'px-4 py-2 rounded-full bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground text-xs font-medium transition-colors'"
+    >
+      Evaluasi SKU vs BOM ({{ summaryData()?.productsBreakdown?.length || 0 }})
+    </button>
+    <button
+      type="button"
+      (click)="activeDetailTab.set('reconciliation')"
+      [class]="activeDetailTab() === 'reconciliation'
+        ? 'px-4 py-2 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-xs'
+        : 'px-4 py-2 rounded-full bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground text-xs font-medium transition-colors'"
+    >
+      Rekonsiliasi GL COGS
+    </button>
+  </div>
+
+  <!-- Tab Content -->
+  @if (loading()) {
+    <div class="bg-card border border-border/80 rounded-3xl p-12 text-center shadow-xs">
+      <ng-icon name="phosphorArrowsClockwise" class="text-3xl text-primary animate-spin inline-block mb-3" />
+      <p class="text-sm font-medium text-muted-foreground">Menghitung Biaya Produksi & Analisis HPP...</p>
+    </div>
+  } @else if (summaryData()) {
+    <!-- Tab 1: Bahan Baku Terpakai -->
+    @if (activeDetailTab() === 'material') {
+      <div class="bg-card border border-border/80 rounded-3xl overflow-hidden shadow-xs">
+        <div class="p-5 border-b border-border flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-bold text-foreground">Rincian Penggunaan Bahan Baku Langsung</h2>
+            <p class="text-xs text-muted-foreground mt-0.5">Berdasarkan mutasi inventaris bahan baku selama periode berjalan.</p>
+          </div>
+          <div class="text-right">
+            <span class="text-xs text-muted-foreground block">Total Bahan Baku</span>
+            <span class="text-base font-bold text-primary">{{ formatRupiah(directMaterialCost()) }}</span>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-muted/40 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <tr>
+                <th class="px-5 py-3.5">Nama Bahan</th>
+                <th class="px-5 py-3.5 text-right">Kuantitas Terpakai</th>
+                <th class="px-5 py-3.5 text-right">Total Biaya</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border/60">
+              @for (item of summaryData()!.materialsBreakdown; track item.itemId) {
+                <tr class="hover:bg-muted/20 transition-colors">
+                  <td class="px-5 py-3.5 font-medium text-foreground">{{ item.itemName }}</td>
+                  <td class="px-5 py-3.5 text-right font-mono">{{ formatNumber(item.quantityUsed) }}</td>
+                  <td class="px-5 py-3.5 text-right font-semibold text-foreground">{{ formatRupiah(item.totalCost) }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="3" class="px-5 py-8 text-center text-muted-foreground text-sm">
+                    Tidak ada transaksi pengeluaran bahan baku pada periode ini.
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot class="bg-muted/30 border-t border-border font-bold">
+              <tr>
+                <td colspan="2" class="px-5 py-3.5 text-foreground text-right uppercase text-xs tracking-wider">Total Biaya Bahan Baku</td>
+                <td class="px-5 py-3.5 text-right font-bold text-foreground text-base">{{ formatRupiah(directMaterialCost()) }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- Tab 2: Upah SPK 4 Tahap -->
+    @if (activeDetailTab() === 'labor') {
+      <div class="bg-card border border-border/80 rounded-3xl p-6 shadow-xs space-y-6">
+        <div>
+          <h2 class="text-base font-bold text-foreground">Tenaga Kerja Langsung (Upah SPK 4 Tahap)</h2>
+          <p class="text-xs text-muted-foreground mt-0.5">Biaya upah borongan yang dialokasikan langsung ke Surat Perintah Kerja (SPK).</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <!-- Cutting -->
+          <div class="p-4 rounded-2xl border border-border/60 bg-muted/20">
+            <div class="flex items-center justify-between text-muted-foreground">
+              <span class="text-xs font-semibold uppercase tracking-wider">Potong</span>
+              <span class="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-xs font-bold">Cutting</span>
+            </div>
+            <div class="text-xl font-bold text-foreground mt-2">
+              {{ formatRupiah(summaryData()!.laborBreakdown.cutting) }}
+            </div>
+          </div>
+
+          <!-- Printing -->
+          <div class="p-4 rounded-2xl border border-border/60 bg-muted/20">
+            <div class="flex items-center justify-between text-muted-foreground">
+              <span class="text-xs font-semibold uppercase tracking-wider">Sablon/Bordir</span>
+              <span class="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 text-xs font-bold">Printing</span>
+            </div>
+            <div class="text-xl font-bold text-foreground mt-2">
+              {{ formatRupiah(summaryData()!.laborBreakdown.printing) }}
+            </div>
+          </div>
+
+          <!-- Sewing -->
+          <div class="p-4 rounded-2xl border border-border/60 bg-muted/20">
+            <div class="flex items-center justify-between text-muted-foreground">
+              <span class="text-xs font-semibold uppercase tracking-wider">Jahit</span>
+              <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 text-xs font-bold">Sewing</span>
+            </div>
+            <div class="text-xl font-bold text-foreground mt-2">
+              {{ formatRupiah(summaryData()!.laborBreakdown.sewing) }}
+            </div>
+          </div>
+
+          <!-- Packing -->
+          <div class="p-4 rounded-2xl border border-border/60 bg-muted/20">
+            <div class="flex items-center justify-between text-muted-foreground">
+              <span class="text-xs font-semibold uppercase tracking-wider">Packing</span>
+              <span class="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 text-xs font-bold">Packing</span>
+            </div>
+            <div class="text-xl font-bold text-foreground mt-2">
+              {{ formatRupiah(summaryData()!.laborBreakdown.packing) }}
+            </div>
+          </div>
+
+          <!-- Head Fee -->
+          <div class="p-4 rounded-2xl border border-border/60 bg-muted/20">
+            <div class="flex items-center justify-between text-muted-foreground">
+              <span class="text-xs font-semibold uppercase tracking-wider">Mandor</span>
+              <span class="px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 text-xs font-bold">Head Fee</span>
+            </div>
+            <div class="text-xl font-bold text-foreground mt-2">
+              {{ formatRupiah(summaryData()!.laborBreakdown.headFee) }}
+            </div>
+          </div>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-muted/40 border border-border flex items-center justify-between">
+          <span class="text-sm font-bold text-foreground uppercase tracking-wider">Total Upah Tenaga Kerja Langsung</span>
+          <span class="text-lg font-bold text-primary">{{ formatRupiah(directLaborCost()) }}</span>
+        </div>
+      </div>
+    }
+
+    <!-- Tab 3: Overhead Pabrik -->
+    @if (activeDetailTab() === 'overhead') {
+      <div class="bg-card border border-border/80 rounded-3xl p-6 shadow-xs space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-bold text-foreground">Rincian Biaya Overhead Pabrik (BOP)</h2>
+            <p class="text-xs text-muted-foreground mt-0.5">Akumulasi perlengkapan produksi, beban depresiasi mesin, dan biaya pabrik lainnya.</p>
+          </div>
+          <div class="text-right">
+            <span class="text-xs text-muted-foreground block">Total Overhead</span>
+            <span class="text-base font-bold text-purple-600">{{ formatRupiah(factoryOverhead()) }}</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-4 rounded-2xl border border-border/60 bg-muted/20">
+            <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Perlengkapan Produksi Terpakai</span>
+            <div class="text-xl font-bold text-foreground mt-2">
+              {{ formatRupiah(summaryData()!.overheadBreakdown.supplies) }}
+            </div>
+          </div>
+
+          <div class="p-4 rounded-2xl border border-border/60 bg-muted/20">
+            <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Penyusutan Aset Pabrik & Mesin</span>
+            <div class="text-xl font-bold text-foreground mt-2">
+              {{ formatRupiah(summaryData()!.overheadBreakdown.depreciation) }}
+            </div>
+          </div>
+
+          <div class="p-4 rounded-2xl border border-border/60 bg-muted/20">
+            <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Beban Overhead Lainnya (Buku Besar)</span>
+            <div class="text-xl font-bold text-foreground mt-2">
+              {{ formatRupiah(summaryData()!.overheadBreakdown.other) }}
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Tab 4: Evaluasi SKU vs BOM -->
+    @if (activeDetailTab() === 'sku') {
+      <div class="bg-card border border-border/80 rounded-3xl overflow-hidden shadow-xs">
+        <div class="p-5 border-b border-border flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-bold text-foreground">Evaluasi HPP Per SKU Produk vs BOM Standar</h2>
+            <p class="text-xs text-muted-foreground mt-0.5">Analisis efisiensi biaya produksi aktual dibandingkan dengan estimasi standar Bill of Materials.</p>
+          </div>
+          <div class="text-right">
+            <span class="text-xs text-muted-foreground block">Total Produk Selesai</span>
+            <span class="text-base font-bold text-foreground">{{ summaryData()!.productsBreakdown.length }} SKU</span>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-muted/40 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <tr>
+                <th class="px-5 py-3.5">Kode SKU</th>
+                <th class="px-5 py-3.5">Nama Produk</th>
+                <th class="px-5 py-3.5 text-right">Qty Produksi</th>
+                <th class="px-5 py-3.5 text-right">Qty Terjual</th>
+                <th class="px-5 py-3.5 text-right">HPP Aktual/Unit</th>
+                <th class="px-5 py-3.5 text-right">BOM Standar/Unit</th>
+                <th class="px-5 py-3.5 text-right">Varians / Unit</th>
+                <th class="px-5 py-3.5 text-center">Varians (%)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border/60">
+              @for (sku of summaryData()!.productsBreakdown; track sku.productId) {
+                <tr class="hover:bg-muted/20 transition-colors">
+                  <td class="px-5 py-3.5 font-mono text-xs text-muted-foreground">{{ sku.sku }}</td>
+                  <td class="px-5 py-3.5 font-medium text-foreground">{{ sku.name }}</td>
+                  <td class="px-5 py-3.5 text-right font-mono">{{ formatNumber(sku.quantityProduced) }}</td>
+                  <td class="px-5 py-3.5 text-right font-mono text-muted-foreground">{{ formatNumber(sku.quantitySold) }}</td>
+                  <td class="px-5 py-3.5 text-right font-semibold text-foreground">{{ formatRupiah(sku.actualHppPerUnit) }}</td>
+                  <td class="px-5 py-3.5 text-right text-muted-foreground">{{ formatRupiah(sku.bomStandardHpp) }}</td>
+                  <td class="px-5 py-3.5 text-right font-semibold" [class.text-emerald-600]="sku.variance <= 0" [class.text-destructive]="sku.variance > 0">
+                    {{ sku.variance > 0 ? '+' : '' }}{{ formatRupiah(sku.variance) }}
+                  </td>
+                  <td class="px-5 py-3.5 text-center">
+                    <span
+                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+                      [class.bg-emerald-500/10]="sku.variancePercent <= 0"
+                      [class.text-emerald-600]="sku.variancePercent <= 0"
+                      [class.bg-destructive/10]="sku.variancePercent > 0"
+                      [class.text-destructive]="sku.variancePercent > 0"
+                    >
+                      <ng-icon [name]="sku.variancePercent <= 0 ? 'phosphorTrendDown' : 'phosphorTrendUp'" class="text-xs" />
+                      {{ formatPct(sku.variancePercent) }}
+                    </span>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="8" class="px-5 py-8 text-center text-muted-foreground text-sm">
+                    Tidak ada data produksi selesai pada periode ini.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- Tab 5: Rekonsiliasi GL COGS -->
+    @if (activeDetailTab() === 'reconciliation') {
+      <div class="bg-card border border-border/80 rounded-3xl p-6 shadow-xs space-y-6">
+        <div>
+          <h2 class="text-base font-bold text-foreground">Rekonsiliasi Beban Pokok Penjualan (COGS Produksi vs Buku Besar)</h2>
+          <p class="text-xs text-muted-foreground mt-0.5">Memvalidasi konsistensi antara akumulasi pengeluaran pabrikasi dan pencatatan buku besar akuntansi.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-5 rounded-2xl border border-border/60 bg-muted/20">
+            <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">COGS dari Siklus Produksi</span>
+            <div class="text-2xl font-bold text-foreground mt-2">
+              {{ formatRupiah(summaryData()!.cogsReconciliation.actualCogs) }}
+            </div>
+            <p class="text-xs text-muted-foreground mt-1">Total HPP Barang Terjual (Fisik)</p>
+          </div>
+
+          <div class="p-5 rounded-2xl border border-border/60 bg-muted/20">
+            <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">COGS di Buku Besar (GL)</span>
+            <div class="text-2xl font-bold text-foreground mt-2">
+              {{ formatRupiah(summaryData()!.cogsReconciliation.glCogs) }}
+            </div>
+            <p class="text-xs text-muted-foreground mt-1">Akun Beban Pokok Penjualan (Level 1 HPP)</p>
+          </div>
+
+          <div class="p-5 rounded-2xl border border-border/60 bg-muted/20">
+            <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Selisih (Discrepancy)</span>
+            <div class="text-2xl font-bold mt-2" [class.text-emerald-600]="isMatched()" [class.text-destructive]="!isMatched()">
+              {{ formatRupiah(summaryData()!.cogsReconciliation.difference) }}
+            </div>
+            <div class="flex items-center gap-1.5 mt-1">
+              @if (isMatched()) {
+                <span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
+                  <ng-icon name="phosphorCheckCircle" class="text-sm" />
+                  SEIMBANG (MATCHED)
+                </span>
+              } @else {
+                <span class="inline-flex items-center gap-1 text-xs font-semibold text-destructive">
+                  <ng-icon name="phosphorWarningCircle" class="text-sm" />
+                  PERLU PENYESUAIAN JURNAL
+                </span>
+              }
+            </div>
+          </div>
+        </div>
+
+        @if (!isMatched()) {
+          <div class="p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-start gap-3">
+            <ng-icon name="phosphorWarningCircle" class="text-lg shrink-0 mt-0.5" />
+            <div>
+              <p class="font-semibold">Peringatan Selisih COGS Buku Besar</p>
+              <p class="text-xs mt-1">
+                Terdapat selisih antara nilai akumulasi biaya produksi fisik dan saldo akun Beban Pokok Penjualan di Buku Besar. Periksa jurnal penyesuaian barang dalam proses (WIP) atau penerimaan persediaan barang jadi.
+              </p>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

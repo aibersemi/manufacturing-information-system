@@ -1,0 +1,288 @@
+<div class="space-y-6">
+  <!-- Top Header & Action Controls -->
+  <div class="bg-card border border-border/80 rounded-3xl p-6 shadow-xs transition-all">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center justify-center p-2 rounded-xl bg-primary/10 text-primary">
+            <ng-icon name="phosphorShieldCheck" class="text-xl" />
+          </span>
+          <h1 class="text-2xl font-bold tracking-tight text-foreground">
+            Rekonsiliasi Sub-Buku Besar & Audit Integritas
+          </h1>
+        </div>
+        <p class="text-sm text-muted-foreground mt-1">
+          Pemeriksaan kepatuhan integritas 6 pos kontrol keuangan: perbandingan real-time saldo transaksi operasional terhadap buku besar (GL).
+        </p>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-wrap items-center gap-2.5">
+        <button
+          type="button"
+          (click)="exportCsv()"
+          [disabled]="loading() || !reconciliationData()"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-background hover:bg-muted/50 text-sm font-medium text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
+        >
+          <ng-icon name="phosphorDownloadSimple" class="text-base" />
+          <span>Ekspor CSV</span>
+        </button>
+        <button
+          type="button"
+          (click)="printReport()"
+          [disabled]="loading() || !reconciliationData()"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-background hover:bg-muted/50 text-sm font-medium text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
+        >
+          <ng-icon name="phosphorPrinter" class="text-base" />
+          <span>Cetak</span>
+        </button>
+        <button
+          type="button"
+          (click)="runReconciliation()"
+          [disabled]="loading()"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium transition-colors disabled:opacity-50 shadow-2xs"
+        >
+          <ng-icon name="phosphorArrowsClockwise" [class.animate-spin]="loading()" class="text-base" />
+          <span>Uji Rekonsiliasi Real-time</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="mt-6 pt-5 border-t border-border/60 flex flex-wrap items-end gap-4">
+      <div class="w-full sm:w-64">
+        <label for="asOfDate" class="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">
+          Tanggal Cut-off Audit
+        </label>
+        <input
+          id="asOfDate"
+          type="date"
+          [ngModel]="asOfDate()"
+          (ngModelChange)="asOfDate.set($event)"
+          class="w-full h-10 px-3 py-2 bg-background border border-border rounded-xl text-sm text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+        />
+      </div>
+
+      <button
+        type="button"
+        (click)="runReconciliation()"
+        class="h-10 px-5 rounded-xl bg-secondary hover:bg-secondary/80 text-secondary-foreground text-sm font-medium transition-colors"
+      >
+        Terapkan Tanggal
+      </button>
+    </div>
+  </div>
+
+  <!-- Error Alert -->
+  @if (errorMessage()) {
+    <div class="rounded-3xl border border-destructive/20 bg-destructive/10 p-4 text-destructive flex items-start gap-3">
+      <ng-icon name="phosphorWarningCircle" class="text-xl shrink-0 mt-0.5" />
+      <div>
+        <p class="text-sm font-semibold">Gagal Menjalankan Rekonsiliasi</p>
+        <p class="text-sm opacity-90">{{ errorMessage() }}</p>
+      </div>
+    </div>
+  }
+
+  <!-- KPI Summary Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Card 1: Status Integritas Sistem -->
+    <div class="bg-card border border-border/80 rounded-3xl p-5 shadow-xs">
+      <div class="flex items-center justify-between text-muted-foreground">
+        <span class="text-xs font-medium uppercase tracking-wider">Status Integritas</span>
+        @if (allMatched()) {
+          <span class="p-2 rounded-xl bg-emerald-500/10 text-emerald-600">
+            <ng-icon name="phosphorShieldCheck" class="text-lg" />
+          </span>
+        } @else {
+          <span class="p-2 rounded-xl bg-destructive/10 text-destructive">
+            <ng-icon name="phosphorShieldWarning" class="text-lg" />
+          </span>
+        }
+      </div>
+      <div class="mt-3">
+        <div class="text-xl font-bold tracking-tight" [class.text-emerald-600]="allMatched()" [class.text-destructive]="!allMatched()">
+          {{ allMatched() ? 'SISTEM SEIMBANG' : 'DITEMUKAN ANOMALI' }}
+        </div>
+        <p class="text-xs text-muted-foreground mt-1">
+          {{ allMatched() ? 'Seluruh 6 pos kontrol keuangan sinkron 100%' : 'Terdapat selisih pada buku besar' }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Card 2: Pos Terverifikasi -->
+    <div class="bg-card border border-border/80 rounded-3xl p-5 shadow-xs">
+      <div class="flex items-center justify-between text-muted-foreground">
+        <span class="text-xs font-medium uppercase tracking-wider">Pos Terverifikasi</span>
+        <span class="p-2 rounded-xl bg-blue-500/10 text-blue-600">
+          <ng-icon name="phosphorCheckCircle" class="text-lg" />
+        </span>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-bold tracking-tight text-foreground">
+          {{ matchedCount() }} / {{ totalCount() }}
+        </div>
+        <div class="w-full bg-muted rounded-full h-1.5 mt-2 overflow-hidden">
+          <div
+            class="h-full rounded-full transition-all duration-500"
+            [class.bg-emerald-500]="reconciliationRatePct() === 100"
+            [class.bg-amber-500]="reconciliationRatePct() < 100"
+            [style.width.%]="reconciliationRatePct()"
+          ></div>
+        </div>
+        <p class="text-xs text-muted-foreground mt-1">
+          {{ reconciliationRatePct() }}% modul akuntansi terverifikasi
+        </p>
+      </div>
+    </div>
+
+    <!-- Card 3: Total Varians Absolut -->
+    <div class="bg-card border border-border/80 rounded-3xl p-5 shadow-xs">
+      <div class="flex items-center justify-between text-muted-foreground">
+        <span class="text-xs font-medium uppercase tracking-wider">Total Varians Absolut</span>
+        <span class="p-2 rounded-xl bg-purple-500/10 text-purple-600">
+          <ng-icon name="phosphorScales" class="text-lg" />
+        </span>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-bold tracking-tight" [class.text-emerald-600]="totalVariance() === 0" [class.text-destructive]="totalVariance() !== 0">
+          {{ formatRupiah(totalVariance()) }}
+        </div>
+        <p class="text-xs text-muted-foreground mt-1">
+          {{ totalVariance() === 0 ? 'Nihil (Tidak ada selisih)' : 'Memerlukan jurnal penyesuaian' }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Card 4: Tanggal Cut-off -->
+    <div class="bg-card border border-border/80 rounded-3xl p-5 shadow-xs">
+      <div class="flex items-center justify-between text-muted-foreground">
+        <span class="text-xs font-medium uppercase tracking-wider">Tanggal Cut-Off</span>
+        <span class="p-2 rounded-xl bg-muted text-muted-foreground">
+          <ng-icon name="phosphorInfo" class="text-lg" />
+        </span>
+      </div>
+      <div class="mt-3">
+        <div class="text-xl font-bold tracking-tight text-foreground font-mono">
+          {{ reconciliationData()?.asOfDate || '-' }}
+        </div>
+        <p class="text-xs text-muted-foreground mt-1">
+          Audit berbasis saldo kumulatif historis
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reconciliation Table -->
+  <div class="bg-card border border-border/80 rounded-3xl overflow-hidden shadow-xs">
+    <div class="p-5 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <div>
+        <h2 class="text-base font-bold text-foreground">Matriks Kontrol Rekonsiliasi Subledger vs GL</h2>
+        <p class="text-xs text-muted-foreground mt-0.5">
+          Integritas matematis antar-modul memastikan kepatuhan standar akuntansi dan akurasi pelaporan finansial.
+        </p>
+      </div>
+    </div>
+
+    @if (loading()) {
+      <div class="p-12 text-center">
+        <ng-icon name="phosphorArrowsClockwise" class="text-3xl text-primary animate-spin inline-block mb-3" />
+        <p class="text-sm font-medium text-muted-foreground">Mengaudit saldo subledger dan buku besar...</p>
+      </div>
+    } @else if (reconciliationData()) {
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-muted/40 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <tr>
+              <th class="px-5 py-3.5">Pos Kontrol Keuangan</th>
+              <th class="px-5 py-3.5">Kategori / Akun Kontrol</th>
+              <th class="px-5 py-3.5 text-right">Saldo Subledger</th>
+              <th class="px-5 py-3.5 text-right">Saldo Buku Besar (GL)</th>
+              <th class="px-5 py-3.5 text-right">Selisih (Varians)</th>
+              <th class="px-5 py-3.5 text-center">Status Audit</th>
+              <th class="px-5 py-3.5 text-center">Aksi Cepat</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border/60">
+            @for (item of reconciliationData()!.items; track item.key) {
+              <tr class="hover:bg-muted/20 transition-colors">
+                <td class="px-5 py-4 font-semibold text-foreground">
+                  {{ item.title }}
+                </td>
+                <td class="px-5 py-4 text-xs text-muted-foreground">
+                  <div>{{ item.category }}</div>
+                  <div class="font-mono text-xs opacity-75">({{ item.controlAccountCode }})</div>
+                </td>
+                <td class="px-5 py-4 text-right font-mono text-foreground font-medium">
+                  {{ formatRupiah(item.subledgerAmount) }}
+                </td>
+                <td class="px-5 py-4 text-right font-mono text-foreground font-medium">
+                  {{ formatRupiah(item.glAmount) }}
+                </td>
+                <td class="px-5 py-4 text-right font-mono font-bold" [class.text-emerald-600]="item.variance === 0" [class.text-destructive]="item.variance !== 0">
+                  {{ formatRupiah(item.variance) }}
+                </td>
+                <td class="px-5 py-4 text-center">
+                  @if (item.isMatched) {
+                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600">
+                      <ng-icon name="phosphorCheckCircle" class="text-xs" />
+                      SEIMBANG
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-destructive/10 text-destructive">
+                      <ng-icon name="phosphorWarningCircle" class="text-xs" />
+                      SELISIH
+                    </span>
+                  }
+                </td>
+                <td class="px-5 py-4 text-center">
+                  <a
+                    [routerLink]="getModuleRoute(item.key)"
+                    class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-border hover:bg-muted text-xs font-medium text-foreground transition-colors"
+                  >
+                    <span>Periksa</span>
+                    <ng-icon name="phosphorArrowSquareOut" class="text-xs" />
+                  </a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  <!-- Explanatory Knowledge Base / Guidance Card -->
+  <div class="bg-card border border-border/80 rounded-3xl p-6 shadow-xs space-y-4">
+    <div class="flex items-center gap-2">
+      <ng-icon name="phosphorInfo" class="text-lg text-primary" />
+      <h3 class="text-sm font-bold text-foreground uppercase tracking-wider">Panduan & Standar Invariant Rekonsiliasi</h3>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs text-muted-foreground">
+      <div class="p-4 rounded-2xl bg-muted/20 border border-border/60">
+        <span class="font-bold text-foreground block mb-1">1. Kas & Bank (1-1.1.xx)</span>
+        Memastikan total arus kas bersih dari buku kas masuk/keluar operasional sama persis dengan saldo debit akun kas dan bank di buku besar.
+      </div>
+      <div class="p-4 rounded-2xl bg-muted/20 border border-border/60">
+        <span class="font-bold text-foreground block mb-1">2. Piutang Usaha (1-1.2.01)</span>
+        Memverifikasi akumulasi sisa tagihan pesanan penjualan yang belum terbayar (unpaid orders) sinkron dengan saldo debit akun piutang.
+      </div>
+      <div class="p-4 rounded-2xl bg-muted/20 border border-border/60">
+        <span class="font-bold text-foreground block mb-1">3. Hutang Usaha (2-1.1.01)</span>
+        Memverifikasi akumulasi kewajiban pembayaran tagihan pembelian yang belum lunas (unpaid POs) sinkron dengan saldo kredit akun hutang usaha.
+      </div>
+      <div class="p-4 rounded-2xl bg-muted/20 border border-border/60">
+        <span class="font-bold text-foreground block mb-1">4. Persediaan (1-1.4.xx)</span>
+        Memverifikasi valuasi stok fisik bahan baku, perlengkapan, dan barang jadi di modul inventaris sesuai dengan saldo akun persediaan di buku besar.
+      </div>
+      <div class="p-4 rounded-2xl bg-muted/20 border border-border/60">
+        <span class="font-bold text-foreground block mb-1">5. Aset Tetap (1-2.0.xx)</span>
+        Memverifikasi total harga perolehan aset tetap aktif di register aset modal persis sesuai saldo debit akun aset tetap di buku besar.
+      </div>
+      <div class="p-4 rounded-2xl bg-muted/20 border border-border/60">
+        <span class="font-bold text-foreground block mb-1">6. Akumulasi Depresiasi (1-2.1.xx)</span>
+        Memverifikasi akumulasi penyusutan aset tetap di register depresiasi sesuai dengan saldo kredit akun kontra akumulasi depresiasi di buku besar.
+      </div>
+    </div>
+  </div>
+</div>

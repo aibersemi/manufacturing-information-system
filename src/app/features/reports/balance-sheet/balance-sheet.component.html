@@ -1,0 +1,276 @@
+<main class="flex flex-1 flex-col gap-6">
+  <!-- 1. Header & Pemilih Tanggal Cut-off -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Laporan Neraca (Balance Sheet)</h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Posisi aset, kewajiban, dan ekuitas kumulatif per tanggal cut-off dengan semantik akun kontra &amp; laba berjalan.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2.5">
+      <div class="flex items-center gap-2 rounded-full border border-border/80 bg-card px-3.5 py-1.5 shadow-2xs">
+        <ng-icon name="phosphorCalendarBlank" class="size-4 text-muted-foreground" />
+        <span class="text-xs text-muted-foreground">Posisi Per Tanggal:</span>
+        <input
+          type="date"
+          [ngModel]="asOfDate()"
+          (ngModelChange)="asOfDate.set($event); refreshData()"
+          class="bg-transparent text-sm font-medium text-foreground focus:outline-hidden"
+          aria-label="Tanggal Posisi Neraca"
+        />
+      </div>
+
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        (click)="refreshData()"
+        [disabled]="loading()"
+        class="h-9 gap-1.5 rounded-full border-border/80 bg-card px-4 text-sm font-medium shadow-2xs hover:bg-accent"
+      >
+        <ng-icon
+          name="phosphorArrowsClockwise"
+          class="size-4"
+          [class.animate-spin]="loading()"
+        />
+        <span>Segarkan</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. Kartu Metrik KPI -->
+  @if (balanceSheet(); as bs) {
+    <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Ringkasan Neraca">
+      <!-- Total Aset -->
+      <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+        <span class="text-sm font-medium text-muted-foreground">Total Aset (Aktiva)</span>
+        <div class="mt-2 flex items-baseline justify-between gap-2">
+          <span class="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            {{ formatRupiah(bs.totalAssets) }}
+          </span>
+        </div>
+        <p class="mt-1 text-xs text-muted-foreground">
+          Lancar: {{ formatRupiah(bs.totalCurrentAssets) }} &bull; Tetap Netto: {{ formatRupiah(bs.totalFixedAssets) }}
+        </p>
+      </div>
+
+      <!-- Total Kewajiban -->
+      <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+        <span class="text-sm font-medium text-muted-foreground">Total Kewajiban (Liabilitas)</span>
+        <div class="mt-2 flex items-baseline justify-between gap-2">
+          <span class="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            {{ formatRupiah(bs.totalLiabilities) }}
+          </span>
+        </div>
+        <p class="mt-1 text-xs text-muted-foreground">
+          Jangka Pendek: {{ formatRupiah(bs.totalCurrentLiabilities) }}
+        </p>
+      </div>
+
+      <!-- Total Ekuitas -->
+      <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+        <span class="text-sm font-medium text-muted-foreground">Total Ekuitas (Modal)</span>
+        <div class="mt-2 flex items-baseline justify-between gap-2">
+          <span class="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            {{ formatRupiah(bs.totalEquity) }}
+          </span>
+        </div>
+        <p class="mt-1 text-xs text-muted-foreground">
+          Laba Berjalan YTD: {{ formatRupiah(bs.currentYearEarnings) }}
+        </p>
+      </div>
+
+      <!-- Status Keseimbangan -->
+      <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+        <span class="text-sm font-medium text-muted-foreground">Status Keseimbangan</span>
+        <div class="mt-2 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            @if (bs.isBalanced) {
+              <div class="flex size-7 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <ng-icon name="phosphorCheckCircle" class="size-4.5" />
+              </div>
+              <span class="text-lg font-semibold tracking-tight text-emerald-600 dark:text-emerald-400 sm:text-xl">
+                Seimbang (&Delta; 0)
+              </span>
+            } @else {
+              <div class="flex size-7 items-center justify-center rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                <ng-icon name="phosphorWarningCircle" class="size-4.5" />
+              </div>
+              <span class="text-lg font-semibold tracking-tight text-rose-600 dark:text-rose-400 sm:text-xl">
+                Selisih: {{ formatRupiah(bs.difference) }}
+              </span>
+            }
+          </div>
+        </div>
+        <p class="mt-1 text-xs text-muted-foreground">
+          Aset = Kewajiban ({{ formatRupiah(bs.totalLiabilities) }}) + Ekuitas ({{ formatRupiah(bs.totalEquity) }})
+        </p>
+      </div>
+    </section>
+
+    <!-- 3. Tampilan Struktur Neraca Berpasangan (Sisi Kiri: Aset, Sisi Kanan: Kewajiban & Ekuitas) -->
+    <div class="grid gap-6 lg:grid-cols-2">
+      <!-- SISI KIRI: ASET (AKTIVA) -->
+      <div class="rounded-3xl border border-border/80 bg-card p-5 sm:p-6 shadow-xs flex flex-col justify-between">
+        <div>
+          <div class="border-b border-border/80 pb-3 mb-4">
+            <h2 class="text-base font-semibold text-foreground uppercase tracking-wide">Aset (Aktiva)</h2>
+            <span class="text-xs text-muted-foreground">Seluruh sumber daya ekonomi yang dikuasai perusahaan</span>
+          </div>
+
+          <div class="flex flex-col gap-4 text-sm">
+            <!-- Aset Lancar -->
+            <div>
+              <div class="bg-muted/40 px-3 py-1.5 rounded-lg font-semibold text-xs text-foreground uppercase tracking-wider">
+                Aset Lancar
+              </div>
+              <div class="divide-y divide-border/40 ps-3 pe-1 pt-1">
+                @for (item of bs.sections.currentAssets; track item.id) {
+                  <div class="flex items-center justify-between py-1.5 text-muted-foreground hover:text-foreground">
+                    <span class="font-mono text-xs">{{ item.code }} &bull; {{ item.name }}</span>
+                    <span class="font-mono text-sm text-foreground">{{ formatRupiah(item.amount) }}</span>
+                  </div>
+                } @empty {
+                  <div class="py-2 text-xs text-muted-foreground italic ps-2">Tidak ada saldo aset lancar</div>
+                }
+              </div>
+              <div class="mt-1 flex items-center justify-between border-t border-border/70 px-3 py-1.5 text-xs font-semibold text-foreground bg-muted/20 rounded-md">
+                <span>Subtotal Aset Lancar</span>
+                <span class="font-mono">{{ formatRupiah(bs.totalCurrentAssets) }}</span>
+              </div>
+            </div>
+
+            <!-- Aset Tetap Netto -->
+            <div>
+              <div class="bg-muted/40 px-3 py-1.5 rounded-lg font-semibold text-xs text-foreground uppercase tracking-wider">
+                Aset Tetap
+              </div>
+              <div class="divide-y divide-border/40 ps-3 pe-1 pt-1">
+                @for (item of bs.sections.fixedAssets; track item.id) {
+                  <div class="flex items-center justify-between py-1.5 text-muted-foreground hover:text-foreground">
+                    <span class="font-mono text-xs">{{ item.code }} &bull; {{ item.name }}</span>
+                    <span
+                      class="font-mono text-sm"
+                      [class.text-rose-600]="item.isContra"
+                      [class.dark:text-rose-400]="item.isContra"
+                      [class.text-foreground]="!item.isContra"
+                    >
+                      {{ item.isContra ? '(' + formatRupiah(item.amount) + ')' : formatRupiah(item.amount) }}
+                    </span>
+                  </div>
+                } @empty {
+                  <div class="py-2 text-xs text-muted-foreground italic ps-2">Tidak ada aset tetap terkapitalisasi</div>
+                }
+              </div>
+              <div class="mt-1 flex items-center justify-between border-t border-border/70 px-3 py-1.5 text-xs font-semibold text-foreground bg-muted/20 rounded-md">
+                <span>Nilai Buku Bersih Aset Tetap</span>
+                <span class="font-mono">{{ formatRupiah(bs.totalFixedAssets) }}</span>
+              </div>
+            </div>
+
+            <!-- Aset Lainnya jika ada -->
+            @if (bs.sections.otherAssets.length > 0) {
+              <div>
+                <div class="bg-muted/40 px-3 py-1.5 rounded-lg font-semibold text-xs text-foreground uppercase tracking-wider">
+                  Aset Lainnya
+                </div>
+                <div class="divide-y divide-border/40 ps-3 pe-1 pt-1">
+                  @for (item of bs.sections.otherAssets; track item.id) {
+                    <div class="flex items-center justify-between py-1.5 text-muted-foreground hover:text-foreground">
+                      <span class="font-mono text-xs">{{ item.code }} &bull; {{ item.name }}</span>
+                      <span class="font-mono text-sm text-foreground">{{ formatRupiah(item.amount) }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Total Aset Footer Box -->
+        <div class="mt-6 flex items-center justify-between rounded-2xl bg-primary/10 border border-primary/20 px-4 py-3.5 font-bold text-foreground">
+          <span class="text-base uppercase tracking-wide">Total Aset (Aktiva)</span>
+          <span class="font-mono text-lg sm:text-xl text-primary">{{ formatRupiah(bs.totalAssets) }}</span>
+        </div>
+      </div>
+
+      <!-- SISI KANAN: KEWAJIBAN & EKUITAS (PASIVA) -->
+      <div class="rounded-3xl border border-border/80 bg-card p-5 sm:p-6 shadow-xs flex flex-col justify-between">
+        <div>
+          <div class="border-b border-border/80 pb-3 mb-4">
+            <h2 class="text-base font-semibold text-foreground uppercase tracking-wide">Kewajiban &amp; Ekuitas (Pasiva)</h2>
+            <span class="text-xs text-muted-foreground">Klaim pihak luar dan hak pemilik atas kekayaan perusahaan</span>
+          </div>
+
+          <div class="flex flex-col gap-4 text-sm">
+            <!-- 1. Kewajiban Lancar -->
+            <div>
+              <div class="bg-muted/40 px-3 py-1.5 rounded-lg font-semibold text-xs text-foreground uppercase tracking-wider">
+                Kewajiban Lancar (Jangka Pendek)
+              </div>
+              <div class="divide-y divide-border/40 ps-3 pe-1 pt-1">
+                @for (item of bs.sections.currentLiabilities; track item.id) {
+                  <div class="flex items-center justify-between py-1.5 text-muted-foreground hover:text-foreground">
+                    <span class="font-mono text-xs">{{ item.code }} &bull; {{ item.name }}</span>
+                    <span class="font-mono text-sm text-foreground">{{ formatRupiah(item.amount) }}</span>
+                  </div>
+                } @empty {
+                  <div class="py-2 text-xs text-muted-foreground italic ps-2">Tidak ada kewajiban lancar terbuka</div>
+                }
+              </div>
+              <div class="mt-1 flex items-center justify-between border-t border-border/70 px-3 py-1.5 text-xs font-semibold text-foreground bg-muted/20 rounded-md">
+                <span>Subtotal Kewajiban</span>
+                <span class="font-mono">{{ formatRupiah(bs.totalCurrentLiabilities) }}</span>
+              </div>
+            </div>
+
+            <!-- 2. Ekuitas Pemilik -->
+            <div>
+              <div class="bg-muted/40 px-3 py-1.5 rounded-lg font-semibold text-xs text-foreground uppercase tracking-wider">
+                Ekuitas &amp; Modal
+              </div>
+              <div class="divide-y divide-border/40 ps-3 pe-1 pt-1">
+                @for (item of bs.sections.equity; track item.id) {
+                  <div class="flex items-center justify-between py-1.5 text-muted-foreground hover:text-foreground">
+                    <span class="font-mono text-xs">{{ item.code }} &bull; {{ item.name }}</span>
+                    <span
+                      class="font-mono text-sm"
+                      [class.text-rose-600]="item.isContra"
+                      [class.dark:text-rose-400]="item.isContra"
+                      [class.text-foreground]="!item.isContra"
+                    >
+                      {{ item.isContra ? '(' + formatRupiah(item.amount) + ')' : formatRupiah(item.amount) }}
+                    </span>
+                  </div>
+                }
+                <!-- Laba Belum Ditutup Tahun Sebelumnya -->
+                @if (bs.priorYearUnclosedEarnings !== 0) {
+                  <div class="flex items-center justify-between py-1.5 text-muted-foreground hover:text-foreground">
+                    <span class="text-xs">Laba Belum Ditutup Tahun Lalu</span>
+                    <span class="font-mono text-sm text-foreground">{{ formatRupiah(bs.priorYearUnclosedEarnings) }}</span>
+                  </div>
+                }
+                <!-- Laba Tahun Berjalan YTD -->
+                <div class="flex items-center justify-between py-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
+                  <span class="text-xs font-semibold">Laba Tahun Berjalan (YTD)</span>
+                  <span class="font-mono text-sm font-semibold">{{ formatRupiah(bs.currentYearEarnings) }}</span>
+                </div>
+              </div>
+              <div class="mt-1 flex items-center justify-between border-t border-border/70 px-3 py-1.5 text-xs font-semibold text-foreground bg-muted/20 rounded-md">
+                <span>Subtotal Ekuitas</span>
+                <span class="font-mono">{{ formatRupiah(bs.totalEquity) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Total Kewajiban & Ekuitas Footer Box -->
+        <div class="mt-6 flex items-center justify-between rounded-2xl bg-muted/70 border border-border/80 px-4 py-3.5 font-bold text-foreground">
+          <span class="text-base uppercase tracking-wide">Total Kewajiban &amp; Ekuitas</span>
+          <span class="font-mono text-lg sm:text-xl text-foreground">{{ formatRupiah(bs.totalLiabilitiesAndEquity) }}</span>
+        </div>
+      </div>
+    </div>
+  }
+</main>

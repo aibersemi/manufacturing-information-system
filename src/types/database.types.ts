@@ -3277,6 +3277,18 @@ export type Database = {
         }
         Returns: Json
       }
+      get_accounting_reconciliation_summary: {
+        Args: { p_as_of_date?: string; p_company_id: string }
+        Returns: Json
+      }
+      get_balance_sheet: {
+        Args: { p_company_id: string; p_date_to?: string }
+        Returns: Json
+      }
+      get_cash_flow_statement: {
+        Args: { p_company_id: string; p_date_from?: string; p_date_to?: string }
+        Returns: Json
+      }
       get_company_users_with_profiles: {
         Args: { p_company_id: string }
         Returns: {
@@ -3294,6 +3306,21 @@ export type Database = {
       }
       get_depreciation_preview: {
         Args: { p_company_id: string; p_period_month: string }
+        Returns: Json
+      }
+      get_general_ledger_entries: {
+        Args: {
+          p_account_id: string
+          p_company_id: string
+          p_date_from?: string
+          p_date_to?: string
+          p_limit?: number
+          p_offset?: number
+        }
+        Returns: Json
+      }
+      get_hpp_manufacturing_summary: {
+        Args: { p_company_id: string; p_date_from?: string; p_date_to?: string }
         Returns: Json
       }
       get_inventory_summary: {
@@ -3315,8 +3342,16 @@ export type Database = {
         Args: { p_company_id: string }
         Returns: Json
       }
+      get_profit_loss: {
+        Args: { p_company_id: string; p_date_from?: string; p_date_to?: string }
+        Returns: Json
+      }
       get_sales_fulfillment_summary: {
         Args: { p_company_id: string }
+        Returns: Json
+      }
+      get_trial_balance: {
+        Args: { p_company_id: string; p_date_from?: string; p_date_to?: string }
         Returns: Json
       }
       get_user_company_ids: { Args: { p_user_id: string }; Returns: string[] }

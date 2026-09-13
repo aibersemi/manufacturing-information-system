@@ -1,0 +1,212 @@
+<main class="flex flex-1 flex-col gap-6">
+  <!-- 1. Header & Filter Akun/Tanggal -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Buku Besar (General Ledger)</h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Histori mutasi jurnal, referensi transaksi, dan saldo berjalan per akun bagan akun (COA).
+      </p>
+    </div>
+
+    <!-- Filter Kontrol -->
+    <div class="flex flex-wrap items-center gap-2.5">
+      <!-- Dropdown Pemilih Akun -->
+      <div class="flex items-center gap-2 rounded-full border border-border/80 bg-card px-3.5 py-1.5 shadow-2xs">
+        <ng-icon name="phosphorBookOpen" class="size-4 text-muted-foreground" />
+        <span class="text-xs text-muted-foreground">Akun:</span>
+        <select
+          [ngModel]="selectedAccountId()"
+          (ngModelChange)="onAccountSelected($event)"
+          class="bg-transparent text-sm font-medium text-foreground focus:outline-hidden max-w-[200px] truncate"
+          aria-label="Pilih Akun Buku Besar"
+        >
+          <option [ngValue]="null" disabled>Pilih Akun COA</option>
+          @for (acc of availableAccounts(); track acc.id) {
+            <option [value]="acc.id">{{ acc.code }} - {{ acc.name }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Rentang Tanggal -->
+      <div class="flex items-center gap-2 rounded-full border border-border/80 bg-card px-3.5 py-1.5 shadow-2xs">
+        <ng-icon name="phosphorCalendarBlank" class="size-4 text-muted-foreground" />
+        <span class="text-xs text-muted-foreground">Dari:</span>
+        <input
+          type="date"
+          [ngModel]="dateFrom()"
+          (ngModelChange)="dateFrom.set($event)"
+          class="bg-transparent text-sm font-medium text-foreground focus:outline-hidden"
+          aria-label="Tanggal Mulai"
+        />
+        <span class="text-xs text-muted-foreground">Sampai:</span>
+        <input
+          type="date"
+          [ngModel]="dateTo()"
+          (ngModelChange)="dateTo.set($event)"
+          class="bg-transparent text-sm font-medium text-foreground focus:outline-hidden"
+          aria-label="Tanggal Selesai"
+        />
+      </div>
+
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        (click)="refreshData()"
+        [disabled]="loading() || !selectedAccountId()"
+        class="h-9 gap-1.5 rounded-full border-border/80 bg-card px-4 text-sm font-medium shadow-2xs hover:bg-accent"
+      >
+        <ng-icon
+          name="phosphorArrowsClockwise"
+          class="size-4"
+          [class.animate-spin]="loading()"
+        />
+        <span>Segarkan</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. Kartu Ringkasan Akun Terpilih -->
+  @if (generalLedger(); as gl) {
+    <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Ringkasan Akun Buku Besar">
+      <!-- Info Akun -->
+      <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Detail Akun</span>
+          <span class="rounded-full bg-accent px-2 py-0.5 font-mono text-xs font-semibold">
+            {{ gl.account.code }}
+          </span>
+        </div>
+        <div class="mt-2">
+          <span class="text-lg font-semibold tracking-tight text-foreground truncate block">
+            {{ gl.account.name }}
+          </span>
+        </div>
+        <p class="mt-1 text-xs text-muted-foreground">
+          {{ gl.account.level1 }} &bull; Normal: <span class="capitalize font-medium text-foreground">{{ gl.account.normalBalance }}</span>
+        </p>
+      </div>
+
+      <!-- Saldo Awal -->
+      <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+        <span class="text-sm font-medium text-muted-foreground">Saldo Awal</span>
+        <div class="mt-2 flex items-baseline justify-between gap-2">
+          <span class="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            {{ formatRupiah(gl.openingBalance) }}
+          </span>
+        </div>
+        <p class="mt-1 text-xs text-muted-foreground">Sebelum tanggal {{ gl.dateFrom }}</p>
+      </div>
+
+      <!-- Total Mutasi Periode -->
+      <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+        <span class="text-sm font-medium text-muted-foreground">Mutasi Periode Ini</span>
+        <div class="mt-2 flex items-baseline justify-between gap-2">
+          <span class="text-base font-semibold text-emerald-600 dark:text-emerald-400">
+            D: {{ formatRupiah(gl.totalDebit) }}
+          </span>
+        </div>
+        <p class="mt-1 text-xs text-blue-600 dark:text-blue-400 font-semibold">
+          K: {{ formatRupiah(gl.totalCredit) }}
+        </p>
+      </div>
+
+      <!-- Saldo Akhir -->
+      <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+        <span class="text-sm font-medium text-muted-foreground">Saldo Akhir Berjalan</span>
+        <div class="mt-2 flex items-baseline justify-between gap-2">
+          <span class="text-xl font-semibold tracking-tight text-primary sm:text-2xl">
+            {{ formatRupiah(gl.endingBalance) }}
+          </span>
+        </div>
+        <p class="mt-1 text-xs text-muted-foreground">Total {{ gl.totalCount }} baris jurnal pada periode ini</p>
+      </div>
+    </section>
+
+    <!-- 3. Tabel Baris Transaksi Buku Besar -->
+    <div class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-start border-collapse">
+          <thead>
+            <tr class="border-b border-border/80 bg-muted/30">
+              <th class="px-4 py-3 text-start text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tanggal</th>
+              <th class="px-4 py-3 text-start text-xs font-semibold text-muted-foreground uppercase tracking-wider">No. Jurnal</th>
+              <th class="px-4 py-3 text-start text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dokumen Sumber</th>
+              <th class="px-4 py-3 text-start text-xs font-semibold text-muted-foreground uppercase tracking-wider">Keterangan / Memo</th>
+              <th class="px-4 py-3 text-end text-xs font-semibold text-muted-foreground uppercase tracking-wider">Debit</th>
+              <th class="px-4 py-3 text-end text-xs font-semibold text-muted-foreground uppercase tracking-wider">Kredit</th>
+              <th class="px-4 py-3 text-end text-xs font-semibold text-muted-foreground uppercase tracking-wider">Saldo Berjalan</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border/60 text-sm">
+            <!-- Baris Saldo Awal -->
+            <tr class="bg-muted/15 italic text-muted-foreground">
+              <td class="px-4 py-2 font-mono text-xs">{{ gl.dateFrom }}</td>
+              <td class="px-4 py-2 text-xs" colspan="3">SALDO AWAL PERIODE</td>
+              <td class="px-4 py-2 text-end font-mono text-xs">-</td>
+              <td class="px-4 py-2 text-end font-mono text-xs">-</td>
+              <td class="px-4 py-2 text-end font-mono text-xs font-semibold text-foreground">
+                {{ formatRupiah(gl.openingBalance) }}
+              </td>
+            </tr>
+
+            @for (entry of gl.entries; track entry.id) {
+              <tr class="transition hover:bg-accent/40">
+                <td class="px-4 py-2.5 font-mono text-xs whitespace-nowrap text-muted-foreground">{{ entry.transactionDate }}</td>
+                <td class="px-4 py-2.5 font-mono text-xs font-semibold text-foreground whitespace-nowrap">{{ entry.entryNumber }}</td>
+                <td class="px-4 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
+                  @if (entry.documentNumber) {
+                    <span class="font-mono text-xs font-medium text-foreground">{{ entry.documentNumber }}</span>
+                    <span class="ms-1 text-muted-foreground/70">({{ entry.documentKind }})</span>
+                  } @else {
+                    <span class="text-muted-foreground/60">-</span>
+                  }
+                </td>
+                <td class="px-4 py-2.5 text-foreground max-w-xs truncate">{{ entry.description || entry.memo || '-' }}</td>
+                <td class="px-4 py-2.5 text-end font-mono text-xs text-emerald-600 dark:text-emerald-400">
+                  {{ entry.debit > 0 ? formatRupiah(entry.debit) : '-' }}
+                </td>
+                <td class="px-4 py-2.5 text-end font-mono text-xs text-blue-600 dark:text-blue-400">
+                  {{ entry.credit > 0 ? formatRupiah(entry.credit) : '-' }}
+                </td>
+                <td class="px-4 py-2.5 text-end font-mono text-xs font-semibold text-foreground">
+                  {{ formatRupiah(entry.runningBalance) }}
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="px-4 py-8 text-center text-muted-foreground text-xs">
+                  Tidak ada transaksi jurnal pada rentang tanggal terpilih untuk akun ini.
+                </td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr class="border-t-2 border-border/80 bg-muted/30 font-semibold text-foreground">
+              <td colspan="4" class="px-4 py-3 text-sm text-end uppercase tracking-wider">Total Mutasi &amp; Saldo Akhir</td>
+              <td class="px-4 py-3 text-end font-mono text-xs text-emerald-600 dark:text-emerald-400">
+                {{ formatRupiah(gl.totalDebit) }}
+              </td>
+              <td class="px-4 py-3 text-end font-mono text-xs text-blue-600 dark:text-blue-400">
+                {{ formatRupiah(gl.totalCredit) }}
+              </td>
+              <td class="px-4 py-3 text-end font-mono text-sm text-primary">
+                {{ formatRupiah(gl.endingBalance) }}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  } @else {
+    <div class="rounded-3xl border border-border/80 bg-card p-12 text-center shadow-xs">
+      <div class="flex flex-col items-center gap-2">
+        <ng-icon name="phosphorBookOpen" class="size-10 text-muted-foreground/40" />
+        <span class="text-base font-semibold text-foreground">Pilih Akun Buku Besar</span>
+        <span class="text-sm text-muted-foreground max-w-md">
+          Pilih salah satu akun dari daftar bagan akun di atas untuk melihat rincian histori transaksi debit, kredit, dan saldo berjalan.
+        </span>
+      </div>
+    </div>
+  }
+</main>

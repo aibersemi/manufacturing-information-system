@@ -1,0 +1,317 @@
+<main class="flex flex-1 flex-col gap-6">
+  <!-- 1. Header & Filter Tanggal -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Laporan Arus Kas (Cash Flow Statement)</h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Laporan arus kas metode langsung (Direct Method) diklasifikasikan ke dalam Operasi, Investasi, dan Pendanaan.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2.5">
+      <div class="flex items-center gap-2 rounded-full border border-border/80 bg-card px-3.5 py-1.5 shadow-2xs">
+        <ng-icon name="phosphorCalendarBlank" class="size-4 text-muted-foreground" />
+        <span class="text-xs text-muted-foreground">Dari:</span>
+        <input
+          type="date"
+          [ngModel]="dateFrom()"
+          (ngModelChange)="dateFrom.set($event)"
+          class="bg-transparent text-sm font-medium text-foreground focus:outline-hidden"
+          aria-label="Tanggal Mulai"
+        />
+        <span class="text-xs text-muted-foreground">Sampai:</span>
+        <input
+          type="date"
+          [ngModel]="dateTo()"
+          (ngModelChange)="dateTo.set($event)"
+          class="bg-transparent text-sm font-medium text-foreground focus:outline-hidden"
+          aria-label="Tanggal Selesai"
+        />
+      </div>
+
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        (click)="refreshData()"
+        [disabled]="loading()"
+        class="h-9 gap-1.5 rounded-full border-border/80 bg-card px-4 text-sm font-medium shadow-2xs hover:bg-accent"
+      >
+        <ng-icon
+          name="phosphorArrowsClockwise"
+          class="size-4"
+          [class.animate-spin]="loading()"
+        />
+        <span>Segarkan</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. Kartu KPI Metrik Arus Kas -->
+  @if (cashFlow(); as cf) {
+    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Metrik Arus Kas">
+      <!-- Saldo Awal Kas -->
+      <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+        <span class="text-sm font-medium text-muted-foreground">Saldo Kas Awal</span>
+        <div class="mt-2 flex items-baseline justify-between gap-2">
+          <span class="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            {{ formatRupiah(cf.openingCashBalance) }}
+          </span>
+        </div>
+        <p class="mt-1 text-xs text-muted-foreground">Sebelum tanggal {{ cf.dateFrom }}</p>
+      </div>
+
+      <!-- Arus Kas Operasi Bersih -->
+      <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+        <span class="text-sm font-medium text-muted-foreground">Arus Kas Operasi</span>
+        <div class="mt-2 flex items-baseline justify-between gap-2">
+          <span
+            class="text-xl font-semibold tracking-tight sm:text-2xl"
+            [class.text-emerald-600]="cf.operatingActivities.netOperatingCashFlow >= 0"
+            [class.dark:text-emerald-400]="cf.operatingActivities.netOperatingCashFlow >= 0"
+            [class.text-rose-600]="cf.operatingActivities.netOperatingCashFlow < 0"
+            [class.dark:text-rose-400]="cf.operatingActivities.netOperatingCashFlow < 0"
+          >
+            {{ formatRupiah(cf.operatingActivities.netOperatingCashFlow) }}
+          </span>
+        </div>
+        <p class="mt-1 text-xs text-muted-foreground">
+          Masuk: {{ formatRupiah(cf.operatingActivities.customerReceipts) }} &bull; Keluar: {{ formatRupiah(cf.operatingActivities.supplierPayments + cf.operatingActivities.payrollAndOperating) }}
+        </p>
+      </div>
+
+      <!-- Perubahan Kas Bersih -->
+      <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+        <span class="text-sm font-medium text-muted-foreground">Kenaikan / (Penurunan) Kas</span>
+        <div class="mt-2 flex items-baseline justify-between gap-2">
+          <span
+            class="text-xl font-semibold tracking-tight sm:text-2xl"
+            [class.text-emerald-600]="cf.netCashChange >= 0"
+            [class.dark:text-emerald-400]="cf.netCashChange >= 0"
+            [class.text-rose-600]="cf.netCashChange < 0"
+            [class.dark:text-rose-400]="cf.netCashChange < 0"
+          >
+            {{ cf.netCashChange >= 0 ? '+' : '' }}{{ formatRupiah(cf.netCashChange) }}
+          </span>
+        </div>
+        <p class="mt-1 text-xs text-muted-foreground">Investasi: {{ formatRupiah(cf.investingActivities.netInvestingCashFlow) }} &bull; Pendanaan: {{ formatRupiah(cf.financingActivities.netFinancingCashFlow) }}</p>
+      </div>
+
+      <!-- Saldo Akhir Kas & Rekonsiliasi -->
+      <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-muted-foreground">Saldo Kas Akhir</span>
+          @if (cf.reconciliation.isMatched) {
+            <span class="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+              Sinkron GL
+            </span>
+          } @else {
+            <span class="rounded-full bg-rose-500/10 px-2 py-0.5 text-xs font-semibold text-rose-600 dark:text-rose-400">
+              Selisih GL
+            </span>
+          }
+        </div>
+        <div class="mt-2 flex items-baseline justify-between gap-2">
+          <span class="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            {{ formatRupiah(cf.closingCashBalance) }}
+          </span>
+        </div>
+        <p class="mt-1 text-xs text-muted-foreground">
+          GL Kas/Bank: {{ formatRupiah(cf.reconciliation.glCashBalance) }}
+        </p>
+      </div>
+    </section>
+
+    <!-- 3. Rincian Arus Kas Metode Langsung Tripartit -->
+    <div class="rounded-3xl border border-border/80 bg-card p-6 shadow-xs">
+      <div class="mb-6 flex flex-col border-b border-border/80 pb-4 text-center">
+        <h2 class="text-lg font-semibold tracking-tight text-foreground uppercase">
+          Laporan Arus Kas Metode Langsung
+        </h2>
+        <span class="text-xs text-muted-foreground mt-0.5">
+          Periode: {{ cf.dateFrom }} s/d {{ cf.dateTo }}
+        </span>
+      </div>
+
+      <div class="flex flex-col gap-6 text-sm">
+        <!-- 1. AKTIVITAS OPERASI -->
+        <div>
+          <div class="flex items-center justify-between bg-muted/40 px-3 py-2 rounded-xl font-semibold text-foreground">
+            <span>Aktivitas Operasi</span>
+            <span class="text-xs text-muted-foreground font-normal">Arus Kas dari Kegiatan Usaha Pokok</span>
+          </div>
+          <div class="divide-y divide-border/40 ps-4 pe-2 pt-2 text-sm">
+            <div class="flex items-center justify-between py-2">
+              <div class="flex items-center gap-2">
+                <div class="flex size-6 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                  <ng-icon name="phosphorArrowDownLeft" class="size-3.5" />
+                </div>
+                <span>Penerimaan Kas dari Pelanggan</span>
+              </div>
+              <span class="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                +{{ formatRupiah(cf.operatingActivities.customerReceipts) }}
+              </span>
+            </div>
+
+            <div class="flex items-center justify-between py-2">
+              <div class="flex items-center gap-2">
+                <div class="flex size-6 items-center justify-center rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                  <ng-icon name="phosphorArrowUpRight" class="size-3.5" />
+                </div>
+                <span>Pembayaran Kas kepada Pemasok (Bahan Baku &amp; Perlengkapan)</span>
+              </div>
+              <span class="font-mono text-sm font-medium text-rose-600 dark:text-rose-400">
+                ({{ formatRupiah(cf.operatingActivities.supplierPayments) }})
+              </span>
+            </div>
+
+            <div class="flex items-center justify-between py-2">
+              <div class="flex items-center gap-2">
+                <div class="flex size-6 items-center justify-center rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                  <ng-icon name="phosphorArrowUpRight" class="size-3.5" />
+                </div>
+                <span>Pembayaran Upah Operator &amp; Beban Operasional</span>
+              </div>
+              <span class="font-mono text-sm font-medium text-rose-600 dark:text-rose-400">
+                ({{ formatRupiah(cf.operatingActivities.payrollAndOperating) }})
+              </span>
+            </div>
+
+            @if (cf.operatingActivities.otherOperating !== 0) {
+              <div class="flex items-center justify-between py-2">
+                <span>Penerimaan / (Pengeluaran) Operasional Lainnya</span>
+                <span class="font-mono text-sm font-medium">
+                  {{ formatRupiah(cf.operatingActivities.otherOperating) }}
+                </span>
+              </div>
+            }
+          </div>
+          <!-- Subtotal Operasi -->
+          <div class="mt-2 flex items-center justify-between border-t border-border/80 px-3 py-2.5 font-semibold text-foreground bg-accent/20 rounded-lg">
+            <span>Arus Kas Bersih dari Aktivitas Operasi</span>
+            <span class="font-mono text-base" [class.text-emerald-600]="cf.operatingActivities.netOperatingCashFlow >= 0" [class.dark:text-emerald-400]="cf.operatingActivities.netOperatingCashFlow >= 0">
+              {{ formatRupiah(cf.operatingActivities.netOperatingCashFlow) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- 2. AKTIVITAS INVESTASI -->
+        <div>
+          <div class="flex items-center justify-between bg-muted/40 px-3 py-2 rounded-xl font-semibold text-foreground">
+            <span>Aktivitas Investasi</span>
+            <span class="text-xs text-muted-foreground font-normal">Belanja Modal (CapEx) &amp; Pelepasan Aset</span>
+          </div>
+          <div class="divide-y divide-border/40 ps-4 pe-2 pt-2 text-sm">
+            <div class="flex items-center justify-between py-2">
+              <div class="flex items-center gap-2">
+                <div class="flex size-6 items-center justify-center rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                  <ng-icon name="phosphorArrowUpRight" class="size-3.5" />
+                </div>
+                <span>Pengeluaran Kas untuk Perolehan Aset Tetap (CapEx)</span>
+              </div>
+              <span class="font-mono text-sm font-medium" [class.text-rose-600]="cf.investingActivities.assetPurchases < 0" [class.dark:text-rose-400]="cf.investingActivities.assetPurchases < 0">
+                {{ cf.investingActivities.assetPurchases < 0 ? '(' + formatRupiah(cf.investingActivities.assetPurchases) + ')' : formatRupiah(cf.investingActivities.assetPurchases) }}
+              </span>
+            </div>
+
+            @if (cf.investingActivities.assetDisposals !== 0) {
+              <div class="flex items-center justify-between py-2">
+                <div class="flex items-center gap-2">
+                  <div class="flex size-6 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    <ng-icon name="phosphorArrowDownLeft" class="size-3.5" />
+                  </div>
+                  <span>Penerimaan Kas dari Hasil Pelepasan Aset Tetap</span>
+                </div>
+                <span class="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                  +{{ formatRupiah(cf.investingActivities.assetDisposals) }}
+                </span>
+              </div>
+            }
+          </div>
+          <!-- Subtotal Investasi -->
+          <div class="mt-2 flex items-center justify-between border-t border-border/80 px-3 py-2.5 font-semibold text-foreground bg-accent/20 rounded-lg">
+            <span>Arus Kas Bersih Digunakan untuk Aktivitas Investasi</span>
+            <span class="font-mono text-base">
+              {{ formatRupiah(cf.investingActivities.netInvestingCashFlow) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- 3. AKTIVITAS PENDANAAN -->
+        <div>
+          <div class="flex items-center justify-between bg-muted/40 px-3 py-2 rounded-xl font-semibold text-foreground">
+            <span>Aktivitas Pendanaan</span>
+            <span class="text-xs text-muted-foreground font-normal">Penyetoran Modal, Prive &amp; Pinjaman</span>
+          </div>
+          <div class="divide-y divide-border/40 ps-4 pe-2 pt-2 text-sm">
+            @if (cf.financingActivities.ownerContributions !== 0) {
+              <div class="flex items-center justify-between py-2">
+                <div class="flex items-center gap-2">
+                  <div class="flex size-6 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    <ng-icon name="phosphorArrowDownLeft" class="size-3.5" />
+                  </div>
+                  <span>Penyetoran Modal Pemilik</span>
+                </div>
+                <span class="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                  +{{ formatRupiah(cf.financingActivities.ownerContributions) }}
+                </span>
+              </div>
+            }
+
+            @if (cf.financingActivities.ownerDrawings !== 0) {
+              <div class="flex items-center justify-between py-2">
+                <div class="flex items-center gap-2">
+                  <div class="flex size-6 items-center justify-center rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                    <ng-icon name="phosphorArrowUpRight" class="size-3.5" />
+                  </div>
+                  <span>Penarikan Modal / Prive Pemilik</span>
+                </div>
+                <span class="font-mono text-sm font-medium text-rose-600 dark:text-rose-400">
+                  ({{ formatRupiah(cf.financingActivities.ownerDrawings) }})
+                </span>
+              </div>
+            }
+
+            @if (cf.financingActivities.debtFinancing !== 0) {
+              <div class="flex items-center justify-between py-2">
+                <span>Penerimaan / (Pelunasan) Pinjaman</span>
+                <span class="font-mono text-sm font-medium">
+                  {{ formatRupiah(cf.financingActivities.debtFinancing) }}
+                </span>
+              </div>
+            }
+
+            @if (cf.financingActivities.ownerContributions === 0 && cf.financingActivities.ownerDrawings === 0 && cf.financingActivities.debtFinancing === 0) {
+              <div class="py-2 text-xs text-muted-foreground italic ps-2">Tidak ada aktivitas pendanaan pada periode ini</div>
+            }
+          </div>
+          <!-- Subtotal Pendanaan -->
+          <div class="mt-2 flex items-center justify-between border-t border-border/80 px-3 py-2.5 font-semibold text-foreground bg-accent/20 rounded-lg">
+            <span>Arus Kas Bersih dari Aktivitas Pendanaan</span>
+            <span class="font-mono text-base">
+              {{ formatRupiah(cf.financingActivities.netFinancingCashFlow) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- RINGKASAN SALDO KAS AKHIR -->
+        <div class="mt-4 flex flex-col gap-2 rounded-2xl bg-muted/60 border border-border/80 p-4 font-semibold text-foreground">
+          <div class="flex items-center justify-between text-sm">
+            <span>Kenaikan / (Penurunan) Kas Bersih Periode Ini</span>
+            <span class="font-mono text-base" [class.text-emerald-600]="cf.netCashChange >= 0" [class.dark:text-emerald-400]="cf.netCashChange >= 0">
+              {{ cf.netCashChange >= 0 ? '+' : '' }}{{ formatRupiah(cf.netCashChange) }}
+            </span>
+          </div>
+          <div class="flex items-center justify-between text-sm text-muted-foreground">
+            <span>Saldo Kas &amp; Bank pada Awal Periode</span>
+            <span class="font-mono">{{ formatRupiah(cf.openingCashBalance) }}</span>
+          </div>
+          <div class="flex items-center justify-between border-t border-border/80 pt-2 text-base text-primary">
+            <span class="uppercase tracking-wider">Saldo Kas &amp; Bank pada Akhir Periode</span>
+            <span class="font-mono text-lg sm:text-xl">{{ formatRupiah(cf.closingCashBalance) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</main>

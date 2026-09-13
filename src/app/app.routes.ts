@@ -302,6 +302,61 @@ export const routes: Routes = [
             (m) => m.AssetDisposalsComponent
           ),
       },
+      // Laporan Keuangan, HPP & Rekonsiliasi (Fase 9: Financial Reporting, HPP & Reconciliation)
+      {
+        path: 'workspace/reports',
+        redirectTo: 'workspace/reports/trial-balance',
+        pathMatch: 'full',
+      },
+      {
+        path: 'workspace/reports/trial-balance',
+        loadComponent: () =>
+          import('./features/reports/trial-balance/trial-balance.component').then(
+            (m) => m.TrialBalanceComponent
+          ),
+      },
+      {
+        path: 'workspace/reports/profit-loss',
+        loadComponent: () =>
+          import('./features/reports/profit-loss/profit-loss.component').then(
+            (m) => m.ProfitLossComponent
+          ),
+      },
+      {
+        path: 'workspace/reports/balance-sheet',
+        loadComponent: () =>
+          import('./features/reports/balance-sheet/balance-sheet.component').then(
+            (m) => m.BalanceSheetComponent
+          ),
+      },
+      {
+        path: 'workspace/reports/cash-flow',
+        loadComponent: () =>
+          import('./features/reports/cash-flow/cash-flow.component').then(
+            (m) => m.CashFlowComponent
+          ),
+      },
+      {
+        path: 'workspace/reports/general-ledger',
+        loadComponent: () =>
+          import('./features/reports/general-ledger/general-ledger.component').then(
+            (m) => m.GeneralLedgerComponent
+          ),
+      },
+      {
+        path: 'workspace/reports/hpp',
+        loadComponent: () =>
+          import('./features/reports/hpp/hpp-report.component').then(
+            (m) => m.HppReportComponent
+          ),
+      },
+      {
+        path: 'workspace/reports/reconciliation',
+        loadComponent: () =>
+          import('./features/reports/reconciliation/reconciliation.component').then(
+            (m) => m.ReconciliationComponent
+          ),
+      },
       {
         path: 'asset-purchases',
         redirectTo: 'workspace/asset-purchases',
@@ -370,6 +425,51 @@ export const routes: Routes = [
       {
         path: 'period-close',
         redirectTo: 'workspace/finance/period-close',
+        pathMatch: 'full',
+      },
+      {
+        path: 'reports',
+        redirectTo: 'workspace/reports/trial-balance',
+        pathMatch: 'full',
+      },
+      {
+        path: 'trial-balance',
+        redirectTo: 'workspace/reports/trial-balance',
+        pathMatch: 'full',
+      },
+      {
+        path: 'profit-loss',
+        redirectTo: 'workspace/reports/profit-loss',
+        pathMatch: 'full',
+      },
+      {
+        path: 'balance-sheet',
+        redirectTo: 'workspace/reports/balance-sheet',
+        pathMatch: 'full',
+      },
+      {
+        path: 'cash-flow',
+        redirectTo: 'workspace/reports/cash-flow',
+        pathMatch: 'full',
+      },
+      {
+        path: 'general-ledger',
+        redirectTo: 'workspace/reports/general-ledger',
+        pathMatch: 'full',
+      },
+      {
+        path: 'hpp',
+        redirectTo: 'workspace/reports/hpp',
+        pathMatch: 'full',
+      },
+      {
+        path: 'hpp-report',
+        redirectTo: 'workspace/reports/hpp',
+        pathMatch: 'full',
+      },
+      {
+        path: 'reconciliation',
+        redirectTo: 'workspace/reports/reconciliation',
         pathMatch: 'full',
       },
       {

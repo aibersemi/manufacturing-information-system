@@ -414,6 +414,87 @@
           }
         </div>
 
+        <!-- Group: Laporan & Analisis (Fase 9: Financial Reporting, HPP & Reconciliation) -->
+        <div class="flex flex-col">
+          <button
+            type="button"
+            (click)="toggleGroup('reports')"
+            class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-muted-foreground transition hover:bg-accent/50 hover:text-foreground"
+            [title]="isSidebarCollapsed() ? 'Laporan & Analisis' : ''"
+          >
+            <ng-icon name="phosphorChartPieSlice" class="size-4 shrink-0 text-foreground/80" />
+            @if (!isSidebarCollapsed()) {
+              <span class="truncate font-medium text-foreground">Laporan &amp; Analisis</span>
+              <ng-icon
+                name="phosphorCaretRight"
+                class="ms-auto size-3.5 transition-transform duration-200"
+                [class.rotate-90]="isGroupOpen('reports')"
+              />
+            }
+          </button>
+
+          @if (!isSidebarCollapsed() && isGroupOpen('reports')) {
+            <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
+              <a
+                routerLink="/workspace/reports/trial-balance"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Neraca Saldo
+              </a>
+              <a
+                routerLink="/workspace/reports/profit-loss"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Laba Rugi
+              </a>
+              <a
+                routerLink="/workspace/reports/balance-sheet"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Neraca Keuangan
+              </a>
+              <a
+                routerLink="/workspace/reports/cash-flow"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Arus Kas
+              </a>
+              <a
+                routerLink="/workspace/reports/general-ledger"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Buku Besar (GL)
+              </a>
+              <a
+                routerLink="/workspace/reports/hpp"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Laporan HPP Pabrik
+              </a>
+              <a
+                routerLink="/workspace/reports/reconciliation"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Rekonsiliasi &amp; Audit
+              </a>
+            </div>
+          }
+        </div>
+
         <!-- Group 2: Operasional Pabrik -->
         <div class="flex flex-col">
           <button

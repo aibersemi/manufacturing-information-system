@@ -32,6 +32,8 @@ import {
   phosphorArmchair,
   phosphorCube,
   phosphorChartPieSlice,
+  phosphorFileText,
+  phosphorScales,
   phosphorTrash,
 } from '@ng-icons/phosphor-icons/regular';
 import { HlmAvatarImports } from '@spartan-ng/helm/avatar';
@@ -86,6 +88,8 @@ import { CompanyService, Company } from '../../core/services/company.service';
       phosphorArmchair,
       phosphorCube,
       phosphorChartPieSlice,
+      phosphorFileText,
+      phosphorScales,
       phosphorTrash,
     }),
   ],
@@ -106,6 +110,7 @@ export class DashboardLayoutComponent {
     sales: true,
     finance: true,
     assets: true,
+    reports: true,
     operations: true,
     inventory: true,
     qc: false,

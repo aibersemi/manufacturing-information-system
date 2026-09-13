@@ -1,0 +1,300 @@
+<main class="flex flex-1 flex-col gap-6">
+  <!-- 1. Header & Filter Periode -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Laporan Laba Rugi (Profit & Loss)</h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Ringkasan performa finansial, pendapatan usaha, margin laba kotor, dan laba bersih periode berjalan.
+      </p>
+    </div>
+
+    <!-- Quick Period Pills & Refresh -->
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="flex items-center gap-1 rounded-full border border-border/80 bg-card p-1 shadow-2xs">
+        <button
+          type="button"
+          (click)="setQuickPeriod('this_month')"
+          class="rounded-full px-3 py-1 text-xs font-medium transition"
+          [class.bg-primary]="activePeriod() === 'this_month'"
+          [class.text-primary-foreground]="activePeriod() === 'this_month'"
+          [class.text-muted-foreground]="activePeriod() !== 'this_month'"
+        >
+          Bulan Ini
+        </button>
+        <button
+          type="button"
+          (click)="setQuickPeriod('this_quarter')"
+          class="rounded-full px-3 py-1 text-xs font-medium transition"
+          [class.bg-primary]="activePeriod() === 'this_quarter'"
+          [class.text-primary-foreground]="activePeriod() === 'this_quarter'"
+          [class.text-muted-foreground]="activePeriod() !== 'this_quarter'"
+        >
+          Kuartal Ini
+        </button>
+        <button
+          type="button"
+          (click)="setQuickPeriod('this_year')"
+          class="rounded-full px-3 py-1 text-xs font-medium transition"
+          [class.bg-primary]="activePeriod() === 'this_year'"
+          [class.text-primary-foreground]="activePeriod() === 'this_year'"
+          [class.text-muted-foreground]="activePeriod() !== 'this_year'"
+        >
+          Tahun Berjalan (YTD)
+        </button>
+        <button
+          type="button"
+          (click)="setQuickPeriod('custom')"
+          class="rounded-full px-3 py-1 text-xs font-medium transition"
+          [class.bg-primary]="activePeriod() === 'custom'"
+          [class.text-primary-foreground]="activePeriod() === 'custom'"
+          [class.text-muted-foreground]="activePeriod() !== 'custom'"
+        >
+          Kustom
+        </button>
+      </div>
+
+      <!-- Kustom Tanggal jika aktif -->
+      @if (activePeriod() === 'custom') {
+        <div class="flex items-center gap-2 rounded-full border border-border/80 bg-card px-3 py-1 shadow-2xs">
+          <input
+            type="date"
+            [ngModel]="dateFrom()"
+            (ngModelChange)="dateFrom.set($event)"
+            class="bg-transparent text-xs font-medium text-foreground focus:outline-hidden"
+            aria-label="Tanggal Mulai"
+          />
+          <span class="text-xs text-muted-foreground">&ndash;</span>
+          <input
+            type="date"
+            [ngModel]="dateTo()"
+            (ngModelChange)="dateTo.set($event)"
+            class="bg-transparent text-xs font-medium text-foreground focus:outline-hidden"
+            aria-label="Tanggal Selesai"
+          />
+        </div>
+      }
+
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        (click)="refreshData()"
+        [disabled]="loading()"
+        class="h-9 gap-1.5 rounded-full border-border/80 bg-card px-4 text-sm font-medium shadow-2xs hover:bg-accent"
+      >
+        <ng-icon
+          name="phosphorArrowsClockwise"
+          class="size-4"
+          [class.animate-spin]="loading()"
+        />
+        <span>Segarkan</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. Kartu KPI Metrik Utama -->
+  @if (profitLoss(); as pl) {
+    <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Ringkasan Kinerja Keuangan">
+      <!-- Pendapatan Bersih -->
+      <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+        <span class="text-sm font-medium text-muted-foreground">Pendapatan Bersih</span>
+        <div class="mt-2 flex items-baseline justify-between gap-2">
+          <span class="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            {{ formatRupiah(pl.netRevenue) }}
+          </span>
+        </div>
+        <p class="mt-1 text-xs text-muted-foreground">
+          Penjualan: {{ formatRupiah(pl.grossSales) }} (Retur: {{ formatRupiah(pl.salesDeductions) }})
+        </p>
+      </div>
+
+      <!-- Laba Kotor & Margin -->
+      <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-muted-foreground">Laba Kotor (Gross Profit)</span>
+          <span class="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+            {{ pl.grossProfitMargin }}%
+          </span>
+        </div>
+        <div class="mt-2 flex items-baseline justify-between gap-2">
+          <span class="text-xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-400 sm:text-2xl">
+            {{ formatRupiah(pl.grossProfit) }}
+          </span>
+        </div>
+        <p class="mt-1 text-xs text-muted-foreground">
+          HPP Manufaktur: {{ formatRupiah(pl.totalCogs) }}
+        </p>
+      </div>
+
+      <!-- Beban Operasional -->
+      <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+        <span class="text-sm font-medium text-muted-foreground">Beban Operasional</span>
+        <div class="mt-2 flex items-baseline justify-between gap-2">
+          <span class="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            {{ formatRupiah(pl.totalOperatingExpenses) }}
+          </span>
+        </div>
+        <p class="mt-1 text-xs text-muted-foreground">
+          Laba Operasional: {{ formatRupiah(pl.operatingProfit) }}
+        </p>
+      </div>
+
+      <!-- Laba Bersih Usaha -->
+      <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-muted-foreground">Laba Bersih (Net Profit)</span>
+          <span class="rounded-full bg-blue-500/10 px-2 py-0.5 text-xs font-semibold text-blue-600 dark:text-blue-400">
+            {{ pl.netProfitMargin }}% Margin
+          </span>
+        </div>
+        <div class="mt-2 flex items-baseline justify-between gap-2">
+          <span
+            class="text-xl font-semibold tracking-tight sm:text-2xl"
+            [class.text-emerald-600]="pl.netIncome >= 0"
+            [class.dark:text-emerald-400]="pl.netIncome >= 0"
+            [class.text-rose-600]="pl.netIncome < 0"
+            [class.dark:text-rose-400]="pl.netIncome < 0"
+          >
+            {{ formatRupiah(pl.netIncome) }}
+          </span>
+        </div>
+        <p class="mt-1 text-xs text-muted-foreground">
+          Lain-lain: Bersih {{ formatRupiah(pl.totalOtherIncome - pl.totalOtherExpenses) }}
+        </p>
+      </div>
+    </section>
+
+    <!-- 3. Tampilan Laporan Laba Rugi Komprehensif Berjenjang -->
+    <div class="rounded-3xl border border-border/80 bg-card p-6 shadow-xs">
+      <div class="mb-6 flex flex-col border-b border-border/80 pb-4 text-center">
+        <h2 class="text-lg font-semibold tracking-tight text-foreground uppercase">
+          Laporan Laba Rugi Komprehensif
+        </h2>
+        <span class="text-xs text-muted-foreground mt-0.5">
+          Periode: {{ pl.dateFrom }} s/d {{ pl.dateTo }} &bull; Basis Akrual Berpasangan
+        </span>
+      </div>
+
+      <div class="flex flex-col gap-4 text-sm">
+        <!-- SEKSI 1: PENDAPATAN USAHA -->
+        <div>
+          <div class="flex items-center justify-between bg-muted/30 px-3 py-2 rounded-xl font-semibold text-foreground">
+            <span>1. Pendapatan Usaha</span>
+            <span></span>
+          </div>
+          <div class="divide-y divide-border/40 ps-4 pe-2 pt-1">
+            @for (item of pl.sections.sales; track item.id) {
+              <div class="flex items-center justify-between py-1.5 text-muted-foreground hover:text-foreground">
+                <span class="font-mono text-xs">{{ item.code }} &bull; {{ item.name }}</span>
+                <span class="font-mono text-sm text-foreground">{{ formatRupiah(item.amount) }}</span>
+              </div>
+            }
+            @for (item of pl.sections.salesDeductions; track item.id) {
+              <div class="flex items-center justify-between py-1.5 text-muted-foreground hover:text-foreground">
+                <span class="font-mono text-xs">{{ item.code }} &bull; {{ item.name }}</span>
+                <span class="font-mono text-sm text-rose-600 dark:text-rose-400">({{ formatRupiah(item.amount) }})</span>
+              </div>
+            }
+          </div>
+          <!-- Subtotal Pendapatan Bersih -->
+          <div class="mt-1 flex items-center justify-between border-t border-border/80 px-3 py-2 font-medium text-foreground bg-accent/20 rounded-lg">
+            <span>Total Pendapatan Usaha Bersih</span>
+            <span class="font-mono text-base font-semibold">{{ formatRupiah(pl.netRevenue) }}</span>
+          </div>
+        </div>
+
+        <!-- SEKSI 2: BEBAN POKOK PENJUALAN (HPP) -->
+        <div>
+          <div class="flex items-center justify-between bg-muted/30 px-3 py-2 rounded-xl font-semibold text-foreground">
+            <span>2. Beban Pokok Penjualan (HPP Manufaktur)</span>
+            <span></span>
+          </div>
+          <div class="divide-y divide-border/40 ps-4 pe-2 pt-1">
+            @for (item of pl.sections.cogs; track item.id) {
+              <div class="flex items-center justify-between py-1.5 text-muted-foreground hover:text-foreground">
+                <span class="font-mono text-xs">{{ item.code }} &bull; {{ item.name }}</span>
+                <span class="font-mono text-sm text-foreground">{{ formatRupiah(item.amount) }}</span>
+              </div>
+            } @empty {
+              <div class="py-2 text-xs text-muted-foreground italic ps-2">Belum ada jurnal HPP pada periode ini</div>
+            }
+          </div>
+          <!-- Subtotal HPP -->
+          <div class="mt-1 flex items-center justify-between border-t border-border/80 px-3 py-2 font-medium text-foreground bg-accent/20 rounded-lg">
+            <span>Total Beban Pokok Penjualan</span>
+            <span class="font-mono text-base font-semibold text-rose-600 dark:text-rose-400">({{ formatRupiah(pl.totalCogs) }})</span>
+          </div>
+        </div>
+
+        <!-- LABA KOTOR -->
+        <div class="flex items-center justify-between rounded-xl bg-emerald-500/10 px-4 py-3 font-semibold text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+          <span class="text-base uppercase tracking-wide">Laba Kotor (Gross Profit)</span>
+          <span class="font-mono text-lg">{{ formatRupiah(pl.grossProfit) }}</span>
+        </div>
+
+        <!-- SEKSI 3: BEBAN OPERASIONAL -->
+        <div>
+          <div class="flex items-center justify-between bg-muted/30 px-3 py-2 rounded-xl font-semibold text-foreground">
+            <span>3. Beban Operasional &amp; Administrasi</span>
+            <span></span>
+          </div>
+          <div class="divide-y divide-border/40 ps-4 pe-2 pt-1">
+            @for (item of pl.sections.operatingExpenses; track item.id) {
+              <div class="flex items-center justify-between py-1.5 text-muted-foreground hover:text-foreground">
+                <span class="font-mono text-xs">{{ item.code }} &bull; {{ item.name }}</span>
+                <span class="font-mono text-sm text-foreground">{{ formatRupiah(item.amount) }}</span>
+              </div>
+            } @empty {
+              <div class="py-2 text-xs text-muted-foreground italic ps-2">Belum ada beban operasional tercatat</div>
+            }
+          </div>
+          <!-- Subtotal Beban Operasional -->
+          <div class="mt-1 flex items-center justify-between border-t border-border/80 px-3 py-2 font-medium text-foreground bg-accent/20 rounded-lg">
+            <span>Total Beban Operasional</span>
+            <span class="font-mono text-base font-semibold text-rose-600 dark:text-rose-400">({{ formatRupiah(pl.totalOperatingExpenses) }})</span>
+          </div>
+        </div>
+
+        <!-- LABA OPERASIONAL -->
+        <div class="flex items-center justify-between rounded-xl bg-muted/50 px-4 py-2.5 font-semibold text-foreground border border-border/80">
+          <span>Laba Operasional Usaha</span>
+          <span class="font-mono text-base">{{ formatRupiah(pl.operatingProfit) }}</span>
+        </div>
+
+        <!-- SEKSI 4: PENDAPATAN & BEBAN LAIN-LAIN -->
+        <div>
+          <div class="flex items-center justify-between bg-muted/30 px-3 py-2 rounded-xl font-semibold text-foreground">
+            <span>4. Pendapatan / (Beban) Lain-lain</span>
+            <span></span>
+          </div>
+          <div class="divide-y divide-border/40 ps-4 pe-2 pt-1">
+            @for (item of pl.sections.otherIncome; track item.id) {
+              <div class="flex items-center justify-between py-1.5 text-muted-foreground hover:text-foreground">
+                <span class="font-mono text-xs">{{ item.code }} &bull; {{ item.name }}</span>
+                <span class="font-mono text-sm text-emerald-600 dark:text-emerald-400">{{ formatRupiah(item.amount) }}</span>
+              </div>
+            }
+            @for (item of pl.sections.otherExpenses; track item.id) {
+              <div class="flex items-center justify-between py-1.5 text-muted-foreground hover:text-foreground">
+                <span class="font-mono text-xs">{{ item.code }} &bull; {{ item.name }}</span>
+                <span class="font-mono text-sm text-rose-600 dark:text-rose-400">({{ formatRupiah(item.amount) }})</span>
+              </div>
+            }
+            @if (pl.sections.otherIncome.length === 0 && pl.sections.otherExpenses.length === 0) {
+              <div class="py-2 text-xs text-muted-foreground italic ps-2">Tidak ada transaksi non-operasional</div>
+            }
+          </div>
+        </div>
+
+        <!-- LABA BERSIH PERIODE BERJALAN -->
+        <div class="mt-2 flex items-center justify-between rounded-2xl bg-primary px-5 py-4 font-bold text-primary-foreground shadow-md">
+          <div class="flex flex-col">
+            <span class="text-base uppercase tracking-wider">Laba Bersih Periode Berjalan</span>
+            <span class="text-xs font-normal opacity-90">Net Income After Tax &amp; Extraordinary Items</span>
+          </div>
+          <span class="font-mono text-xl sm:text-2xl">{{ formatRupiah(pl.netIncome) }}</span>
+        </div>
+      </div>
+    </div>
+  }
+</main>

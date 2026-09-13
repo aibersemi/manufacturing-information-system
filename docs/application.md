@@ -36,6 +36,7 @@ src/
 │   │   │   ├── master-data.service.ts  # Layanan CRUD UOM, Pelanggan, Pemasok, Material, Produk, BOM, Pegawai, & Tarif Upah
 │   │   │   ├── production.service.ts   # Layanan Operasional Pabrik: Perintah Produksi, SPK 4 Tahap, Catat Potong/Sablon, Bundle, & Repair
 │   │   │   ├── purchasing-inventory.service.ts # Layanan Pengadaan (Bahan, Perlengkapan, Non-Produksi, Pembayaran) & Inventaris
+│   │   │   ├── report.service.ts       # Layanan Laporan Keuangan, HPP Pabrikasi & Rekonsiliasi Audit Subledger-GL (Fase 9)
 │   │   │   ├── sales.service.ts        # Layanan Penjualan & Piutang: Customer PO, Faktur Penjualan, Penerimaan Piutang, & Pemenuhan
 │   │   │   ├── settings.service.ts     # Layanan CRUD Perusahaan, Penugasan Pengguna, Matriks Izin, Profil, & Audit
 │   │   │   ├── storage.service.ts      # Layanan upload, signed URL, & manajemen file Supabase Storage
@@ -81,6 +82,14 @@ src/
 │   │   │   ├── supplies/               # Pengadaan Perlengkapan Pabrik (/workspace/purchase-supplies)
 │   │   │   ├── non-production/         # Belanja Non-Produksi & Umum (/workspace/purchase-non-production)
 │   │   │   └── payments/               # Pembayaran Hutang & Kas Keluar (/workspace/purchase-payments)
+│   │   ├── reports/                    # Modul Laporan Keuangan, HPP & Rekonsiliasi (Fase 9)
+│   │   │   ├── balance-sheet/          # Neraca Keuangan Sesuai Standar Akuntansi (/workspace/reports/balance-sheet)
+│   │   │   ├── cash-flow/              # Laporan Arus Kas Metode Langsung (/workspace/reports/cash-flow)
+│   │   │   ├── general-ledger/         # Buku Besar Detail per Akun dengan Running Balance (/workspace/reports/general-ledger)
+│   │   │   ├── hpp/                    # Laporan HPP & Biaya Pabrikasi 3 Unsur (/workspace/reports/hpp)
+│   │   │   ├── profit-loss/            # Laporan Laba Rugi Komprehensif (/workspace/reports/profit-loss)
+│   │   │   ├── reconciliation/         # Matriks Rekonsiliasi 6 Pos Kontrol Subledger vs GL (/workspace/reports/reconciliation)
+│   │   │   └── trial-balance/          # Neraca Saldo Debet/Kredit Terseimbang (/workspace/reports/trial-balance)
 │   │   ├── sales/                      # Modul Penjualan & Piutang Dagang (Accounts Receivable)
 │   │   │   ├── orders/                 # Pesanan Penjualan Pelanggan / Customer PO (/workspace/sales-orders)
 │   │   │   ├── invoices/               # Faktur Penjualan & Pengurangan Stok Jadi (/workspace/sales)
@@ -478,6 +487,93 @@ Modul Aset Tetap & Penyusutan (Fase 8) mengimplementasikan tata kelola siklus hi
      - **Kredit**: Laba Pelepasan Aset (`4-2.0.03`) (jika menghasilkan laba).
    - Membukukan mutasi kas masuk pada `cash_movement` jenis `asset_sale` dan mengubah status aset menjadi `disposed`.
 
+---
 
+## Modul Laporan Keuangan, HPP & Rekonsiliasi Akuntansi (Fase 9)
 
+Modul **Financial Reporting, HPP & Reconciliation (Fase 9)** mengimplementasikan tata kelola pelaporan finansial pabrikasi konveksi modern, agregasi analitik berbasis PostgreSQL stored procedures, evaluasi efisiensi biaya manufaktur per SKU, dan sistem audit integritas subledger-ke-buku besar (*General Ledger*) secara real-time.
 
+### 1. Neraca Saldo / Trial Balance (`get_trial_balance`)
+- **Rute**: `/workspace/reports/trial-balance` (Alias: `/trial-balance`, `/reports`)
+- **Komponen**: `TrialBalanceComponent`
+- **Tujuan**: Memastikan keabsahan matematis pembukuan berpasangan (*Double-Entry Bookkeeping*) pada rentang periode terpilih.
+- **Logika Perhitungan**:
+  - Saldo Awal (*Opening Balance*): Akumulasi seluruh transaksi jurnal *posted* sebelum tanggal awal (`< v_date_from`).
+  - Mutasi Debit & Kredit Periode: Agregasi pergerakan mutasi selama rentang periode (`>= v_date_from AND <= v_date_to`).
+  - Saldo Akhir (*Closing Balance*): Saldo kumulatif hingga tanggal akhir periode.
+  - Pemisahan Kolom Debet/Kredit: Disajikan dalam kolom *Ending Debit* dan *Ending Credit* berdasarkan posisi saldo normal akun.
+  - **Uji Keseimbangan (*Balance Validation*)**: Sistem secara otomatis mengevaluasi invariant $\sum \text{Debit} = \sum \text{Kredit}$. Status ditandai dengan badge hijau (*SEIMBANG*) atau merah (*TIDAK SEIMBANG*) jika terdapat selisih.
+
+### 2. Laporan Laba Rugi / Income Statement (`get_profit_loss`)
+- **Rute**: `/workspace/reports/profit-loss` (Alias: `/profit-loss`)
+- **Komponen**: `ProfitLossComponent`
+- **Tujuan**: Mengukur kinerja profitabilitas operasional dan finansial perusahaan hanya pada periode berjalan (*Period-Only Performance*).
+- **Struktur Laporan Multi-Step**:
+  1. **Pendapatan Bersih (*Net Revenue*)**: Pendapatan Penjualan (`4-1.0.01`) dikurangi Retur Penjualan (`4-1.0.02`) dan Diskon Penjualan (`4-1.0.03`).
+  2. **Beban Pokok Penjualan (*Cost of Goods Sold / COGS*)**: Seluruh akun kategori `5-x.x.xx` (Bahan Baku Terpakai, Upah Langsung SPK, dan Overhead Pabrik).
+  3. **Laba Kotor (*Gross Profit*)**: $\text{Gross Profit} = \text{Net Revenue} - \text{COGS}$.
+  4. **Beban Operasional (*Operating Expenses*)**: Akun beban umum, pemasaran, operasional, dan depresiasi (`6-x.x.xx`).
+  5. **Laba Operasional (*Operating Profit / EBIT*)**: $\text{Operating Profit} = \text{Gross Profit} - \text{Operating Expenses}$.
+  6. **Pendapatan & Beban Lain-lain**: Pendapatan Non-Operasional (`7-x.x.xx`) dikurangi Beban Non-Operasional (`8-x.x.xx`).
+  7. **Laba Bersih (*Net Income*)**: $\text{Net Income} = \text{Operating Profit} + \text{Other Income} - \text{Other Expenses}$.
+- **Metrik Analisis**: Menampilkan rasio *Gross Margin (%)*, *Operating Margin (%)*, dan *Net Margin (%)*.
+
+### 3. Neraca Keuangan / Balance Sheet (`get_balance_sheet`)
+- **Rute**: `/workspace/reports/balance-sheet` (Alias: `/balance-sheet`)
+- **Komponen**: `BalanceSheetComponent`
+- **Tujuan**: Menggambarkan posisi kekayaan (aset), kewajiban (liabilitas), dan permodalan (ekuitas) perusahaan pada titik tanggal tertentu (*Cumulative Cut-off Date*).
+- **Penanganan Khusus Akuntansi**:
+  - **Akun Kontra (*Contra Accounts*)**: Akun kontra aset (seperti Akumulasi Penyusutan Aset `1-2.1.xx`) memiliki saldo normal kredit namun disajikan di sisi aset sebagai pengurang (*negative deduction*), menghasilkan Nilai Buku Bersih (*Net Book Value*).
+  - **Pembedaan Laba Ditahan & Laba Berjalan**:
+    - `v_prior_year_earnings`: Laba/rugi bersih kumulatif dari seluruh tahun buku sebelumnya yang belum ditutup ke modal via tutup buku tahunan.
+    - `v_current_year_earnings`: Laba/rugi bersih tahun berjalan YTD (*Year-to-Date Net Income*) dari tanggal 1 Januari tahun berjalan s/d tanggal cut-off.
+  - **Integritas Persamaan Dasar Akuntansi**:
+    $$\text{Total Aset} = \text{Total Kewajiban} + \text{Total Ekuitas}$$
+    $$\Delta = \text{Total Aset} - (\text{Total Kewajiban} + \text{Total Ekuitas}) = 0$$
+    Sistem memverifikasi selisih $\Delta$ secara matematis dengan toleransi ketat.
+
+### 4. Laporan Arus Kas / Cash Flow Statement (`get_cash_flow_statement`)
+- **Rute**: `/workspace/reports/cash-flow` (Alias: `/cash-flow`)
+- **Komponen**: `CashFlowComponent`
+- **Tujuan**: Melacak aliran likuiditas riil masuk dan keluar menggunakan **Metode Langsung (*Direct Method*)**.
+- **Klasifikasi 3 Aktivitas Standar**:
+  1. **Aktivitas Operasi (*Operating Activities*)**: Penerimaan pelunasan piutang pelanggan, pembayaran bahan baku, pembayaran upah SPK borongan, pembayaran perlengkapan, dan pengeluaran operasional tunai.
+  2. **Aktivitas Investasi (*Investing Activities*)**: Belanja modal pengadaan mesin/peralatan pabrik (*CapEx*) dan penerimaan kas hasil penjualan/pelepasan aset tetap bekas (*Asset Disposal*).
+  3. **Aktivitas Pendanaan (*Financing Activities*)**: Setoran modal awal, penarikan prive (*equity withdrawal*), dan penerimaan/pelunasan pinjaman perbankan.
+- **Rekonsiliasi Kas**:
+  $$\text{Kas Akhir} = \text{Kas Awal} + \text{Kenaikan/Penurunan Bersih Kas}$$
+  Hasil akhir dicocokkan langsung terhadap saldo akun Kas & Bank (`1-1.1.xx`) di Buku Besar untuk menjamin tidak ada mutasi kas siluman.
+
+### 5. Buku Besar / General Ledger (`get_general_ledger_entries`)
+- **Rute**: `/workspace/reports/general-ledger` (Alias: `/general-ledger`)
+- **Komponen**: `GeneralLedgerComponent`
+- **Tujuan**: Menelusuri jejak audit detail historis (*Audit Trail*) per akun secara individual.
+- **Fitur Utama**:
+  - Pemilihan akun fleksibel via dropdown COA hierarkis.
+  - Saldo Awal Terbuku (*Brought Forward Opening Balance*).
+  - Kolom mutasi Debit, Kredit, dan Saldo Berjalan (*Running Balance*) yang dihitung menggunakan PostgreSQL window functions (`SUM(debit - credit) OVER (...)`).
+  - Pagination efisien (`limit`, `offset`) dengan visualisasi nomor referensi jurnal, jenis sumber transaksi, dan deskripsi/catatan.
+
+### 6. Laporan HPP & Biaya Pabrikasi (`get_hpp_manufacturing_summary`)
+- **Rute**: `/workspace/reports/hpp` (Alias: `/hpp`, `/hpp-report`)
+- **Komponen**: `HppReportComponent`
+- **Tujuan**: Menghitung akumulasi biaya pabrikasi riil dan membandingkan HPP aktual per SKU terhadap standar Bill of Materials (BOM).
+- **Tiga Unsur Pokok Biaya Produksi Manufaktur**:
+  1. **Biaya Bahan Baku Langsung (*Direct Materials*)**: Diagregasi dari mutasi fisik pengeluaran bahan baku (`inventory_movement` status `material`, kuantitas negatif) dikalikan harga perolehan.
+  2. **Biaya Tenaga Kerja Langsung (*Direct Labor*)**: Rincian upah borongan 4 tahap pengerjaan SPK (`wage_liability`): Potong (*Cutting*), Bordir/Sablon (*Printing*), Jahit (*Sewing*), dan Finishing/Packing (*Packing* & *Head Fee*).
+  3. **Biaya Overhead Pabrik (*Factory Overhead / BOP*)**: Konsumsi perlengkapan produksi (*supplies*), beban depresiasi mesin pabrik periode berjalan, dan beban overhead pabrikasi dari jurnal umum.
+- **Evaluasi Efisiensi SKU vs BOM**: Menghitung varians biaya aktual per unit dibandingkan estimasi standar BOM, lengkap dengan persentase varians ($\pm\%$) untuk mendeteksi pemborosan (*waste*) atau efisiensi produksi.
+- **Rekonsiliasi GL COGS**: Membandingkan total COGS fisik terhadap saldo akun Beban Pokok Penjualan di Buku Besar.
+
+### 7. Rekonsiliasi Subledger-ke-Buku Besar & Audit Integritas (`get_accounting_reconciliation_summary`)
+- **Rute**: `/workspace/reports/reconciliation` (Alias: `/reconciliation`)
+- **Komponen**: `ReconciliationComponent`
+- **Tujuan**: Memastikan keabsahan kontrol internal antara buku pembantu operasional (*subledger*) dan buku besar keuangan (*General Ledger*).
+- **Matriks 6 Pos Kontrol Keuangan**:
+  1. **Kas & Bank**: Saldo akumulasi mutasi buku kas operasional vs Saldo Akun Kas & Bank (`1-1.1.xx`).
+  2. **Piutang Usaha (AR)**: Akumulasi saldo faktur pesanan penjualan belum lunas (*unpaid orders*) vs Saldo Akun Piutang Usaha (`1-1.2.01`).
+  3. **Hutang Usaha (AP)**: Akumulasi kewajiban tagihan pengadaan bahan belum dibayar (*unpaid purchase orders*) vs Saldo Akun Hutang Usaha (`2-1.1.01`).
+  4. **Nilai Persediaan**: Valuasi total stok fisik bahan baku, perlengkapan, dan barang jadi vs Saldo Akun Persediaan (`1-1.4.xx`).
+  5. **Aset Tetap**: Total harga perolehan unit aktif di register aset modal vs Saldo Akun Aset Tetap (`1-2.0.xx`).
+  6. **Akumulasi Penyusutan**: Akumulasi depresiasi terhitung di modul aset vs Saldo Kredit Akun Akumulasi Penyusutan (`1-2.1.xx`).
+- **Uji Integritas Real-time**: Tombol *Uji Rekonsiliasi Real-time* mengevaluasi ke-6 pos secara serentak. Jika ada selisih, sistem memberikan peringatan anomali beserta navigasi cepat ke modul terkait untuk investigasi jurnal koreksi.
