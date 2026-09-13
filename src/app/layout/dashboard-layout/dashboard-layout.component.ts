@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
@@ -43,6 +43,22 @@ import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { toast } from '@spartan-ng/brain/sonner';
 import { AuthService } from '../../core/services/auth.service';
 import { CompanyService, Company } from '../../core/services/company.service';
+
+export const STORAGE_KEY_SIDEBAR_COLLAPSED = 'mis_sidebar_collapsed';
+export const STORAGE_KEY_NAV_GROUPS = 'mis_nav_groups_state';
+
+export const DEFAULT_NAV_GROUPS: Record<string, boolean> = {
+  masterData: true,
+  purchasing: true,
+  sales: true,
+  finance: true,
+  assets: true,
+  reports: true,
+  operations: true,
+  inventory: true,
+  qc: false,
+  settings: false,
+};
 
 @Component({
   selector: 'app-dashboard-layout',
@@ -101,21 +117,22 @@ export class DashboardLayoutComponent {
   private readonly companyService = inject(CompanyService);
   private readonly router = inject(Router);
 
-  readonly isSidebarCollapsed = signal(false);
+  readonly isSidebarCollapsed = signal<boolean>(this.getStoredSidebarState());
   readonly isMobileMenuOpen = signal(false);
 
-  readonly openNavGroups = signal<Record<string, boolean>>({
-    masterData: true,
-    purchasing: true,
-    sales: true,
-    finance: true,
-    assets: true,
-    reports: true,
-    operations: true,
-    inventory: true,
-    qc: false,
-    settings: false,
-  });
+  readonly openNavGroups = signal<Record<string, boolean>>(this.getStoredNavGroupsState());
+
+  constructor() {
+    effect(() => {
+      const collapsed = this.isSidebarCollapsed();
+      this.storeSidebarState(collapsed);
+    });
+
+    effect(() => {
+      const groups = this.openNavGroups();
+      this.storeNavGroupsState(groups);
+    });
+  }
 
   readonly availableCompanies = computed(() => this.companyService.availableCompanies());
   readonly activeCompanyId = computed(() => this.companyService.activeCompanyId());
@@ -176,6 +193,10 @@ export class DashboardLayoutComponent {
   });
 
   toggleSidebar(): void {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      this.isMobileMenuOpen.update((open) => !open);
+      return;
+    }
     this.isSidebarCollapsed.update((collapsed) => !collapsed);
   }
 
@@ -211,6 +232,60 @@ export class DashboardLayoutComponent {
     } catch (err) {
       console.error('Logout error:', err);
       toast.error('Gagal keluar dari sistem.');
+    }
+  }
+
+  private getStoredSidebarState(): boolean {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const stored = window.localStorage.getItem(STORAGE_KEY_SIDEBAR_COLLAPSED);
+        if (stored !== null) {
+          return stored === 'true';
+        }
+      }
+    } catch (e) {
+      console.warn('Gagal membaca status sidebar dari localStorage:', e);
+    }
+    return false;
+  }
+
+  private storeSidebarState(collapsed: boolean): void {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(STORAGE_KEY_SIDEBAR_COLLAPSED, String(collapsed));
+      }
+    } catch (e) {
+      console.warn('Gagal menyimpan status sidebar ke localStorage:', e);
+    }
+  }
+
+  private getStoredNavGroupsState(): Record<string, boolean> {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const stored = window.localStorage.getItem(STORAGE_KEY_NAV_GROUPS);
+        if (stored) {
+          const parsed = JSON.parse(stored) as unknown;
+          if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+            return {
+              ...DEFAULT_NAV_GROUPS,
+              ...(parsed as Record<string, boolean>),
+            };
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Gagal membaca status navigasi menu dari localStorage:', e);
+    }
+    return { ...DEFAULT_NAV_GROUPS };
+  }
+
+  private storeNavGroupsState(groups: Record<string, boolean>): void {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(STORAGE_KEY_NAV_GROUPS, JSON.stringify(groups));
+      }
+    } catch (e) {
+      console.warn('Gagal menyimpan status navigasi menu ke localStorage:', e);
     }
   }
 }

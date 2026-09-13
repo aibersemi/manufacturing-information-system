@@ -1,10 +1,15 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthService } from '../../core/services/auth.service';
 import { CompanyService, Company } from '../../core/services/company.service';
-import { DashboardLayoutComponent } from './dashboard-layout.component';
+import {
+  DashboardLayoutComponent,
+  STORAGE_KEY_SIDEBAR_COLLAPSED,
+  STORAGE_KEY_NAV_GROUPS,
+  DEFAULT_NAV_GROUPS,
+} from './dashboard-layout.component';
 
 describe('DashboardLayoutComponent', () => {
   let component: DashboardLayoutComponent;
@@ -40,6 +45,8 @@ describe('DashboardLayoutComponent', () => {
   };
 
   beforeEach(async () => {
+    localStorage.clear();
+
     mockAuthService = {
       currentUser: signal({
         id: 'u-1',
@@ -104,6 +111,69 @@ describe('DashboardLayoutComponent', () => {
     expect(component.isMobileMenuOpen()).toBe(false);
   });
 
+  it('should toggle desktop sidebar and persist state to localStorage', () => {
+    // Pastikan window.innerWidth desktop
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1280 });
+    expect(component.isSidebarCollapsed()).toBe(false);
+
+    component.toggleSidebar();
+    expect(component.isSidebarCollapsed()).toBe(true);
+    fixture.detectChanges();
+    expect(localStorage.getItem(STORAGE_KEY_SIDEBAR_COLLAPSED)).toBe('true');
+
+    component.toggleSidebar();
+    expect(component.isSidebarCollapsed()).toBe(false);
+    fixture.detectChanges();
+    expect(localStorage.getItem(STORAGE_KEY_SIDEBAR_COLLAPSED)).toBe('false');
+  });
+
+  it('should restore stored sidebar state and nav groups from localStorage upon initialization', () => {
+    localStorage.setItem(STORAGE_KEY_SIDEBAR_COLLAPSED, 'true');
+    localStorage.setItem(
+      STORAGE_KEY_NAV_GROUPS,
+      JSON.stringify({ masterData: false, settings: true })
+    );
+
+    const newFixture = TestBed.createComponent(DashboardLayoutComponent);
+    const newComponent = newFixture.componentInstance;
+    newFixture.detectChanges();
+
+    expect(newComponent.isSidebarCollapsed()).toBe(true);
+    expect(newComponent.isGroupOpen('masterData')).toBe(false);
+    expect(newComponent.isGroupOpen('settings')).toBe(true);
+    // Grup lain tetap mempertahankan default
+    expect(newComponent.isGroupOpen('purchasing')).toBe(DEFAULT_NAV_GROUPS['purchasing']);
+  });
+
+  it('should toggle nav group and persist updated state to localStorage', () => {
+    expect(component.isGroupOpen('finance')).toBe(true);
+
+    component.toggleGroup('finance');
+    expect(component.isGroupOpen('finance')).toBe(false);
+    fixture.detectChanges();
+
+    const storedJson = localStorage.getItem(STORAGE_KEY_NAV_GROUPS);
+    expect(storedJson).toBeTruthy();
+    const stored = JSON.parse(storedJson!);
+    expect(stored.finance).toBe(false);
+
+    component.toggleGroup('finance');
+    expect(component.isGroupOpen('finance')).toBe(true);
+    fixture.detectChanges();
+    const updated = JSON.parse(localStorage.getItem(STORAGE_KEY_NAV_GROUPS)!);
+    expect(updated.finance).toBe(true);
+  });
+
+  it('should handle corrupt localStorage data gracefully', () => {
+    localStorage.setItem(STORAGE_KEY_NAV_GROUPS, '{ corrupt json');
+
+    const newFixture = TestBed.createComponent(DashboardLayoutComponent);
+    const newComponent = newFixture.componentInstance;
+    newFixture.detectChanges();
+
+    expect(newComponent.isGroupOpen('masterData')).toBe(true);
+  });
+
   it('should handle logout flow', async () => {
     const navigateSpy = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
 
@@ -113,3 +183,4 @@ describe('DashboardLayoutComponent', () => {
     expect(navigateSpy).toHaveBeenCalledWith('/login');
   });
 });
+
