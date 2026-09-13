@@ -24,7 +24,7 @@ To use the MCP server, you configure your host environment (IDE or CLI) to run `
 
 ### Antigravity IDE
 
-Create a file named `.antigravity/mcp.json` in your project's root:
+Create a file named `.agents/mcp_config.json` in your project's root:
 
 ```json
 {

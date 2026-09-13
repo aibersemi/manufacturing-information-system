@@ -248,23 +248,6 @@
       </nav>
     </div>
 
-    <!-- Sidebar Footer (User Info Khas Konveksi) -->
-    <div class="border-t border-border/80 p-3">
-      @if (!isSidebarCollapsed()) {
-        <div class="flex min-w-0 flex-col gap-0.5 px-1">
-          <p class="truncate text-sm font-medium text-foreground">{{ userName() }}</p>
-          <p class="truncate text-xs text-muted-foreground capitalize">
-            {{ userRoleLabel() }}
-          </p>
-        </div>
-      } @else {
-        <div class="flex justify-center">
-          <div class="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
-            {{ userInitials() }}
-          </div>
-        </div>
-      }
-    </div>
   </aside>
 
   <!-- Area Konten Utama (Header Ramping h-14 + Main) -->

@@ -26,7 +26,7 @@ Panduan wajib bagi agen AI saat bekerja di repositori ini.
 - Ikuti standar modern Angular v22+ (Signals, Standalone, Zoneless, Signal Forms, native control flow `@if`/`@for`, fungsi `input()`/`output()`, dan `inject()`). Aturan rinci tercantum pada [.agents/rules/angular.md](.agents/rules/angular.md).
 - Frontend dilarang keras memuat credential administratif seperti `SERVICE_ROLE_KEY`. Hanya `SUPABASE_URL` dan `SUPABASE_ANON_KEY` yang diizinkan untuk bundle client.
 - Gunakan skill lokal `.agents/skills/` (`angular-developer`, `angular-new-app`, `spartan`, `supabase`, `supabase-postgres-best-practices`) untuk panduan implementasi.
-- Gunakan MCP Server lokal (`.antigravity/mcp.json` - Angular CLI & Spartan MCP) untuk analisis proyek, dokumentasi komponen Spartan, eksekusi target, dan verifikasi build.
+- Gunakan MCP Server lokal ([.agents/mcp_config.json](.agents/mcp_config.json) - Angular CLI & Spartan MCP) untuk analisis proyek, dokumentasi komponen Spartan, eksekusi target, dan verifikasi build.
 - Prioritaskan performa tinggi secara konsisten dengan mengoptimalkan change detection dan user experience melalui paradigma Angular modern.
 - Utamakan penulisan kode yang bersih, efisien, dan mudah dipelihara dengan senantiasa menerapkan API terbaru serta best practices mutakhir Angular v22+.
 
