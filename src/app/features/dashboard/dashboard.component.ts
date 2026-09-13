@@ -1,18 +1,23 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
-  lucideActivity,
-  lucideAlertCircle,
-  lucideArrowUpRight,
-  lucideCheckCircle2,
-  lucideClipboardList,
-  lucideClock,
-  lucideCpu,
-  lucidePlus,
-  lucideRefreshCw,
-  lucideShieldCheck,
-  lucideTrendingUp,
-} from '@ng-icons/lucide';
+  phosphorArrowsClockwise,
+  phosphorArrowUpRight,
+  phosphorBuildings,
+  phosphorCheckCircle,
+  phosphorClipboardText,
+  phosphorClock,
+  phosphorCpu,
+  phosphorMagnifyingGlass,
+  phosphorPackage,
+  phosphorPlus,
+  phosphorPulse,
+  phosphorShieldCheck,
+  phosphorTrendUp,
+  phosphorUser,
+  phosphorWarningCircle,
+} from '@ng-icons/phosphor-icons/regular';
 import { HlmBadge } from '@spartan-ng/helm/badge';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
@@ -31,20 +36,24 @@ interface WorkOrderItem {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [HlmCardImports, HlmBadge, HlmButton, NgIcon],
+  imports: [HlmCardImports, HlmBadge, HlmButton, NgIcon, FormsModule],
   providers: [
     provideIcons({
-      lucideTrendingUp,
-      lucideCpu,
-      lucideClipboardList,
-      lucideShieldCheck,
-      lucideAlertCircle,
-      lucideCheckCircle2,
-      lucideClock,
-      lucideArrowUpRight,
-      lucidePlus,
-      lucideRefreshCw,
-      lucideActivity,
+      phosphorTrendUp,
+      phosphorCpu,
+      phosphorClipboardText,
+      phosphorShieldCheck,
+      phosphorWarningCircle,
+      phosphorCheckCircle,
+      phosphorClock,
+      phosphorArrowUpRight,
+      phosphorPlus,
+      phosphorArrowsClockwise,
+      phosphorPulse,
+      phosphorMagnifyingGlass,
+      phosphorBuildings,
+      phosphorPackage,
+      phosphorUser,
     }),
   ],
   templateUrl: './dashboard.component.html',
@@ -53,10 +62,12 @@ interface WorkOrderItem {
 export class DashboardComponent {
   private readonly authService = inject(AuthService);
 
+  readonly searchQuery = signal('');
+
   readonly currentUser = computed(() => this.authService.currentUser());
 
   readonly userEmail = computed(() => {
-    return this.currentUser()?.email ?? 'Pengguna';
+    return this.currentUser()?.email ?? 'supergadangzzz@mis.mrmads.net';
   });
 
   readonly userRole = computed(() => {
@@ -118,6 +129,32 @@ export class DashboardComponent {
       operator: 'Rina Wijaya',
     },
   ]);
+
+  readonly statusFilter = signal<'all' | 'active' | 'completed'>('all');
+
+  readonly filteredWorkOrders = computed(() => {
+    const query = this.searchQuery().toLowerCase().trim();
+    const status = this.statusFilter();
+    return this.recentWorkOrders().filter((wo) => {
+      const matchQuery =
+        !query ||
+        wo.code.toLowerCase().includes(query) ||
+        wo.item.toLowerCase().includes(query) ||
+        wo.line.toLowerCase().includes(query) ||
+        wo.operator.toLowerCase().includes(query);
+
+      const matchStatus =
+        status === 'all' ||
+        (status === 'active' && (wo.status === 'processing' || wo.status === 'quality_check' || wo.status === 'queued')) ||
+        (status === 'completed' && wo.status === 'completed');
+
+      return matchQuery && matchStatus;
+    });
+  });
+
+  setStatusFilter(filter: 'all' | 'active' | 'completed'): void {
+    this.statusFilter.set(filter);
+  }
 
   getStatusBadgeVariant(status: WorkOrderItem['status']): 'default' | 'secondary' | 'outline' | 'destructive' {
     switch (status) {

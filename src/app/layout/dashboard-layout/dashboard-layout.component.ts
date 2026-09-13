@@ -1,23 +1,31 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { NgOptimizedImage } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
-  lucideActivity,
-  lucideBell,
-  lucideBoxes,
-  lucideChevronDown,
-  lucideClipboardList,
-  lucideFactory,
-  lucideLayoutDashboard,
-  lucideLogOut,
-  lucideMenu,
-  lucideSettings,
-  lucideShieldCheck,
-  lucideSliders,
-  lucideUser,
-  lucideX,
-} from '@ng-icons/lucide';
+  phosphorArrowsClockwise,
+  phosphorBell,
+  phosphorBuildings,
+  phosphorCaretDown,
+  phosphorCaretRight,
+  phosphorCheck,
+  phosphorClipboardText,
+  phosphorCpu,
+  phosphorFactory,
+  phosphorGauge,
+  phosphorGear,
+  phosphorList,
+  phosphorPackage,
+  phosphorPulse,
+  phosphorShieldCheck,
+  phosphorSidebar,
+  phosphorSidebarSimple,
+  phosphorSignOut,
+  phosphorSliders,
+  phosphorUser,
+  phosphorUsersThree,
+  phosphorWarehouse,
+  phosphorX,
+} from '@ng-icons/phosphor-icons/regular';
 import { HlmAvatarImports } from '@spartan-ng/helm/avatar';
 import { HlmBadge } from '@spartan-ng/helm/badge';
 import { HlmButton } from '@spartan-ng/helm/button';
@@ -31,7 +39,6 @@ import { AuthService } from '../../core/services/auth.service';
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
-    NgOptimizedImage,
     NgIcon,
     HlmAvatarImports,
     HlmBadge,
@@ -40,20 +47,29 @@ import { AuthService } from '../../core/services/auth.service';
   ],
   providers: [
     provideIcons({
-      lucideLayoutDashboard,
-      lucideClipboardList,
-      lucideFactory,
-      lucideBoxes,
-      lucideShieldCheck,
-      lucideSettings,
-      lucideLogOut,
-      lucideUser,
-      lucideSliders,
-      lucideBell,
-      lucideChevronDown,
-      lucideActivity,
-      lucideMenu,
-      lucideX,
+      phosphorGauge,
+      phosphorUsersThree,
+      phosphorPackage,
+      phosphorCpu,
+      phosphorClipboardText,
+      phosphorFactory,
+      phosphorBuildings,
+      phosphorWarehouse,
+      phosphorShieldCheck,
+      phosphorGear,
+      phosphorCaretRight,
+      phosphorCaretDown,
+      phosphorBell,
+      phosphorSignOut,
+      phosphorUser,
+      phosphorSidebar,
+      phosphorSidebarSimple,
+      phosphorX,
+      phosphorList,
+      phosphorArrowsClockwise,
+      phosphorCheck,
+      phosphorSliders,
+      phosphorPulse,
     }),
   ],
   templateUrl: './dashboard-layout.component.html',
@@ -63,20 +79,41 @@ export class DashboardLayoutComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
+  readonly isSidebarCollapsed = signal(false);
   readonly isMobileMenuOpen = signal(false);
+
+  readonly openNavGroups = signal<Record<string, boolean>>({
+    masterData: true,
+    operations: true,
+    inventory: true,
+    qc: false,
+    settings: false,
+  });
+
+  readonly companies = [
+    'Pabrik Semikonduktor Aiber',
+    'Fabrikasi Wafer Line B',
+    'Cleanroom IC Packaging',
+  ];
+  readonly activeCompany = signal('Pabrik Semikonduktor Aiber');
 
   readonly currentUser = computed(() => this.authService.currentUser());
 
   readonly userEmail = computed(() => {
     const user = this.currentUser();
-    return user?.email ?? 'Pengguna MIS';
+    return user?.email ?? 'supergadangzzz@mis.mrmads.net';
+  });
+
+  readonly userName = computed(() => {
+    const email = this.userEmail();
+    return email.split('@')[0] || 'Operator';
   });
 
   readonly userRole = computed(() => {
     const user = this.currentUser();
     const appRole = user?.app_metadata?.['role'] as string | undefined;
     const userRole = user?.user_metadata?.['role'] as string | undefined;
-    return appRole || userRole || 'operator';
+    return appRole || userRole || 'Owner';
   });
 
   readonly userRoleLabel = computed(() => {
@@ -90,15 +127,18 @@ export class DashboardLayoutComponent {
         return 'Finance Lead';
       case 'operator':
       default:
-        return 'Production Operator';
+        return 'Operator Fabrikasi';
     }
   });
 
   readonly userInitials = computed(() => {
-    const email = this.userEmail();
-    const clean = email.split('@')[0] || 'US';
-    return clean.slice(0, 2).toUpperCase();
+    const name = this.userName();
+    return name.slice(0, 2).toUpperCase();
   });
+
+  toggleSidebar(): void {
+    this.isSidebarCollapsed.update((collapsed) => !collapsed);
+  }
 
   toggleMobileMenu(): void {
     this.isMobileMenuOpen.update((open) => !open);
@@ -106,6 +146,22 @@ export class DashboardLayoutComponent {
 
   closeMobileMenu(): void {
     this.isMobileMenuOpen.set(false);
+  }
+
+  toggleGroup(groupKey: string): void {
+    this.openNavGroups.update((groups) => ({
+      ...groups,
+      [groupKey]: !groups[groupKey],
+    }));
+  }
+
+  isGroupOpen(groupKey: string): boolean {
+    return !!this.openNavGroups()[groupKey];
+  }
+
+  selectCompany(company: string): void {
+    this.activeCompany.set(company);
+    toast.success(`Beralih ke ${company}`);
   }
 
   async logout(): Promise<void> {
@@ -119,3 +175,4 @@ export class DashboardLayoutComponent {
     }
   }
 }
+

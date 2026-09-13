@@ -1,17 +1,18 @@
 import { Component, inject, signal } from '@angular/core';
-import { NgOptimizedImage } from '@angular/common';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
-  lucideAlertCircle,
-  lucideEye,
-  lucideEyeOff,
-  lucideLoader2,
-  lucideLock,
-  lucideMail,
-  lucideShieldCheck,
-} from '@ng-icons/lucide';
+  phosphorBuildings,
+  phosphorCircleNotch,
+  phosphorEye,
+  phosphorEyeSlash,
+  phosphorFactory,
+  phosphorLock,
+  phosphorSignIn,
+  phosphorUser,
+  phosphorWarningCircle,
+} from '@ng-icons/phosphor-icons/regular';
 import { HlmAlertImports } from '@spartan-ng/helm/alert';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
@@ -25,7 +26,6 @@ import { getSafeReturnUrl } from '../../../core/utils/url.util';
   selector: 'app-login',
   imports: [
     ReactiveFormsModule,
-    NgOptimizedImage,
     HlmAlertImports,
     HlmButton,
     HlmCardImports,
@@ -35,13 +35,15 @@ import { getSafeReturnUrl } from '../../../core/utils/url.util';
   ],
   providers: [
     provideIcons({
-      lucideAlertCircle,
-      lucideMail,
-      lucideLock,
-      lucideEye,
-      lucideEyeOff,
-      lucideLoader2,
-      lucideShieldCheck,
+      phosphorBuildings,
+      phosphorCircleNotch,
+      phosphorEye,
+      phosphorEyeSlash,
+      phosphorFactory,
+      phosphorLock,
+      phosphorSignIn,
+      phosphorUser,
+      phosphorWarningCircle,
     }),
   ],
   templateUrl: './login.component.html',

@@ -1,48 +1,38 @@
-<div class="relative flex min-h-screen items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8">
-  <!-- Ambient Neutral Glow Accent -->
-  <div
-    class="pointer-events-none absolute -top-40 left-1/2 -z-10 size-[32rem] -translate-x-1/2 rounded-full bg-foreground/5 blur-3xl"
-    aria-hidden="true"
-  ></div>
-
-  <div class="w-full max-w-md">
-    <!-- Branding Header -->
-    <div class="mb-6 flex flex-col items-center text-center">
-      <div
-        class="mb-4 flex size-32 items-center justify-center rounded-3xl bg-card p-3 shadow-sm ring-1 ring-border"
-      >
-        <img
-          ngSrc="images/mis.svg"
-          width="96"
-          height="96"
-          priority
-          alt="Logo Manufacturing Information System"
-          class="size-24 object-contain"
-        />
-      </div>
-      <h1 class="text-2xl font-bold tracking-tight text-foreground">
+<main class="flex min-h-screen items-center justify-center px-4 py-10">
+  <div class="flex w-full max-w-md flex-col gap-5">
+    <!-- Header Branding di atas Card (Identik Konveksi) -->
+    <div class="text-center">
+      <p class="text-sm font-medium text-muted-foreground">
+        Aplikasi Operasional Internal
+      </p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight text-foreground">
         Manufacturing Information System
       </h1>
-      <p class="mt-1 text-sm text-muted-foreground">
-        Production & Operations Platform
-      </p>
     </div>
 
-    <!-- Login Card (Spartan Luma Style) -->
-    <div hlmCard class="w-full">
-      <div hlmCardHeader class="pb-2">
-        <h2 hlmCardTitle class="text-xl font-semibold tracking-tight">Masuk ke Akun</h2>
-        <p hlmCardDescription class="text-xs text-muted-foreground">
-          Masukkan alamat email dan kata sandi Anda untuk melanjutkan
+    <!-- Login Card (Radix-Luma Style: rounded-4xl, subtle border & shadow) -->
+    <div hlmCard class="w-full max-w-md rounded-4xl border border-border/80 bg-card/95 p-6 shadow-md backdrop-blur-xs">
+      <div hlmCardHeader class="flex flex-col items-center justify-center text-center p-0 pb-6">
+        <!-- Logo Circular Icon Badge khas Konveksi -->
+        <div
+          class="mb-3 flex size-16 items-center justify-center rounded-full bg-linear-to-br from-teal-500 to-emerald-600 text-white shadow-sm ring-4 ring-white/60 dark:ring-slate-800/60"
+        >
+          <ng-icon name="phosphorFactory" class="size-8" />
+        </div>
+        <h2 hlmCardTitle class="text-xl font-semibold tracking-tight text-foreground">
+          Masuk ke Sistem
+        </h2>
+        <p hlmCardDescription class="mt-1 text-sm text-muted-foreground">
+          Gunakan akun operasional pabrik terdaftar Anda.
         </p>
       </div>
 
-      <div hlmCardContent>
+      <div hlmCardContent class="p-0">
         <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-4" novalidate>
-          <!-- Alert Pesan Kesalahan (Spartan Luma Alert) -->
+          <!-- Alert Pesan Kesalahan -->
           @if (errorMessage()) {
-            <div hlmAlert variant="destructive">
-              <ng-icon name="lucideAlertCircle" class="size-4" />
+            <div hlmAlert variant="destructive" class="rounded-2xl">
+              <ng-icon name="phosphorWarningCircle" class="size-4" />
               <h4 hlmAlertTitle>Gagal Masuk</h4>
               <p hlmAlertDescription>
                 {{ errorMessage() }}
@@ -50,19 +40,38 @@
             </div>
           }
 
+          <!-- Entitas / Pabrik (Pill Select Trigger) -->
+          <div class="flex flex-col gap-2">
+            <span class="text-sm font-medium text-foreground">
+              Pabrik / Unit Operasi
+            </span>
+            <div
+              id="facility-select"
+              class="flex h-10 w-full items-center justify-between rounded-full border border-border bg-muted/40 px-4 text-sm text-foreground shadow-2xs"
+            >
+              <div class="flex items-center gap-2.5 truncate">
+                <ng-icon name="phosphorBuildings" class="size-4.5 text-muted-foreground shrink-0" />
+                <span class="truncate">Pabrik Semikonduktor Aiber (Utama)</span>
+              </div>
+              <span class="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 shrink-0">
+                Aktif
+              </span>
+            </div>
+          </div>
+
           <!-- Field Username atau Email -->
-          <div class="flex flex-col gap-1.5">
+          <div class="flex flex-col gap-2">
             <label
               hlmLabel
               for="email"
-              class="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+              class="text-sm font-medium text-foreground"
             >
               Username atau Email
             </label>
             <div class="relative">
               <ng-icon
-                name="lucideMail"
-                class="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                name="phosphorUser"
+                class="pointer-events-none absolute start-3.5 top-1/2 size-4.5 -translate-y-1/2 text-muted-foreground"
                 aria-hidden="true"
               />
               <input
@@ -71,15 +80,15 @@
                 type="text"
                 formControlName="email"
                 autocomplete="username"
-                placeholder="admin@mrmads.net"
-                class="ps-9 w-full"
+                placeholder="supergadangzzz"
+                class="h-10 w-full rounded-full border border-border bg-muted/40 ps-10 pe-4 text-sm text-foreground transition focus:bg-background"
                 [class.border-destructive]="isFieldInvalid('email')"
                 [attr.aria-invalid]="isFieldInvalid('email')"
                 aria-describedby="email-error"
               />
             </div>
             @if (isFieldInvalid('email')) {
-              <p id="email-error" class="text-xs text-destructive" role="alert">
+              <p id="email-error" class="px-2 text-xs text-destructive" role="alert">
                 @if (form.get('email')?.hasError('required')) {
                   Username atau email wajib diisi.
                 } @else if (form.get('email')?.hasError('minlength')) {
@@ -90,20 +99,18 @@
           </div>
 
           <!-- Field Password -->
-          <div class="flex flex-col gap-1.5">
-            <div class="flex items-center justify-between">
-              <label
-                hlmLabel
-                for="password"
-                class="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-              >
-                Kata Sandi
-              </label>
-            </div>
+          <div class="flex flex-col gap-2">
+            <label
+              hlmLabel
+              for="password"
+              class="text-sm font-medium text-foreground"
+            >
+              Password
+            </label>
             <div class="relative">
               <ng-icon
-                name="lucideLock"
-                class="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                name="phosphorLock"
+                class="pointer-events-none absolute start-3.5 top-1/2 size-4.5 -translate-y-1/2 text-muted-foreground"
                 aria-hidden="true"
               />
               <input
@@ -113,7 +120,7 @@
                 formControlName="password"
                 autocomplete="current-password"
                 placeholder="••••••••"
-                class="ps-9 pe-10 w-full"
+                class="h-10 w-full rounded-full border border-border bg-muted/40 ps-10 pe-11 text-sm text-foreground transition focus:bg-background"
                 [class.border-destructive]="isFieldInvalid('password')"
                 [attr.aria-invalid]="isFieldInvalid('password')"
                 aria-describedby="password-error"
@@ -121,52 +128,46 @@
               <button
                 type="button"
                 (click)="togglePasswordVisibility()"
-                class="absolute end-2 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                [attr.aria-label]="showPassword() ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'"
+                class="absolute end-2.5 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                [attr.aria-label]="showPassword() ? 'Sembunyikan password' : 'Tampilkan password'"
               >
-                <ng-icon [name]="showPassword() ? 'lucideEyeOff' : 'lucideEye'" class="size-4" />
+                <ng-icon [name]="showPassword() ? 'phosphorEyeSlash' : 'phosphorEye'" class="size-4" />
               </button>
             </div>
             @if (isFieldInvalid('password')) {
-              <p id="password-error" class="text-xs text-destructive" role="alert">
+              <p id="password-error" class="px-2 text-xs text-destructive" role="alert">
                 @if (form.get('password')?.hasError('required')) {
-                  Kata sandi wajib diisi.
+                  Password wajib diisi.
                 } @else if (form.get('password')?.hasError('minlength')) {
-                  Kata sandi minimal 6 karakter.
+                  Password minimal 6 karakter.
                 }
               </p>
             }
           </div>
 
-          <!-- Tombol Submit (Luma Style: Pill rounded-4xl, size lg) -->
+          <!-- Tombol Submit (Signature Konveksi: Full Pill Button rounded-4xl) -->
           <div class="pt-2">
             <button
               hlmBtn
-              size="lg"
               type="submit"
               [disabled]="isSubmitting()"
-              class="w-full font-medium"
+              class="h-10 w-full rounded-full text-sm font-medium shadow-sm transition hover:opacity-95"
             >
               @if (isSubmitting()) {
                 <span class="inline-flex items-center gap-2">
-                  <ng-icon name="lucideLoader2" class="size-4 animate-spin" />
+                  <ng-icon name="phosphorCircleNotch" class="size-4 animate-spin" />
                   Memverifikasi...
                 </span>
               } @else {
-                Masuk ke Sistem
+                <span class="inline-flex items-center gap-2">
+                  <ng-icon name="phosphorSignIn" class="size-4.5" />
+                  Masuk
+                </span>
               }
             </button>
           </div>
         </form>
       </div>
-
-      <!-- Card Footer -->
-      <div hlmCardFooter class="flex flex-col items-center justify-center border-t border-border/50 text-center text-xs text-muted-foreground">
-        <div class="flex items-center gap-1.5">
-          <ng-icon name="lucideShieldCheck" class="size-3.5 text-foreground/70" />
-          <span>Keamanan Terenkripsi &amp; Row Level Security (RLS)</span>
-        </div>
-      </div>
     </div>
   </div>
-</div>
+</main>

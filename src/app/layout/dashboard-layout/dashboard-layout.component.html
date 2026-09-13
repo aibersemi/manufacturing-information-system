@@ -1,40 +1,37 @@
-<div class="relative flex min-h-screen bg-background text-foreground">
+<div class="relative flex min-h-screen text-foreground">
   <!-- Backdrop for Mobile Sidebar -->
   @if (isMobileMenuOpen()) {
     <div
-      class="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
+      class="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs lg:hidden"
       (click)="closeMobileMenu()"
       aria-hidden="true"
     ></div>
   }
 
-  <!-- Sidebar Navigasi Kiri -->
+  <!-- Sidebar Navigasi Kiri (Collapsible Icon Mode Identik Konveksi) -->
   <aside
-    class="fixed inset-y-0 start-0 z-50 flex w-72 flex-col border-e border-border bg-card transition-transform duration-300 lg:static lg:translate-x-0"
+    class="fixed inset-y-0 start-0 z-50 flex flex-col border-e border-border/80 bg-sidebar transition-[width,transform] duration-200 ease-out lg:static lg:translate-x-0"
+    [class.w-64]="!isSidebarCollapsed()"
+    [class.w-16]="isSidebarCollapsed()"
     [class.-translate-x-full]="!isMobileMenuOpen()"
     [class.translate-x-0]="isMobileMenuOpen()"
   >
     <!-- Sidebar Header / Branding -->
-    <div class="flex h-16 items-center justify-between border-b border-border/80 px-6">
-      <div class="flex items-center gap-3">
-        <div class="flex size-10 items-center justify-center rounded-xl bg-background p-1.5 shadow-xs ring-1 ring-border">
-          <img
-            ngSrc="images/mis.svg"
-            width="32"
-            height="32"
-            priority
-            alt="Logo MIS"
-            class="size-7 object-contain"
-          />
+    <div class="flex h-14 items-center border-b border-border/80 px-3.5">
+      <div class="flex items-center gap-2.5 overflow-hidden">
+        <div class="flex size-8 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-teal-500 to-emerald-600 text-white shadow-xs">
+          <ng-icon name="phosphorFactory" class="size-4.5" />
         </div>
-        <div class="flex flex-col">
-          <span class="text-sm font-bold tracking-tight text-foreground leading-tight">
-            MIS Platform
-          </span>
-          <span class="text-[11px] font-medium text-muted-foreground">
-            Manufacturing Operations
-          </span>
-        </div>
+        @if (!isSidebarCollapsed()) {
+          <div class="flex flex-col min-w-0">
+            <span class="truncate text-sm font-semibold tracking-tight text-foreground leading-tight">
+              MIS Platform
+            </span>
+            <span class="truncate text-xs text-muted-foreground">
+              Manufacturing Ops
+            </span>
+          </div>
+        }
       </div>
 
       <!-- Close Button (Mobile Only) -->
@@ -42,190 +39,348 @@
         hlmBtn
         variant="ghost"
         size="icon"
-        class="size-8 lg:hidden"
+        class="ms-auto size-7 lg:hidden"
         (click)="closeMobileMenu()"
         aria-label="Tutup menu sidebar"
       >
-        <ng-icon name="lucideX" class="size-4" />
+        <ng-icon name="phosphorX" class="size-4" />
       </button>
     </div>
 
-    <!-- Sidebar Navigation Menu -->
-    <div class="flex-1 overflow-y-auto px-4 py-5">
-      <div class="space-y-6">
-        <!-- Grup Navigasi Operasi -->
-        <div>
-          <h3 class="px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-            Operasional Pabrik
-          </h3>
-          <nav class="mt-2.5 flex flex-col gap-1" aria-label="Menu Utama">
-            <a
-              routerLink="/"
-              [routerLinkActiveOptions]="{ exact: true }"
-              routerLinkActive="bg-accent text-accent-foreground font-semibold shadow-xs"
-              class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-accent/60 hover:text-foreground"
-              (click)="closeMobileMenu()"
-            >
-              <ng-icon name="lucideLayoutDashboard" class="size-4.5 text-foreground/70 transition group-hover:text-foreground" />
-              <span>Dashboard Utama</span>
-            </a>
+    <!-- Sidebar Navigation Menu (Accordion Groups Identik Konveksi) -->
+    <div class="flex-1 overflow-y-auto overflow-x-hidden p-2">
+      <nav class="flex flex-col gap-1 text-sm" aria-label="Menu Utama">
+        <!-- Direct Item: Dashboard -->
+        <a
+          routerLink="/"
+          [routerLinkActiveOptions]="{ exact: true }"
+          routerLinkActive="bg-accent text-accent-foreground font-semibold shadow-xs"
+          class="group flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-muted-foreground transition hover:bg-accent/60 hover:text-foreground"
+          (click)="closeMobileMenu()"
+          title="Dashboard"
+        >
+          <ng-icon name="phosphorGauge" class="size-4 shrink-0 text-foreground/80 transition group-hover:text-foreground" />
+          @if (!isSidebarCollapsed()) {
+            <span class="truncate font-medium">Dashboard</span>
+          }
+        </a>
 
-            <a
-              routerLink="/work-orders"
-              routerLinkActive="bg-accent text-accent-foreground font-semibold shadow-xs"
-              class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-accent/60 hover:text-foreground"
-              (click)="closeMobileMenu()"
-            >
-              <ng-icon name="lucideClipboardList" class="size-4.5 text-foreground/70 transition group-hover:text-foreground" />
-              <span>Perintah Kerja (WO)</span>
-            </a>
+        <!-- Group 1: Master Data -->
+        <div class="flex flex-col">
+          <button
+            type="button"
+            (click)="toggleGroup('masterData')"
+            class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-muted-foreground transition hover:bg-accent/50 hover:text-foreground"
+            [title]="isSidebarCollapsed() ? 'Master Data' : ''"
+          >
+            <ng-icon name="phosphorUsersThree" class="size-4 shrink-0 text-foreground/80" />
+            @if (!isSidebarCollapsed()) {
+              <span class="truncate font-medium text-foreground">Master Data</span>
+              <ng-icon
+                name="phosphorCaretRight"
+                class="ms-auto size-3.5 transition-transform duration-200"
+                [class.rotate-90]="isGroupOpen('masterData')"
+              />
+            }
+          </button>
 
-            <a
-              routerLink="/operations"
-              routerLinkActive="bg-accent text-accent-foreground font-semibold shadow-xs"
-              class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-accent/60 hover:text-foreground"
-              (click)="closeMobileMenu()"
-            >
-              <ng-icon name="lucideFactory" class="size-4.5 text-foreground/70 transition group-hover:text-foreground" />
-              <span>Lini Produksi &amp; Mesin</span>
-            </a>
-
-            <a
-              routerLink="/inventory"
-              routerLinkActive="bg-accent text-accent-foreground font-semibold shadow-xs"
-              class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-accent/60 hover:text-foreground"
-              (click)="closeMobileMenu()"
-            >
-              <ng-icon name="lucideBoxes" class="size-4.5 text-foreground/70 transition group-hover:text-foreground" />
-              <span>Inventaris &amp; Material</span>
-            </a>
-
-            <a
-              routerLink="/quality"
-              routerLinkActive="bg-accent text-accent-foreground font-semibold shadow-xs"
-              class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-accent/60 hover:text-foreground"
-              (click)="closeMobileMenu()"
-            >
-              <ng-icon name="lucideShieldCheck" class="size-4.5 text-foreground/70 transition group-hover:text-foreground" />
-              <span>Kontrol Kualitas (QC)</span>
-            </a>
-          </nav>
+          @if (!isSidebarCollapsed() && isGroupOpen('masterData')) {
+            <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
+              <a
+                routerLink="/inventory"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Bahan &amp; Material
+              </a>
+              <a
+                routerLink="/work-orders"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Komponen Semikonduktor
+              </a>
+            </div>
+          }
         </div>
 
-        <!-- Grup Navigasi Sistem -->
-        <div>
-          <h3 class="px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-            Administrasi
-          </h3>
-          <nav class="mt-2.5 flex flex-col gap-1" aria-label="Menu Sistem">
-            <a
-              routerLink="/settings"
-              routerLinkActive="bg-accent text-accent-foreground font-semibold shadow-xs"
-              class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-accent/60 hover:text-foreground"
-              (click)="closeMobileMenu()"
-            >
-              <ng-icon name="lucideSettings" class="size-4.5 text-foreground/70 transition group-hover:text-foreground" />
-              <span>Pengaturan Sistem</span>
-            </a>
-          </nav>
+        <!-- Group 2: Operasional Pabrik -->
+        <div class="flex flex-col">
+          <button
+            type="button"
+            (click)="toggleGroup('operations')"
+            class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-muted-foreground transition hover:bg-accent/50 hover:text-foreground"
+            [title]="isSidebarCollapsed() ? 'Operasional Pabrik' : ''"
+          >
+            <ng-icon name="phosphorFactory" class="size-4 shrink-0 text-foreground/80" />
+            @if (!isSidebarCollapsed()) {
+              <span class="truncate font-medium text-foreground">Operasional Pabrik</span>
+              <ng-icon
+                name="phosphorCaretRight"
+                class="ms-auto size-3.5 transition-transform duration-200"
+                [class.rotate-90]="isGroupOpen('operations')"
+              />
+            }
+          </button>
+
+          @if (!isSidebarCollapsed() && isGroupOpen('operations')) {
+            <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
+              <a
+                routerLink="/work-orders"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Perintah Kerja (WO)
+              </a>
+              <a
+                routerLink="/operations"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Lini Fabrikasi &amp; Mesin
+              </a>
+            </div>
+          }
         </div>
-      </div>
+
+        <!-- Group 3: Stok & Gudang -->
+        <div class="flex flex-col">
+          <button
+            type="button"
+            (click)="toggleGroup('inventory')"
+            class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-muted-foreground transition hover:bg-accent/50 hover:text-foreground"
+            [title]="isSidebarCollapsed() ? 'Stok & Gudang' : ''"
+          >
+            <ng-icon name="phosphorWarehouse" class="size-4 shrink-0 text-foreground/80" />
+            @if (!isSidebarCollapsed()) {
+              <span class="truncate font-medium text-foreground">Stok &amp; Gudang</span>
+              <ng-icon
+                name="phosphorCaretRight"
+                class="ms-auto size-3.5 transition-transform duration-200"
+                [class.rotate-90]="isGroupOpen('inventory')"
+              />
+            }
+          </button>
+
+          @if (!isSidebarCollapsed() && isGroupOpen('inventory')) {
+            <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
+              <a
+                routerLink="/inventory"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Stok Material Wafer
+              </a>
+            </div>
+          }
+        </div>
+
+        <!-- Group 4: Kontrol Kualitas -->
+        <div class="flex flex-col">
+          <button
+            type="button"
+            (click)="toggleGroup('qc')"
+            class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-muted-foreground transition hover:bg-accent/50 hover:text-foreground"
+            [title]="isSidebarCollapsed() ? 'Kontrol Kualitas' : ''"
+          >
+            <ng-icon name="phosphorShieldCheck" class="size-4 shrink-0 text-foreground/80" />
+            @if (!isSidebarCollapsed()) {
+              <span class="truncate font-medium text-foreground">Kontrol Kualitas</span>
+              <ng-icon
+                name="phosphorCaretRight"
+                class="ms-auto size-3.5 transition-transform duration-200"
+                [class.rotate-90]="isGroupOpen('qc')"
+              />
+            }
+          </button>
+
+          @if (!isSidebarCollapsed() && isGroupOpen('qc')) {
+            <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
+              <a
+                routerLink="/quality"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Inspeksi QC &amp; Defect
+              </a>
+            </div>
+          }
+        </div>
+
+        <!-- Group 5: Pengaturan -->
+        <div class="flex flex-col">
+          <button
+            type="button"
+            (click)="toggleGroup('settings')"
+            class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-muted-foreground transition hover:bg-accent/50 hover:text-foreground"
+            [title]="isSidebarCollapsed() ? 'Pengaturan' : ''"
+          >
+            <ng-icon name="phosphorGear" class="size-4 shrink-0 text-foreground/80" />
+            @if (!isSidebarCollapsed()) {
+              <span class="truncate font-medium text-foreground">Pengaturan</span>
+              <ng-icon
+                name="phosphorCaretRight"
+                class="ms-auto size-3.5 transition-transform duration-200"
+                [class.rotate-90]="isGroupOpen('settings')"
+              />
+            }
+          </button>
+
+          @if (!isSidebarCollapsed() && isGroupOpen('settings')) {
+            <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
+              <a
+                routerLink="/settings"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Konfigurasi Sistem
+              </a>
+            </div>
+          }
+        </div>
+      </nav>
     </div>
 
-    <!-- Sidebar Footer (Status Operasional) -->
-    <div class="border-t border-border/80 p-4">
-      <div class="flex items-center justify-between rounded-xl bg-muted/50 p-3 ring-1 ring-border/50">
-        <div class="flex items-center gap-2.5">
-          <span class="relative flex size-2.5">
-            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-            <span class="relative inline-flex size-2.5 rounded-full bg-emerald-500"></span>
-          </span>
-          <div class="flex flex-col">
-            <span class="text-xs font-semibold text-foreground">Sistem Aktif</span>
-            <span class="text-[10px] text-muted-foreground">Supabase Online</span>
+    <!-- Sidebar Footer (User Info Khas Konveksi) -->
+    <div class="border-t border-border/80 p-3">
+      @if (!isSidebarCollapsed()) {
+        <div class="flex min-w-0 flex-col gap-0.5 px-1">
+          <p class="truncate text-sm font-medium text-foreground">{{ userName() }}</p>
+          <p class="truncate text-xs text-muted-foreground capitalize">
+            {{ userRoleLabel() }}
+          </p>
+        </div>
+      } @else {
+        <div class="flex justify-center">
+          <div class="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+            {{ userInitials() }}
           </div>
         </div>
-        <span hlmBadge variant="outline" class="text-[10px] capitalize">
-          {{ userRole() }}
-        </span>
-      </div>
+      }
     </div>
   </aside>
 
-  <!-- Area Konten Utama (Header + Main) -->
+  <!-- Area Konten Utama (Header Ramping h-14 + Main) -->
   <div class="flex flex-1 flex-col min-w-0 min-h-screen">
-    <!-- Header Atas (Top Navbar) -->
-    <header class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border/80 bg-background/95 px-4 backdrop-blur-md sm:px-6 lg:px-8">
-      <!-- Sisi Kiri Header: Toggle Mobile & Breadcrumb -->
+    <!-- Header Atas (Top Navbar: Tinggi h-14 Identik Konveksi) -->
+    <header class="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/80 bg-header-bg/90 px-4 backdrop-blur-md sm:px-6">
+      <!-- Sisi Kiri Header: Sidebar Trigger & Company Switcher Pill -->
       <div class="flex items-center gap-3">
+        <!-- Sidebar Toggle Trigger (Desktop & Mobile) -->
         <button
           hlmBtn
           variant="ghost"
           size="icon"
-          class="size-9 lg:hidden"
-          (click)="toggleMobileMenu()"
-          aria-label="Buka menu navigasi"
+          class="size-8 rounded-lg text-muted-foreground transition hover:bg-accent hover:text-foreground"
+          (click)="toggleSidebar()"
+          aria-label="Buka atau tutup sidebar"
         >
-          <ng-icon name="lucideMenu" class="size-5" />
+          <ng-icon name="phosphorSidebarSimple" class="size-4.5" />
         </button>
 
-        <div class="flex items-center gap-2">
-          <span class="text-sm font-semibold tracking-tight text-foreground sm:text-base">
-            Ringkasan Operasi Pabrik
-          </span>
-          <span class="hidden rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground md:inline-block">
-            Shift 1 (Aktif)
-          </span>
+        <!-- Company Switcher Pill Dropdown (Identik Konveksi Header) -->
+        <div class="relative">
+          <button
+            [hlmDropdownMenuTrigger]="companyDropdown"
+            class="flex h-9 items-center gap-2 rounded-full border border-border/80 bg-chip-bg px-3.5 text-sm font-medium text-foreground shadow-2xs transition hover:bg-accent/80 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Pilih pabrik aktif"
+          >
+            <span class="max-w-[180px] truncate sm:max-w-[240px]">{{ activeCompany() }}</span>
+            <ng-icon name="phosphorCaretDown" class="size-3 text-muted-foreground" />
+          </button>
+
+          <ng-template #companyDropdown>
+            <div hlmDropdownMenu class="w-64 p-1.5 shadow-lg rounded-2xl">
+              <div hlmDropdownMenuLabel class="px-2 py-1.5 text-xs uppercase font-bold text-muted-foreground">
+                Pabrik / Fasilitas Aktif
+              </div>
+              <div hlmDropdownMenuSeparator></div>
+              @for (company of companies; track company) {
+                <button
+                  hlmDropdownMenuItem
+                  (click)="selectCompany(company)"
+                  class="flex items-center justify-between rounded-xl px-2.5 py-2 text-sm"
+                >
+                  <span class="truncate">{{ company }}</span>
+                  @if (company === activeCompany()) {
+                    <ng-icon name="phosphorCheck" class="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                  }
+                </button>
+              }
+            </div>
+          </ng-template>
         </div>
       </div>
 
-      <!-- Sisi Kanan Header: Status & User Profile Dropdown -->
-      <div class="flex items-center gap-3">
-        <!-- Status Indicator Badge (Desktop) -->
-        <div class="hidden items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs sm:flex">
-          <ng-icon name="lucideActivity" class="size-3.5 text-emerald-500" />
-          <span class="text-muted-foreground">Status:</span>
-          <span class="font-semibold text-foreground">Optimal</span>
+      <!-- Sisi Kanan Header: Status, Notification Bell & User Profile Menu -->
+      <div class="flex items-center gap-2.5">
+        <!-- Status Indicator Pill (Desktop) -->
+        <div class="hidden h-9 items-center gap-1.5 rounded-full border border-chip-line bg-chip-bg px-3.5 text-xs sm:flex">
+          <span class="relative flex size-2">
+            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex size-2 rounded-full bg-emerald-500"></span>
+          </span>
+          <span class="text-xs text-muted-foreground">Status:</span>
+          <span class="text-xs font-semibold text-foreground">Optimal</span>
         </div>
+
+        <!-- Notification Bell Icon Button -->
+        <button
+          hlmBtn
+          variant="ghost"
+          size="icon"
+          class="relative size-8 rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
+          aria-label="Notifikasi"
+        >
+          <ng-icon name="phosphorBell" class="size-4.5" />
+          <span class="absolute top-1.5 end-1.5 size-2 rounded-full bg-emerald-500 ring-2 ring-background"></span>
+        </button>
 
         <!-- User Profile Dropdown Menu Trigger -->
         <button
           [hlmDropdownMenuTrigger]="userDropdown"
-          class="flex items-center gap-2.5 rounded-full border border-border/80 bg-card p-1 pe-3 transition hover:bg-accent/70 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+          class="flex h-9 items-center gap-2 rounded-full border border-border/80 bg-chip-bg p-0.5 pe-3 transition hover:bg-accent/70 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
           aria-label="Buka menu pengguna"
           id="user-profile-button"
         >
           <hlm-avatar size="sm" class="size-7">
-            <span hlmAvatarFallback class="bg-primary font-bold text-primary-foreground text-[10px]">
+            <span hlmAvatarFallback class="bg-primary font-bold text-primary-foreground text-xs">
               {{ userInitials() }}
             </span>
           </hlm-avatar>
 
           <div class="hidden flex-col text-start sm:flex">
-            <span class="text-xs font-semibold text-foreground leading-tight max-w-[150px] truncate">
-              {{ userEmail() }}
+            <span class="text-sm font-medium text-foreground leading-tight max-w-[130px] truncate">
+              {{ userName() }}
             </span>
-            <span class="text-[10px] text-muted-foreground capitalize">
-              {{ userRoleLabel() }}
+            <span class="text-xs text-muted-foreground capitalize">
+              {{ userRole() }}
             </span>
           </div>
 
-          <ng-icon name="lucideChevronDown" class="size-3.5 text-muted-foreground" />
+          <ng-icon name="phosphorCaretDown" class="size-3 text-muted-foreground" />
         </button>
 
-        <!-- Dropdown Menu Template -->
+        <!-- User Dropdown Menu Template -->
         <ng-template #userDropdown>
-          <div hlmDropdownMenu class="w-64 p-1.5 shadow-lg">
+          <div hlmDropdownMenu class="w-64 p-1.5 shadow-lg rounded-2xl">
             <!-- User Header Info -->
-            <div hlmDropdownMenuLabel class="flex flex-col gap-1 pb-2">
-              <span class="text-xs font-semibold text-foreground truncate">
+            <div hlmDropdownMenuLabel class="flex flex-col gap-0.5 px-2 py-1.5">
+              <span class="text-sm font-medium text-foreground truncate">
                 {{ userEmail() }}
               </span>
-              <div class="flex items-center gap-2">
-                <span hlmBadge variant="secondary" class="text-[10px] uppercase font-semibold">
+              <div class="flex items-center gap-2 mt-0.5">
+                <span hlmBadge variant="secondary" class="text-xs font-semibold uppercase">
                   {{ userRole() }}
                 </span>
-                <span class="text-[11px] text-muted-foreground">
+                <span class="text-xs text-muted-foreground">
                   Terautentikasi
                 </span>
               </div>
@@ -234,13 +389,13 @@
             <div hlmDropdownMenuSeparator></div>
 
             <!-- Menu Links -->
-            <button hlmDropdownMenuItem routerLink="/settings">
-              <ng-icon name="lucideUser" class="size-4" />
+            <button hlmDropdownMenuItem routerLink="/settings" class="rounded-xl">
+              <ng-icon name="phosphorUser" class="size-4" />
               <span>Profil Pengguna</span>
             </button>
 
-            <button hlmDropdownMenuItem routerLink="/settings">
-              <ng-icon name="lucideSliders" class="size-4" />
+            <button hlmDropdownMenuItem routerLink="/settings" class="rounded-xl">
+              <ng-icon name="phosphorSliders" class="size-4" />
               <span>Pengaturan Sistem</span>
             </button>
 
@@ -252,8 +407,9 @@
               variant="destructive"
               (click)="logout()"
               id="logout-button"
+              class="rounded-xl text-destructive focus:bg-destructive/10"
             >
-              <ng-icon name="lucideLogOut" class="size-4" />
+              <ng-icon name="phosphorSignOut" class="size-4" />
               <span>Keluar dari Sistem</span>
             </button>
           </div>
@@ -267,3 +423,4 @@
     </main>
   </div>
 </div>
+
