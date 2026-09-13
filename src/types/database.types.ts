@@ -3140,10 +3140,34 @@ export type Database = {
         Args: { p_company_id: string; p_creator_user_id: string }
         Returns: undefined
       }
+      get_company_users_with_profiles: {
+        Args: { p_company_id: string }
+        Returns: {
+          company_id: string
+          created_at: string
+          email: string
+          full_name: string
+          is_active: boolean
+          roles: string[]
+          updated_at: string
+          user_id: string
+          username: string
+          version: number
+        }[]
+      }
       get_user_company_ids: { Args: { p_user_id: string }; Returns: string[] }
       is_company_owner: {
         Args: { p_company_id: string; p_user_id: string }
         Returns: boolean
+      }
+      list_available_system_users: {
+        Args: never
+        Returns: {
+          email: string
+          full_name: string
+          user_id: string
+          username: string
+        }[]
       }
     }
     Enums: {

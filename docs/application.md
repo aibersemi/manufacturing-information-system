@@ -26,21 +26,27 @@ src/
 │   ├── core/
 │   │   ├── guards/
 │   │   │   ├── auth.guard.ts           # Functional route guard (CanActivateFn) dengan returnUrl
-│   │   │   └── guest.guard.ts          # Guard pencegah akses login untuk sesi aktif
+│   │   │   ├── guest.guard.ts          # Guard pencegah akses login untuk sesi aktif
+│   │   │   └── owner.guard.ts          # Guard pembatasan akses khusus peran Owner
 │   │   ├── services/
 │   │   │   ├── auth.service.ts         # Reactive session & user state via Signals + waitForAuthReady()
 │   │   │   ├── company.service.ts      # Multi-company context, RLS tenant scope, & local storage persistence
+│   │   │   ├── settings.service.ts     # Layanan CRUD Perusahaan, Penugasan Pengguna, Matriks Izin, Profil, & Audit
 │   │   │   ├── storage.service.ts      # Layanan upload, signed URL, & manajemen file Supabase Storage
 │   │   │   └── supabase.service.ts     # Singleton Supabase client wrapper (PKCE Flow)
 │   │   └── utils/
 │   │       └── url.util.ts             # Sanitasi URL & mitigasi Open Redirect
 │   ├── features/
 │   │   ├── auth/login/                 # Komponen halaman masuk login
-│   │   └── dashboard/                  # Komponen overview metrik manufaktur
+│   │   ├── dashboard/                  # Komponen overview metrik manufaktur
+│   │   └── settings/
+│   │       ├── companies/              # Manajemen fasilitas manufaktur & multi-company (/workspace/companies)
+│   │       ├── users-access/           # Penugasan staf & matriks izin akses per peran (/workspace/users-access)
+│   │       └── profile/                # Profil pribadi, data rekening bank, & ganti password (/workspace/profile)
 │   ├── layout/
 │   │   └── dashboard-layout/           # Layout utama (sidebar navigasi + header profil)
 │   ├── app.config.ts                   # Provider zoneless, router, & error listeners
-│   ├── app.routes.ts                   # Rute modular dengan lazy loading
+│   ├── app.routes.ts                   # Rute modular dengan lazy loading & guard otorisasi
 │   └── app.ts                          # Root component
 ├── environments/
 │   ├── environment.example.ts          # Template deklarasi variabel environment

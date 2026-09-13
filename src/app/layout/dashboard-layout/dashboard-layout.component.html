@@ -234,13 +234,31 @@
 
           @if (!isSidebarCollapsed() && isGroupOpen('settings')) {
             <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
+              @if (isOwner()) {
+                <a
+                  routerLink="/workspace/companies"
+                  routerLinkActive="text-foreground font-semibold"
+                  class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                  (click)="closeMobileMenu()"
+                >
+                  Perusahaan
+                </a>
+                <a
+                  routerLink="/workspace/users-access"
+                  routerLinkActive="text-foreground font-semibold"
+                  class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                  (click)="closeMobileMenu()"
+                >
+                  Pengguna &amp; Akses
+                </a>
+              }
               <a
-                routerLink="/settings"
+                routerLink="/workspace/profile"
                 routerLinkActive="text-foreground font-semibold"
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Konfigurasi Sistem
+                Profil Pengguna
               </a>
             </div>
           }
@@ -380,15 +398,17 @@
             <div hlmDropdownMenuSeparator></div>
 
             <!-- Menu Links -->
-            <button hlmDropdownMenuItem routerLink="/settings" class="rounded-xl">
+            <button hlmDropdownMenuItem routerLink="/workspace/profile" class="rounded-xl">
               <ng-icon name="phosphorUser" class="size-4" />
               <span>Profil Pengguna</span>
             </button>
 
-            <button hlmDropdownMenuItem routerLink="/settings" class="rounded-xl">
-              <ng-icon name="phosphorSliders" class="size-4" />
-              <span>Pengaturan Sistem</span>
-            </button>
+            @if (isOwner()) {
+              <button hlmDropdownMenuItem routerLink="/workspace/companies" class="rounded-xl">
+                <ng-icon name="phosphorSliders" class="size-4" />
+                <span>Pengaturan Perusahaan</span>
+              </button>
+            }
 
             <div hlmDropdownMenuSeparator></div>
 

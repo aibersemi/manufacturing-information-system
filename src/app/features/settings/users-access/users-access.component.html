@@ -1,0 +1,553 @@
+<main class="flex flex-1 flex-col gap-6">
+  <!-- 1. Header Halaman & Action Buttons -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Pengguna &amp; Hak Akses</h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Fasilitas Aktif:
+        <span class="font-semibold text-foreground">
+          {{ activeCompany()?.name || 'Memuat...' }}
+        </span>
+        <span class="font-mono text-xs bg-muted px-2 py-0.5 rounded-md ms-1 text-foreground">
+          {{ activeCompany()?.code || '-' }}
+        </span>
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <!-- Refresh Button -->
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        (click)="loadAllData()"
+        [disabled]="isLoading()"
+        class="h-9 gap-1.5 rounded-full border-border/80 bg-card/80 px-3.5 text-sm font-medium shadow-2xs hover:bg-accent"
+      >
+        <ng-icon
+          name="phosphorArrowsClockwise"
+          class="size-4"
+          [class.animate-spin]="isLoading()"
+        />
+        <span>Segarkan</span>
+      </button>
+
+      <!-- Add Assignment Button -->
+      @if (activeTab() === 'assignments') {
+        <button
+          hlmBtn
+          size="sm"
+          (click)="openAddAssignmentModal()"
+          id="btn-add-assignment"
+          class="h-9 gap-1.5 rounded-full px-4 text-sm font-medium shadow-xs"
+        >
+          <ng-icon name="phosphorUserPlus" class="size-4" />
+          <span>Tambah Penugasan Pengguna</span>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- 2. Navigasi Tab Utama (Pill Style) -->
+  <div class="flex items-center gap-2 border-b border-border/60 pb-3">
+    <button
+      type="button"
+      (click)="setTab('assignments')"
+      [class.bg-primary]="activeTab() === 'assignments'"
+      [class.text-primary-foreground]="activeTab() === 'assignments'"
+      [class.bg-muted]="activeTab() !== 'assignments'"
+      [class.text-muted-foreground]="activeTab() !== 'assignments'"
+      class="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition shadow-2xs hover:text-foreground"
+    >
+      <ng-icon name="phosphorUsers" class="size-4" />
+      <span>Penugasan Pengguna ({{ companyUsers().length }})</span>
+    </button>
+
+    <button
+      type="button"
+      (click)="setTab('matrix')"
+      [class.bg-primary]="activeTab() === 'matrix'"
+      [class.text-primary-foreground]="activeTab() === 'matrix'"
+      [class.bg-muted]="activeTab() !== 'matrix'"
+      [class.text-muted-foreground]="activeTab() !== 'matrix'"
+      class="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition shadow-2xs hover:text-foreground"
+    >
+      <ng-icon name="phosphorShieldCheck" class="size-4" />
+      <span>Matriks Izin Akses Per Peran</span>
+    </button>
+  </div>
+
+  <!-- 3. TAB 1: DAFTAR PENUGASAN PENGGUNA -->
+  @if (activeTab() === 'assignments') {
+    <!-- Search & Filter Controls Pill Bar -->
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="relative w-full max-w-sm">
+        <ng-icon
+          name="phosphorMagnifyingGlass"
+          class="pointer-events-none absolute start-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden="true"
+        />
+        <input
+          type="text"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+          placeholder="Cari nama, email, atau username staf..."
+          class="w-full rounded-full border border-border bg-card ps-10 pe-4 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-2xs transition focus:bg-background focus:ring-2 focus:ring-ring focus:outline-hidden"
+        />
+      </div>
+
+      <div class="flex items-center gap-1 self-start rounded-full border border-border/80 bg-card p-1 shadow-2xs sm:self-auto">
+        <button
+          type="button"
+          (click)="setStatusFilter('all')"
+          [class.bg-muted]="statusFilter() === 'all'"
+          [class.text-foreground]="statusFilter() === 'all'"
+          [class.font-semibold]="statusFilter() === 'all'"
+          class="rounded-full px-3.5 py-1 text-sm text-muted-foreground transition hover:text-foreground"
+        >
+          Semua
+        </button>
+        <button
+          type="button"
+          (click)="setStatusFilter('active')"
+          [class.bg-muted]="statusFilter() === 'active'"
+          [class.text-foreground]="statusFilter() === 'active'"
+          [class.font-semibold]="statusFilter() === 'active'"
+          class="rounded-full px-3.5 py-1 text-sm text-muted-foreground transition hover:text-foreground"
+        >
+          Aktif
+        </button>
+        <button
+          type="button"
+          (click)="setStatusFilter('inactive')"
+          [class.bg-muted]="statusFilter() === 'inactive'"
+          [class.text-foreground]="statusFilter() === 'inactive'"
+          [class.font-semibold]="statusFilter() === 'inactive'"
+          class="rounded-full px-3.5 py-1 text-sm text-muted-foreground transition hover:text-foreground"
+        >
+          Nonaktif
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabel Data Penugasan Card -->
+    <div hlmCard class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
+      <div hlmCardHeader class="border-b border-border/60 px-5 py-4">
+        <h2 hlmCardTitle class="text-base font-semibold tracking-tight text-foreground">
+          Staf &amp; Pengguna Terdaftar di Perusahaan Ini
+        </h2>
+        <p hlmCardDescription class="text-sm text-muted-foreground">
+          Daftar akun yang memiliki akses operasional beserta wewenang peran yang diemban.
+        </p>
+      </div>
+
+      <div hlmCardContent class="p-0">
+        @if (isLoading()) {
+          <div class="flex items-center justify-center p-12 text-center text-muted-foreground">
+            <ng-icon name="phosphorArrowsClockwise" class="size-6 animate-spin me-2" />
+            <span class="text-sm">Memuat data pengguna...</span>
+          </div>
+        } @else if (filteredUsers().length === 0) {
+          <div class="flex flex-col items-center justify-center p-12 text-center text-muted-foreground">
+            <div class="flex size-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground mb-3">
+              <ng-icon name="phosphorUser" class="size-6" />
+            </div>
+            <p class="text-sm font-medium text-foreground">Tidak ada staf yang sesuai</p>
+            <p class="text-xs text-muted-foreground mt-1">
+              Gunakan kata kunci lain atau tambahkan penugasan baru.
+            </p>
+          </div>
+        } @else {
+          <div class="overflow-x-auto">
+            <table class="w-full text-start text-sm">
+              <thead class="bg-muted/40 border-b border-border/60 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th class="px-5 py-3 text-start">Pengguna &amp; Email</th>
+                  <th class="px-5 py-3 text-start">Username</th>
+                  <th class="px-5 py-3 text-start">Peran Akses</th>
+                  <th class="px-5 py-3 text-center">Status</th>
+                  <th class="px-5 py-3 text-end">Aksi</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border/60">
+                @for (user of filteredUsers(); track user.user_id) {
+                  <tr class="transition hover:bg-muted/30">
+                    <!-- Nama & Email Pengguna -->
+                    <td class="px-5 py-3.5">
+                      <div class="flex flex-col">
+                        <div class="flex items-center gap-2">
+                          <span class="font-medium text-foreground text-sm">
+                            {{ user.full_name }}
+                          </span>
+                          @if (currentUserId() === user.user_id) {
+                            <span class="rounded-full bg-teal-500/10 px-2 py-0.5 text-xs font-medium text-teal-600 dark:text-teal-400">
+                              (Anda)
+                            </span>
+                          }
+                        </div>
+                        <span class="text-xs text-muted-foreground font-mono mt-0.5">
+                          {{ user.email }}
+                        </span>
+                      </div>
+                    </td>
+
+                    <!-- Username -->
+                    <td class="px-5 py-3.5 text-xs text-muted-foreground font-mono">
+                      {{ user.username }}
+                    </td>
+
+                    <!-- Peran Akses (Badges) -->
+                    <td class="px-5 py-3.5">
+                      <div class="flex flex-wrap gap-1.5">
+                        @for (role of user.roles; track role) {
+                          <span class="inline-flex items-center rounded-full bg-muted border border-border/80 px-2.5 py-0.5 text-xs font-medium text-foreground">
+                            {{ formatRoleLabel(role) }}
+                          </span>
+                        }
+                      </div>
+                    </td>
+
+                    <!-- Status -->
+                    <td class="px-5 py-3.5 text-center whitespace-nowrap">
+                      @if (user.is_active) {
+                        <span class="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                          Aktif
+                        </span>
+                      } @else {
+                        <span class="inline-flex items-center rounded-full bg-muted border border-border px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                          Nonaktif
+                        </span>
+                      }
+                    </td>
+
+                    <!-- Aksi -->
+                    <td class="px-5 py-3.5 text-end whitespace-nowrap">
+                      <button
+                        hlmBtn
+                        variant="ghost"
+                        size="sm"
+                        (click)="openEditAssignmentModal(user)"
+                        class="h-8 gap-1 rounded-full px-3 text-xs font-medium hover:bg-accent"
+                        title="Kelola Peran & Akses"
+                      >
+                        <ng-icon name="phosphorPencilSimple" class="size-3.5" />
+                        <span>Kelola Peran</span>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- 4. TAB 2: MATRIKS IZIN AKSES -->
+  @if (activeTab() === 'matrix') {
+    <!-- Role Selector Pills Bar -->
+    <div class="flex flex-col gap-2">
+      <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        Pilih Peran untuk Meninjau / Mengubah Hak Akses:
+      </span>
+      <div class="flex flex-wrap items-center gap-1.5">
+        @for (role of availableRoles; track role.id) {
+          <button
+            type="button"
+            (click)="setMatrixRole(role.id)"
+            [class.bg-primary]="selectedMatrixRole() === role.id"
+            [class.text-primary-foreground]="selectedMatrixRole() === role.id"
+            [class.bg-card]="selectedMatrixRole() !== role.id"
+            [class.text-muted-foreground]="selectedMatrixRole() !== role.id"
+            class="rounded-full border border-border/80 px-3.5 py-1.5 text-sm font-medium transition shadow-2xs hover:text-foreground"
+          >
+            {{ role.label }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Permission Matrix Card -->
+    <div hlmCard class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
+      <div hlmCardHeader class="border-b border-border/60 px-5 py-4">
+        <div class="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 hlmCardTitle class="text-base font-semibold tracking-tight text-foreground">
+              Matriks Izin: {{ formatRoleLabel(selectedMatrixRole()) }}
+            </h2>
+            <p hlmCardDescription class="text-sm text-muted-foreground">
+              Pengaturan hak baca, buat, ubah, hapus, posting, dan void transaksi per modul aplikasi.
+            </p>
+          </div>
+          @if (selectedMatrixRole() === 'owner') {
+            <span class="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 px-3 py-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+              <ng-icon name="phosphorShieldCheck" class="size-3.5" />
+              <span>Izin Owner Penuh Permanen</span>
+            </span>
+          }
+        </div>
+      </div>
+
+      <div hlmCardContent class="p-0">
+        @if (matrixPermissions().length === 0) {
+          <div class="p-8 text-center text-sm text-muted-foreground">
+            Tidak ada konfigurasi izin untuk peran ini.
+          </div>
+        } @else {
+          <div class="overflow-x-auto">
+            <table class="w-full text-start text-sm">
+              <thead class="bg-muted/40 border-b border-border/60 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th class="px-5 py-3 text-start">Menu / Fitur</th>
+                  <th class="px-4 py-3 text-center">Lihat (View)</th>
+                  <th class="px-4 py-3 text-center">Buat (Create)</th>
+                  <th class="px-4 py-3 text-center">Ubah (Edit)</th>
+                  <th class="px-4 py-3 text-center">Hapus (Delete)</th>
+                  <th class="px-4 py-3 text-center">Posting (Post)</th>
+                  <th class="px-4 py-3 text-center">Batal (Void)</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border/60">
+                @for (perm of matrixPermissions(); track perm.menu_key) {
+                  <tr class="transition hover:bg-muted/30">
+                    <!-- Menu Key -->
+                    <td class="px-5 py-3 font-mono text-sm font-semibold text-foreground">
+                      {{ perm.menu_key }}
+                    </td>
+
+                    <!-- can_view -->
+                    <td class="px-4 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        [checked]="perm.can_view"
+                        (change)="updateSinglePermission(perm, 'can_view', $any($event.target).checked)"
+                        [disabled]="selectedMatrixRole() === 'owner'"
+                        class="size-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50"
+                      />
+                    </td>
+
+                    <!-- can_create -->
+                    <td class="px-4 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        [checked]="perm.can_create"
+                        (change)="updateSinglePermission(perm, 'can_create', $any($event.target).checked)"
+                        [disabled]="selectedMatrixRole() === 'owner'"
+                        class="size-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50"
+                      />
+                    </td>
+
+                    <!-- can_edit -->
+                    <td class="px-4 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        [checked]="perm.can_edit"
+                        (change)="updateSinglePermission(perm, 'can_edit', $any($event.target).checked)"
+                        [disabled]="selectedMatrixRole() === 'owner'"
+                        class="size-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50"
+                      />
+                    </td>
+
+                    <!-- can_delete -->
+                    <td class="px-4 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        [checked]="perm.can_delete"
+                        (change)="updateSinglePermission(perm, 'can_delete', $any($event.target).checked)"
+                        [disabled]="selectedMatrixRole() === 'owner'"
+                        class="size-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50"
+                      />
+                    </td>
+
+                    <!-- can_post -->
+                    <td class="px-4 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        [checked]="perm.can_post"
+                        (change)="updateSinglePermission(perm, 'can_post', $any($event.target).checked)"
+                        [disabled]="selectedMatrixRole() === 'owner'"
+                        class="size-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50"
+                      />
+                    </td>
+
+                    <!-- can_void -->
+                    <td class="px-4 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        [checked]="perm.can_void"
+                        (change)="updateSinglePermission(perm, 'can_void', $any($event.target).checked)"
+                        [disabled]="selectedMatrixRole() === 'owner'"
+                        class="size-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50"
+                      />
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- 5. Modal Dialog Kelola Penugasan Pengguna -->
+  @if (isAssignmentModalOpen()) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-200"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-assignment-title"
+    >
+      <div class="relative w-full max-w-lg rounded-2xl border border-border/80 bg-card p-6 shadow-xl animate-in zoom-in-95 duration-200">
+        <!-- Close Button -->
+        <button
+          type="button"
+          (click)="closeAssignmentModal()"
+          class="absolute top-4 end-4 rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+          aria-label="Tutup dialog"
+        >
+          <ng-icon name="phosphorX" class="size-5" />
+        </button>
+
+        <!-- Header -->
+        <div class="flex flex-col gap-1 mb-5">
+          <h2 id="modal-assignment-title" class="text-lg font-semibold tracking-tight text-foreground">
+            {{ modalMode() === 'create' ? 'Tambah Penugasan Pengguna' : 'Kelola Peran & Akses' }}
+          </h2>
+          <p class="text-xs text-muted-foreground">
+            Tentukan akun dan pilih peran wewenang pada entitas {{ activeCompany()?.name }}.
+          </p>
+        </div>
+
+        @if (formError()) {
+          <div class="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+            {{ formError() }}
+          </div>
+        }
+
+        <form (ngSubmit)="saveAssignment()" class="flex flex-col gap-4">
+          <!-- Field: Pengguna -->
+          <div class="flex flex-col gap-1.5">
+            <label for="assign-user" class="text-xs font-semibold text-foreground">
+              Pilih Pengguna Sistem
+            </label>
+            @if (modalMode() === 'create') {
+              <select
+                id="assign-user"
+                [ngModel]="formUserId()"
+                (ngModelChange)="formUserId.set($event)"
+                name="formUserId"
+                required
+                class="w-full rounded-xl border border-border bg-background px-3.5 py-2 text-sm text-foreground shadow-2xs focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+              >
+                <option value="" disabled>-- Pilih Pengguna Terdaftar --</option>
+                @for (usr of systemUsers(); track usr.user_id) {
+                  <option [value]="usr.user_id">
+                    {{ usr.full_name }} ({{ usr.email }})
+                  </option>
+                }
+              </select>
+            } @else {
+              <div class="rounded-xl border border-border/80 bg-muted/40 px-3.5 py-2">
+                <span class="text-sm font-medium text-foreground block">
+                  {{ selectedAssignment()?.full_name }}
+                </span>
+                <span class="text-xs text-muted-foreground font-mono">
+                  {{ selectedAssignment()?.email }}
+                </span>
+              </div>
+            }
+          </div>
+
+          <!-- Field: Pilihan Peran -->
+          <div class="flex flex-col gap-2">
+            <span class="text-xs font-semibold text-foreground">
+              Wewenang Peran (Minimal 1 Peran)
+            </span>
+            <div class="flex flex-col gap-1.5 rounded-xl border border-border/80 p-3 bg-muted/20">
+              @for (role of availableRoles; track role.id) {
+                <label
+                  class="flex items-center justify-between rounded-lg p-2 transition cursor-pointer hover:bg-muted/40"
+                  [class.bg-primary/10]="isRoleSelected(role.id)"
+                >
+                  <div class="flex items-center gap-2.5">
+                    <input
+                      type="checkbox"
+                      [checked]="isRoleSelected(role.id)"
+                      (change)="toggleRoleSelection(role.id)"
+                      [disabled]="currentUserId() === formUserId() && role.id === 'owner'"
+                      class="size-4 rounded border-border text-primary focus:ring-primary"
+                    />
+                    <span class="text-sm font-medium text-foreground">
+                      {{ role.label }}
+                    </span>
+                  </div>
+
+                  @if (role.isExclusive) {
+                    <span class="text-xs text-muted-foreground italic">
+                      Eksklusif
+                    </span>
+                  }
+                </label>
+              }
+            </div>
+            @if (currentUserId() === formUserId()) {
+              <span class="text-xs text-amber-600 dark:text-amber-400">
+                * Anda tidak dapat melepas peran Owner dari akun Anda sendiri.
+              </span>
+            }
+          </div>
+
+          <!-- Field: Status Keaktifan -->
+          <div class="flex items-center justify-between rounded-xl border border-border/80 bg-muted/30 p-3">
+            <div class="flex flex-col">
+              <span class="text-xs font-semibold text-foreground">Status Penugasan</span>
+              <span class="text-xs text-muted-foreground">
+                Jika dinonaktifkan, pengguna tidak dapat mengakses data perusahaan ini.
+              </span>
+            </div>
+            <label class="relative inline-flex cursor-pointer items-center">
+              <input
+                type="checkbox"
+                [ngModel]="formIsActive()"
+                (ngModelChange)="formIsActive.set($event)"
+                name="formIsActive"
+                class="peer sr-only"
+                [disabled]="currentUserId() === formUserId()"
+              />
+              <div class="peer h-6 w-11 rounded-full bg-muted peer-checked:bg-primary after:absolute after:start-[2px] after:top-[2px] after:size-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-disabled:opacity-50"></div>
+            </label>
+          </div>
+
+          <!-- Modal Actions -->
+          <div class="mt-3 flex items-center justify-end gap-2 border-t border-border/60 pt-4">
+            <button
+              type="button"
+              hlmBtn
+              variant="outline"
+              size="sm"
+              (click)="closeAssignmentModal()"
+              [disabled]="isSubmitting()"
+              class="h-9 rounded-full px-4 text-sm font-medium"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              hlmBtn
+              size="sm"
+              [disabled]="isSubmitting()"
+              class="h-9 gap-1.5 rounded-full px-5 text-sm font-medium shadow-xs"
+            >
+              @if (isSubmitting()) {
+                <ng-icon name="phosphorArrowsClockwise" class="size-4 animate-spin" />
+              }
+              <span>{{ isSubmitting() ? 'Menyimpan...' : 'Simpan Penugasan' }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</main>

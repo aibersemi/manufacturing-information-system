@@ -1,0 +1,378 @@
+<main class="flex flex-1 flex-col gap-6">
+  <!-- 1. Header Halaman & Action Buttons -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Perusahaan</h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Kelola daftar fasilitas manufaktur, entitas multi-company, dan status operasional.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <!-- Refresh Button -->
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        (click)="loadCompanies()"
+        [disabled]="isLoading()"
+        class="h-9 gap-1.5 rounded-full border-border/80 bg-card/80 px-3.5 text-sm font-medium shadow-2xs hover:bg-accent"
+      >
+        <ng-icon
+          name="phosphorArrowsClockwise"
+          class="size-4"
+          [class.animate-spin]="isLoading()"
+        />
+        <span>Segarkan</span>
+      </button>
+
+      <!-- Add Company Button -->
+      <button
+        hlmBtn
+        size="sm"
+        (click)="openCreateModal()"
+        id="btn-add-company"
+        class="h-9 gap-1.5 rounded-full px-4 text-sm font-medium shadow-xs"
+      >
+        <ng-icon name="phosphorPlus" class="size-4" />
+        <span>Tambah Perusahaan</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. Search & Filter Controls Pill Bar -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <!-- Search Pill Input -->
+    <div class="relative w-full max-w-sm">
+      <ng-icon
+        name="phosphorMagnifyingGlass"
+        class="pointer-events-none absolute start-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        aria-hidden="true"
+      />
+      <input
+        type="text"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+        placeholder="Cari kode atau nama perusahaan..."
+        class="w-full rounded-full border border-border bg-card ps-10 pe-4 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-2xs transition focus:bg-background focus:ring-2 focus:ring-ring focus:outline-hidden"
+      />
+    </div>
+
+    <!-- Filter Tab Pills -->
+    <div class="flex items-center gap-1 self-start rounded-full border border-border/80 bg-card p-1 shadow-2xs sm:self-auto">
+      <button
+        type="button"
+        (click)="setStatusFilter('all')"
+        [class.bg-muted]="statusFilter() === 'all'"
+        [class.text-foreground]="statusFilter() === 'all'"
+        [class.font-semibold]="statusFilter() === 'all'"
+        class="rounded-full px-3.5 py-1 text-sm text-muted-foreground transition hover:text-foreground"
+      >
+        Semua
+      </button>
+      <button
+        type="button"
+        (click)="setStatusFilter('active')"
+        [class.bg-muted]="statusFilter() === 'active'"
+        [class.text-foreground]="statusFilter() === 'active'"
+        [class.font-semibold]="statusFilter() === 'active'"
+        class="rounded-full px-3.5 py-1 text-sm text-muted-foreground transition hover:text-foreground"
+      >
+        Aktif
+      </button>
+      <button
+        type="button"
+        (click)="setStatusFilter('inactive')"
+        [class.bg-muted]="statusFilter() === 'inactive'"
+        [class.text-foreground]="statusFilter() === 'inactive'"
+        [class.font-semibold]="statusFilter() === 'inactive'"
+        class="rounded-full px-3.5 py-1 text-sm text-muted-foreground transition hover:text-foreground"
+      >
+        Nonaktif
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Konten Utama: Tabel Data Perusahaan -->
+  <div hlmCard class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
+    <div hlmCardHeader class="border-b border-border/60 px-5 py-4">
+      <div class="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 hlmCardTitle class="text-base font-semibold tracking-tight text-foreground">
+            Daftar Fasilitas Manufaktur &amp; Entitas
+          </h2>
+          <p hlmCardDescription class="text-sm text-muted-foreground">
+            Total {{ filteredCompanies().length }} perusahaan terdaftar dalam lingkup multi-tenant.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div hlmCardContent class="p-0">
+      @if (isLoading()) {
+        <div class="flex items-center justify-center p-12 text-center text-muted-foreground">
+          <ng-icon name="phosphorArrowsClockwise" class="size-6 animate-spin me-2" />
+          <span class="text-sm">Memuat data perusahaan...</span>
+        </div>
+      } @else if (filteredCompanies().length === 0) {
+        <div class="flex flex-col items-center justify-center p-12 text-center text-muted-foreground">
+          <div class="flex size-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground mb-3">
+            <ng-icon name="phosphorBuilding" class="size-6" />
+          </div>
+          <p class="text-sm font-medium text-foreground">Tidak ada perusahaan yang sesuai</p>
+          <p class="text-xs text-muted-foreground mt-1">
+            Gunakan kata kunci pencarian lain atau tambahkan perusahaan baru.
+          </p>
+        </div>
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="w-full text-start text-sm">
+            <thead class="bg-muted/40 border-b border-border/60 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <tr>
+                <th class="px-5 py-3 text-start">Kode</th>
+                <th class="px-5 py-3 text-start">Nama Perusahaan</th>
+                <th class="px-5 py-3 text-center">Status Operasional</th>
+                <th class="px-5 py-3 text-center">Integritas Kode</th>
+                <th class="px-5 py-3 text-start">Dibuat Pada</th>
+                <th class="px-5 py-3 text-end">Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border/60">
+              @for (company of filteredCompanies(); track company.id) {
+                <tr class="transition hover:bg-muted/30">
+                  <!-- Kode Perusahaan -->
+                  <td class="px-5 py-3.5 whitespace-nowrap">
+                    <div class="flex items-center gap-2">
+                      <span class="font-mono text-sm font-semibold text-foreground bg-muted/60 px-2.5 py-1 rounded-md">
+                        {{ company.code }}
+                      </span>
+                      @if (activeCompanyId() === company.id) {
+                        <span class="inline-flex items-center gap-1 rounded-full bg-teal-500/10 px-2 py-0.5 text-xs font-medium text-teal-600 dark:text-teal-400">
+                          <ng-icon name="phosphorCheckCircle" class="size-3" />
+                          <span>Aktif Digunakan</span>
+                        </span>
+                      }
+                    </div>
+                  </td>
+
+                  <!-- Nama Perusahaan -->
+                  <td class="px-5 py-3.5 font-medium text-foreground">
+                    {{ company.name }}
+                  </td>
+
+                  <!-- Status Operasional -->
+                  <td class="px-5 py-3.5 text-center whitespace-nowrap">
+                    @if (company.is_active) {
+                      <span class="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                        Aktif
+                      </span>
+                    } @else {
+                      <span class="inline-flex items-center rounded-full bg-muted border border-border px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                        Nonaktif
+                      </span>
+                    }
+                  </td>
+
+                  <!-- Integritas Kode (code_locked) -->
+                  <td class="px-5 py-3.5 text-center whitespace-nowrap">
+                    @if (company.code_locked) {
+                      <span class="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                        <ng-icon name="phosphorLock" class="size-3.5 text-amber-500" />
+                        <span>Terkunci</span>
+                      </span>
+                    } @else {
+                      <span class="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                        <ng-icon name="phosphorLockOpen" class="size-3.5 text-muted-foreground" />
+                        <span>Dapat Diubah</span>
+                      </span>
+                    }
+                  </td>
+
+                  <!-- Dibuat Pada -->
+                  <td class="px-5 py-3.5 text-xs text-muted-foreground whitespace-nowrap">
+                    {{ company.created_at | date: 'dd MMM yyyy, HH:mm' }}
+                  </td>
+
+                  <!-- Tombol Aksi -->
+                  <td class="px-5 py-3.5 text-end whitespace-nowrap">
+                    <div class="flex items-center justify-end gap-1.5">
+                      <!-- Edit Button -->
+                      <button
+                        hlmBtn
+                        variant="ghost"
+                        size="sm"
+                        (click)="openEditModal(company)"
+                        class="h-8 gap-1 rounded-full px-2.5 text-xs font-medium hover:bg-accent"
+                        title="Edit Perusahaan"
+                      >
+                        <ng-icon name="phosphorPencilSimple" class="size-3.5" />
+                        <span>Edit</span>
+                      </button>
+
+                      <!-- Toggle Status Button -->
+                      <button
+                        hlmBtn
+                        variant="ghost"
+                        size="sm"
+                        (click)="toggleStatus(company)"
+                        class="h-8 gap-1 rounded-full px-2.5 text-xs font-medium hover:bg-accent"
+                        [title]="company.is_active ? 'Nonaktifkan' : 'Aktifkan'"
+                      >
+                        <ng-icon
+                          [name]="company.is_active ? 'phosphorToggleRight' : 'phosphorToggleLeft'"
+                          class="size-4"
+                          [class.text-emerald-500]="company.is_active"
+                          [class.text-muted-foreground]="!company.is_active"
+                        />
+                        <span>{{ company.is_active ? 'Nonaktifkan' : 'Aktifkan' }}</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- 4. Modal Dialog Tambah / Edit Perusahaan -->
+  @if (isModalOpen()) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-200"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-company-title"
+    >
+      <div class="relative w-full max-w-lg rounded-2xl border border-border/80 bg-card p-6 shadow-xl animate-in zoom-in-95 duration-200">
+        <!-- Close Button -->
+        <button
+          type="button"
+          (click)="closeModal()"
+          class="absolute top-4 end-4 rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+          aria-label="Tutup dialog"
+        >
+          <ng-icon name="phosphorX" class="size-5" />
+        </button>
+
+        <!-- Modal Header -->
+        <div class="flex flex-col gap-1 mb-5">
+          <h2 id="modal-company-title" class="text-lg font-semibold tracking-tight text-foreground">
+            {{ modalMode() === 'create' ? 'Tambah Perusahaan Baru' : 'Edit Perusahaan' }}
+          </h2>
+          <p class="text-xs text-muted-foreground">
+            @if (modalMode() === 'create') {
+              Inisialisasi perusahaan baru akan otomatis membuat akun COA, unit, dan sequence standar.
+            } @else {
+              Perbarui rincian nama atau status keaktifan fasilitas manufaktur ini.
+            }
+          </p>
+        </div>
+
+        <!-- Error Alert -->
+        @if (formError()) {
+          <div class="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+            {{ formError() }}
+          </div>
+        }
+
+        <!-- Form Content -->
+        <form (ngSubmit)="saveCompany()" class="flex flex-col gap-4">
+          <!-- Field: Kode Perusahaan -->
+          <div class="flex flex-col gap-1.5">
+            <label for="company-code" class="text-xs font-semibold text-foreground">
+              Kode Perusahaan
+            </label>
+            <input
+              id="company-code"
+              type="text"
+              [ngModel]="formCode()"
+              (ngModelChange)="formCode.set($event)"
+              name="formCode"
+              placeholder="Contoh: AIBER002, JKT01"
+              [disabled]="modalMode() === 'edit' && (selectedCompany()?.code_locked ?? false)"
+              required
+              class="w-full rounded-xl border border-border bg-background px-3.5 py-2 font-mono text-sm uppercase tracking-wider text-foreground placeholder:text-muted-foreground shadow-2xs focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden disabled:bg-muted disabled:text-muted-foreground"
+            />
+            <span class="text-xs text-muted-foreground">
+              Hanya huruf kapital dan angka tanpa spasi.
+            </span>
+          </div>
+
+          <!-- Field: Nama Perusahaan -->
+          <div class="flex flex-col gap-1.5">
+            <label for="company-name" class="text-xs font-semibold text-foreground">
+              Nama Lengkap Perusahaan
+            </label>
+            <input
+              id="company-name"
+              type="text"
+              [ngModel]="formName()"
+              (ngModelChange)="formName.set($event)"
+              name="formName"
+              placeholder="Contoh: PT Semikonduktor Indonesia Maju"
+              required
+              class="w-full rounded-xl border border-border bg-background px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-2xs focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+            />
+          </div>
+
+          <!-- Field: Status Aktif (Hanya Mode Edit) -->
+          @if (modalMode() === 'edit') {
+            <div class="flex items-center justify-between rounded-xl border border-border/80 bg-muted/30 p-3">
+              <div class="flex flex-col">
+                <span class="text-xs font-semibold text-foreground">Status Keaktifan</span>
+                <span class="text-xs text-muted-foreground">
+                  Entitas yang dinonaktifkan tidak dapat menerima transaksi baru.
+                </span>
+              </div>
+              <label class="relative inline-flex cursor-pointer items-center">
+                <input
+                  type="checkbox"
+                  [ngModel]="formIsActive()"
+                  (ngModelChange)="formIsActive.set($event)"
+                  name="formIsActive"
+                  class="peer sr-only"
+                  [disabled]="activeCompanyId() === selectedCompany()?.id"
+                />
+                <div class="peer h-6 w-11 rounded-full bg-muted peer-checked:bg-primary after:absolute after:start-[2px] after:top-[2px] after:size-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-disabled:opacity-50"></div>
+              </label>
+            </div>
+            @if (activeCompanyId() === selectedCompany()?.id) {
+              <p class="text-xs text-amber-600 dark:text-amber-400">
+                * Perusahaan ini sedang Anda gunakan saat ini dan tidak dapat dinonaktifkan.
+              </p>
+            }
+          }
+
+          <!-- Modal Actions -->
+          <div class="mt-3 flex items-center justify-end gap-2 border-t border-border/60 pt-4">
+            <button
+              type="button"
+              hlmBtn
+              variant="outline"
+              size="sm"
+              (click)="closeModal()"
+              [disabled]="isSubmitting()"
+              class="h-9 rounded-full px-4 text-sm font-medium"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              hlmBtn
+              size="sm"
+              [disabled]="isSubmitting()"
+              class="h-9 gap-1.5 rounded-full px-5 text-sm font-medium shadow-xs"
+            >
+              @if (isSubmitting()) {
+                <ng-icon name="phosphorArrowsClockwise" class="size-4 animate-spin" />
+              }
+              <span>{{ isSubmitting() ? 'Menyimpan...' : 'Simpan Data' }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</main>

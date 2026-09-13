@@ -34,15 +34,27 @@ const host = env.POSTGRES_HOST || '127.0.0.1';
 const port = env.POSTGRES_PORT || '5123';
 const db = env.POSTGRES_DB || 'postgres';
 
-console.log(`Menjalankan migrasi SQL: ${migrationPath} ke ${host}:${port}/${db}...`);
+const argFile = process.argv[2];
+const migrationsDir = path.join(projectRoot, 'supabase', 'migrations');
 
-try {
-  execSync(
-    `PGPASSWORD="${password}" psql -h "${host}" -p "${port}" -U "${dbUser}" -d "${db}" -v ON_ERROR_STOP=1 -f "${migrationPath}"`,
-    { stdio: 'inherit' }
-  );
-  console.log('Migrasi foundation_schema berhasil diterapkan ke database!');
-} catch (err) {
-  console.error('Gagal menerapkan migrasi:', err.message);
-  process.exit(1);
+const filesToApply = argFile 
+  ? [path.resolve(projectRoot, argFile)]
+  : fs.readdirSync(migrationsDir)
+      .filter((f) => f.endsWith('.sql'))
+      .sort()
+      .map((f) => path.join(migrationsDir, f));
+
+for (const file of filesToApply) {
+  console.log(`Menjalankan migrasi SQL: ${file} ke ${host}:${port}/${db}...`);
+  try {
+    execSync(
+      `PGPASSWORD="${password}" psql -h "${host}" -p "${port}" -U "${dbUser}" -d "${db}" -v ON_ERROR_STOP=1 -f "${file}"`,
+      { stdio: 'inherit' }
+    );
+    console.log(`✓ Migrasi ${path.basename(file)} berhasil diterapkan!`);
+  } catch (err) {
+    console.error(`Gagal menerapkan migrasi ${file}:`, err.message);
+    process.exit(1);
+  }
 }
+console.log('Seluruh migrasi berhasil diproses!');

@@ -94,6 +94,7 @@ export class DashboardLayoutComponent {
 
   readonly availableCompanies = computed(() => this.companyService.availableCompanies());
   readonly activeCompanyId = computed(() => this.companyService.activeCompanyId());
+  readonly isOwner = computed(() => this.companyService.isOwner());
   readonly activeCompany = computed(() => {
     const current = this.companyService.activeCompany();
     if (current) return current.name;

@@ -1,0 +1,290 @@
+<main class="flex flex-1 flex-col gap-6">
+  <!-- 1. Header Halaman -->
+  <div class="flex flex-col gap-1">
+    <h1 class="text-2xl font-semibold tracking-tight text-foreground">Profil Pengguna</h1>
+    <p class="text-sm text-muted-foreground">
+      Kelola informasi profil pribadi, kontak, data rekening bank, dan pengaturan keamanan kata sandi akun Anda.
+    </p>
+  </div>
+
+  <!-- 2. Grid Dua Kartu Utama -->
+  <div class="grid gap-6 lg:grid-cols-2">
+    <!-- KARTU 1: INFORMASI PRIBADI & PERBANKAN -->
+    <div hlmCard class="rounded-3xl border border-border/80 bg-card shadow-xs">
+      <div hlmCardHeader class="border-b border-border/60 px-6 py-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 hlmCardTitle class="text-base font-semibold tracking-tight text-foreground">
+              Informasi Pribadi &amp; Kontak
+            </h2>
+            <p hlmCardDescription class="text-sm text-muted-foreground">
+              Data identitas dan informasi rekening untuk penggajian operasional.
+            </p>
+          </div>
+          <div class="flex size-9 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+            <ng-icon name="phosphorUser" class="size-5" />
+          </div>
+        </div>
+      </div>
+
+      <div hlmCardContent class="p-6">
+        <form (ngSubmit)="saveProfile()" class="flex flex-col gap-4">
+          <!-- Field: Email Akun (Read-only) -->
+          <div class="flex flex-col gap-1.5">
+            <label for="profile-email" class="text-xs font-semibold text-foreground">
+              Alamat Email Akun
+            </label>
+            <input
+              id="profile-email"
+              type="text"
+              [value]="profile()?.email || '-'"
+              disabled
+              class="w-full rounded-xl border border-border bg-muted/50 px-3.5 py-2 font-mono text-sm text-muted-foreground shadow-2xs cursor-not-allowed"
+            />
+            <span class="text-xs text-muted-foreground">
+              Alamat email terdaftar dan terikat pada sistem autentikasi.
+            </span>
+          </div>
+
+          <!-- Field: Nama Lengkap -->
+          <div class="flex flex-col gap-1.5">
+            <label for="profile-name" class="text-xs font-semibold text-foreground">
+              Nama Lengkap
+            </label>
+            <input
+              id="profile-name"
+              type="text"
+              [ngModel]="formFullName()"
+              (ngModelChange)="formFullName.set($event)"
+              name="formFullName"
+              placeholder="Contoh: Budi Santoso"
+              required
+              class="w-full rounded-xl border border-border bg-background px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-2xs focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+            />
+          </div>
+
+          <!-- Field: Nomor Telepon -->
+          <div class="flex flex-col gap-1.5">
+            <label for="profile-phone" class="text-xs font-semibold text-foreground">
+              Nomor Telepon / WhatsApp
+            </label>
+            <input
+              id="profile-phone"
+              type="tel"
+              [ngModel]="formPhone()"
+              (ngModelChange)="formPhone.set($event)"
+              name="formPhone"
+              placeholder="Contoh: +62 812 3456 7890"
+              class="w-full rounded-xl border border-border bg-background px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-2xs focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+            />
+          </div>
+
+          <!-- Field: Alamat Tinggal -->
+          <div class="flex flex-col gap-1.5">
+            <label for="profile-address" class="text-xs font-semibold text-foreground">
+              Alamat Tempat Tinggal
+            </label>
+            <textarea
+              id="profile-address"
+              [ngModel]="formAddress()"
+              (ngModelChange)="formAddress.set($event)"
+              name="formAddress"
+              rows="2"
+              placeholder="Contoh: Jl. Industri Semikonduktor Blok A No. 12"
+              class="w-full rounded-xl border border-border bg-background px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-2xs focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+            ></textarea>
+          </div>
+
+          <!-- Bagian Data Rekening Bank -->
+          <div class="border-t border-border/60 pt-4 flex flex-col gap-4">
+            <h3 class="text-sm font-semibold tracking-tight text-foreground">
+              Informasi Rekening Bank Penggajian
+            </h3>
+
+            <!-- Field: Nomor Rekening -->
+            <div class="flex flex-col gap-1.5">
+              <label for="bank-account" class="text-xs font-semibold text-foreground">
+                Nomor Rekening Bank
+              </label>
+              <input
+                id="bank-account"
+                type="text"
+                [ngModel]="formBankAccount()"
+                (ngModelChange)="formBankAccount.set($event)"
+                name="formBankAccount"
+                placeholder="Contoh: 123-456-7890 (BCA / Mandiri / BRI)"
+                class="w-full rounded-xl border border-border bg-background px-3.5 py-2 font-mono text-sm text-foreground placeholder:text-muted-foreground shadow-2xs focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+              />
+            </div>
+
+            <!-- Field: Nama Pemilik Rekening -->
+            <div class="flex flex-col gap-1.5">
+              <label for="bank-account-name" class="text-xs font-semibold text-foreground">
+                Nama Pemilik Rekening (Sesuai Buku Tabungan)
+              </label>
+              <input
+                id="bank-account-name"
+                type="text"
+                [ngModel]="formBankAccountName()"
+                (ngModelChange)="formBankAccountName.set($event)"
+                name="formBankAccountName"
+                placeholder="Contoh: BUDI SANTOSO"
+                class="w-full rounded-xl border border-border bg-background px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-2xs focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+              />
+            </div>
+          </div>
+
+          <!-- Tombol Simpan Profil -->
+          <div class="mt-2 flex justify-end border-t border-border/60 pt-4">
+            <button
+              type="submit"
+              hlmBtn
+              size="sm"
+              [disabled]="isSavingProfile()"
+              class="h-9 gap-1.5 rounded-full px-5 text-sm font-medium shadow-xs"
+            >
+              @if (isSavingProfile()) {
+                <ng-icon name="phosphorArrowsClockwise" class="size-4 animate-spin" />
+              } @else {
+                <ng-icon name="phosphorFloppyDisk" class="size-4" />
+              }
+              <span>{{ isSavingProfile() ? 'Menyimpan...' : 'Simpan Perubahan Profil' }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- KARTU 2: KEAMANAN & KATA SANDI -->
+    <div hlmCard class="rounded-3xl border border-border/80 bg-card shadow-xs">
+      <div hlmCardHeader class="border-b border-border/60 px-6 py-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 hlmCardTitle class="text-base font-semibold tracking-tight text-foreground">
+              Keamanan &amp; Kata Sandi
+            </h2>
+            <p hlmCardDescription class="text-sm text-muted-foreground">
+              Perbarui kata sandi akun untuk menjaga keamanan hak akses sistem Anda.
+            </p>
+          </div>
+          <div class="flex size-9 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+            <ng-icon name="phosphorShieldCheck" class="size-5" />
+          </div>
+        </div>
+      </div>
+
+      <div hlmCardContent class="p-6">
+        @if (passwordError()) {
+          <div class="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+            {{ passwordError() }}
+          </div>
+        }
+
+        <form (ngSubmit)="changePassword()" class="flex flex-col gap-4">
+          <!-- Field: Kata Sandi Saat Ini -->
+          <div class="flex flex-col gap-1.5">
+            <label for="current-password" class="text-xs font-semibold text-foreground">
+              Kata Sandi Saat Ini
+            </label>
+            <input
+              id="current-password"
+              type="password"
+              [ngModel]="currentPassword()"
+              (ngModelChange)="currentPassword.set($event)"
+              name="currentPassword"
+              placeholder="Masukkan kata sandi lama Anda"
+              required
+              class="w-full rounded-xl border border-border bg-background px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-2xs focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+            />
+          </div>
+
+          <!-- Field: Kata Sandi Baru -->
+          <div class="flex flex-col gap-1.5">
+            <label for="new-password" class="text-xs font-semibold text-foreground">
+              Kata Sandi Baru
+            </label>
+            <input
+              id="new-password"
+              type="password"
+              [ngModel]="newPassword()"
+              (ngModelChange)="newPassword.set($event)"
+              name="newPassword"
+              placeholder="Minimal 8 karakter"
+              required
+              class="w-full rounded-xl border border-border bg-background px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-2xs focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+            />
+
+            <!-- Indikator Kekuatan Password -->
+            @if (newPassword().length > 0) {
+              <div class="mt-1 flex flex-col gap-1">
+                <div class="flex h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    class="h-full transition-all duration-300"
+                    [class]="passwordStrength().color"
+                    [style.width.%]="(passwordStrength().score / 3) * 100"
+                  ></div>
+                </div>
+                <div class="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Kekuatan kata sandi:</span>
+                  <span class="font-semibold text-foreground">
+                    {{ passwordStrength().label }}
+                  </span>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Field: Konfirmasi Kata Sandi Baru -->
+          <div class="flex flex-col gap-1.5">
+            <label for="confirm-password" class="text-xs font-semibold text-foreground">
+              Konfirmasi Kata Sandi Baru
+            </label>
+            <input
+              id="confirm-password"
+              type="password"
+              [ngModel]="confirmPassword()"
+              (ngModelChange)="confirmPassword.set($event)"
+              name="confirmPassword"
+              placeholder="Ketik ulang kata sandi baru"
+              required
+              class="w-full rounded-xl border border-border bg-background px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-2xs focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+            />
+            @if (isPasswordMismatch()) {
+              <span class="text-xs text-destructive">
+                Kata sandi konfirmasi tidak cocok dengan kata sandi baru.
+              </span>
+            }
+          </div>
+
+          <!-- Security Recommendations Info -->
+          <div class="rounded-xl border border-border/80 bg-muted/20 p-3 text-xs text-muted-foreground">
+            <p class="font-medium text-foreground mb-1">Pedoman Keamanan Kata Sandi:</p>
+            <ul class="list-disc list-inside flex flex-col gap-0.5">
+              <li>Panjang kata sandi minimal 8 karakter.</li>
+              <li>Gunakan kombinasi huruf besar, huruf kecil, angka, dan simbol.</li>
+              <li>Hindari menggunakan tanggal lahir atau informasi pribadi yang mudah ditebak.</li>
+            </ul>
+          </div>
+
+          <!-- Tombol Ganti Kata Sandi -->
+          <div class="mt-2 flex justify-end border-t border-border/60 pt-4">
+            <button
+              type="submit"
+              hlmBtn
+              size="sm"
+              [disabled]="isChangingPassword() || isPasswordMismatch()"
+              class="h-9 gap-1.5 rounded-full px-5 text-sm font-medium shadow-xs"
+            >
+              @if (isChangingPassword()) {
+                <ng-icon name="phosphorArrowsClockwise" class="size-4 animate-spin" />
+              } @else {
+                <ng-icon name="phosphorLock" class="size-4" />
+              }
+              <span>{{ isChangingPassword() ? 'Memproses...' : 'Ubah Kata Sandi' }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>

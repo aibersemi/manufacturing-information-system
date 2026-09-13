@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { guestGuard } from './core/guards/guest.guard';
+import { ownerGuard } from './core/guards/owner.guard';
 
 export const routes: Routes = [
   {
@@ -15,6 +16,39 @@ export const routes: Routes = [
         path: '',
         loadComponent: () =>
           import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+      },
+      {
+        path: 'workspace/companies',
+        canActivate: [ownerGuard],
+        loadComponent: () =>
+          import('./features/settings/companies/companies.component').then(
+            (m) => m.CompaniesComponent
+          ),
+      },
+      {
+        path: 'workspace/users-access',
+        canActivate: [ownerGuard],
+        loadComponent: () =>
+          import('./features/settings/users-access/users-access.component').then(
+            (m) => m.UsersAccessComponent
+          ),
+      },
+      {
+        path: 'workspace/profile',
+        loadComponent: () =>
+          import('./features/settings/profile/profile.component').then(
+            (m) => m.ProfileComponent
+          ),
+      },
+      {
+        path: 'settings',
+        redirectTo: 'workspace/profile',
+        pathMatch: 'full',
+      },
+      {
+        path: 'workspace/settings',
+        redirectTo: 'workspace/profile',
+        pathMatch: 'full',
       },
     ],
   },
