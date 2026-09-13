@@ -357,6 +357,63 @@
           }
         </div>
 
+        <!-- Group: Aset Tetap (Fase 8: Fixed Assets & Depreciation) -->
+        <div class="flex flex-col">
+          <button
+            type="button"
+            (click)="toggleGroup('assets')"
+            class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-muted-foreground transition hover:bg-accent/50 hover:text-foreground"
+            [title]="isSidebarCollapsed() ? 'Aset Tetap' : ''"
+          >
+            <ng-icon name="phosphorArmchair" class="size-4 shrink-0 text-foreground/80" />
+            @if (!isSidebarCollapsed()) {
+              <span class="truncate font-medium text-foreground">Aset Tetap</span>
+              <ng-icon
+                name="phosphorCaretRight"
+                class="ms-auto size-3.5 transition-transform duration-200"
+                [class.rotate-90]="isGroupOpen('assets')"
+              />
+            }
+          </button>
+
+          @if (!isSidebarCollapsed() && isGroupOpen('assets')) {
+            <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
+              <a
+                routerLink="/workspace/asset-purchases"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Pengadaan Aset
+              </a>
+              <a
+                routerLink="/workspace/assets"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Register Aset
+              </a>
+              <a
+                routerLink="/workspace/depreciation"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Penyusutan Bulanan
+              </a>
+              <a
+                routerLink="/workspace/asset-disposals"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Pelepasan Aset
+              </a>
+            </div>
+          }
+        </div>
+
         <!-- Group 2: Operasional Pabrik -->
         <div class="flex flex-col">
           <button

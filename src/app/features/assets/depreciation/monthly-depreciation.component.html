@@ -1,0 +1,460 @@
+<main class="flex flex-1 flex-col gap-6">
+  <!-- 1. Header Halaman & Pemilih Periode Bulanan -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Penyusutan Bulanan Aset Tetap</h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Perhitungan periodik beban depresiasi aset (Garis Lurus &amp; Saldo Menurun) dan pembukuan jurnal otomatis.
+      </p>
+    </div>
+
+    <!-- Pemilih Periode & Tombol Aksi -->
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 bg-card border border-border/80 px-3 py-1.5 rounded-full shadow-2xs">
+        <ng-icon name="phosphorCalendarBlank" class="size-4 text-muted-foreground" />
+        <label for="period-month-input" class="text-xs font-semibold text-muted-foreground">Periode:</label>
+        <input
+          id="period-month-input"
+          type="month"
+          class="bg-transparent text-sm font-semibold text-foreground focus:outline-none cursor-pointer"
+          [ngModel]="selectedPeriod()"
+          (ngModelChange)="onPeriodChange($event)"
+        />
+      </div>
+
+      <button
+        hlmBtn
+        variant="outline"
+        class="rounded-full shadow-2xs text-sm"
+        (click)="loadData()"
+        [disabled]="loading()"
+      >
+        <ng-icon name="phosphorArrowsClockwise" class="size-4 mr-1.5" [class.animate-spin]="loading()" />
+        Segarkan
+      </button>
+
+      @if (totalEligibleCount() > 0) {
+        <button
+          hlmBtn
+          class="rounded-full shadow-2xs text-sm bg-emerald-600 text-white hover:bg-emerald-700"
+          (click)="openPostDialog()"
+          [disabled]="loading() || selectedAssetIds().size === 0"
+        >
+          <ng-icon name="phosphorCheckCircle" class="size-4 mr-1.5" />
+          Posting Penyusutan ({{ selectedAssetIds().size }})
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- 2. Kartu Metrik KPI Penyusutan -->
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <!-- Total Aset Siap Disusutkan -->
+    <div class="rounded-3xl border border-border/80 bg-card p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-muted-foreground">Aset Siap Disusutkan</span>
+        <div class="flex size-9 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <ng-icon name="phosphorListChecks" class="size-5" />
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-semibold tracking-tight text-foreground">
+          {{ totalEligibleCount() }} <span class="text-sm font-normal text-muted-foreground">unit</span>
+        </div>
+        <p class="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">
+          Memenuhi kriteria periode {{ selectedPeriod() }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Total Nilai Depresiasi Periode Terpilih -->
+    <div class="rounded-3xl border border-border/80 bg-card p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-muted-foreground">Total Beban Depresiasi</span>
+        <div class="flex size-9 items-center justify-center rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400">
+          <ng-icon name="phosphorMoney" class="size-5" />
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-semibold tracking-tight text-foreground">
+          {{ formatRupiah(totalEligibleAmount()) }}
+        </div>
+        <p class="text-xs text-muted-foreground mt-1">
+          Beban periode {{ selectedPeriod() }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Jumlah Aset Belum Siap -->
+    <div class="rounded-3xl border border-border/80 bg-card p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-muted-foreground">Aset Belum Dapat Disusutkan</span>
+        <div class="flex size-9 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+          <ng-icon name="phosphorWarningCircle" class="size-5" />
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-semibold tracking-tight text-foreground">
+          {{ totalIneligibleCount() }} <span class="text-sm font-normal text-muted-foreground">unit</span>
+        </div>
+        <p class="text-xs text-amber-600 dark:text-amber-400 font-medium mt-1">
+          Perlu pengaturan atau masa depan
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Navigasi Tab (Pratinjau, Ineligible, Riwayat) -->
+  <div class="flex items-center gap-1.5 bg-muted/40 p-1 rounded-full border border-border/60 w-fit text-xs font-medium">
+    <button
+      type="button"
+      (click)="activeTab.set('eligible')"
+      class="px-4 py-2 rounded-full transition-all flex items-center gap-1.5"
+      [class.bg-card]="activeTab() === 'eligible'"
+      [class.text-foreground]="activeTab() === 'eligible'"
+      [class.shadow-2xs]="activeTab() === 'eligible'"
+      [class.text-muted-foreground]="activeTab() !== 'eligible'"
+    >
+      <ng-icon name="phosphorCheckCircle" class="size-4" />
+      Pratinjau Penyusutan ({{ totalEligibleCount() }})
+    </button>
+    <button
+      type="button"
+      (click)="activeTab.set('ineligible')"
+      class="px-4 py-2 rounded-full transition-all flex items-center gap-1.5"
+      [class.bg-card]="activeTab() === 'ineligible'"
+      [class.text-foreground]="activeTab() === 'ineligible'"
+      [class.shadow-2xs]="activeTab() === 'ineligible'"
+      [class.text-muted-foreground]="activeTab() !== 'ineligible'"
+    >
+      <ng-icon name="phosphorWarningCircle" class="size-4" />
+      Belum Memenuhi Syarat ({{ totalIneligibleCount() }})
+    </button>
+    <button
+      type="button"
+      (click)="activeTab.set('history')"
+      class="px-4 py-2 rounded-full transition-all flex items-center gap-1.5"
+      [class.bg-card]="activeTab() === 'history'"
+      [class.text-foreground]="activeTab() === 'history'"
+      [class.shadow-2xs]="activeTab() === 'history'"
+      [class.text-muted-foreground]="activeTab() !== 'history'"
+    >
+      <ng-icon name="phosphorArchive" class="size-4" />
+      Riwayat Dokumen ({{ history().length }})
+    </button>
+  </div>
+
+  <!-- 4. Konten Tab 1: Pratinjau Penyusutan (Eligible Assets) -->
+  @if (activeTab() === 'eligible') {
+    <div class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden space-y-0">
+      <div class="px-6 py-4 bg-muted/20 border-b border-border/80 flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-semibold text-foreground">Daftar Aset Siap Disusutkan (Periode {{ selectedPeriod() }})</h2>
+          <p class="text-xs text-muted-foreground">Centang aset yang akan dibukukan beban penyusutannya pada jurnal umum.</p>
+        </div>
+
+        @if (eligibleAssets().length > 0) {
+          <div class="flex items-center gap-3 text-xs">
+            <span class="text-muted-foreground">Terpilih: <strong>{{ selectedAssetIds().size }}</strong> dari {{ totalEligibleCount() }}</span>
+            <span class="text-muted-foreground">Total Jurnal: <strong class="text-foreground">{{ formatRupiah(selectedTotalAmount()) }}</strong></span>
+          </div>
+        }
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-muted/40 border-b border-border/80 text-xs font-semibold uppercase text-muted-foreground">
+            <tr>
+              <th class="px-5 py-3.5 w-12 text-center">
+                <input
+                  type="checkbox"
+                  class="rounded-sm text-primary focus:ring-primary size-4"
+                  [checked]="isAllSelected()"
+                  (change)="toggleSelectAll()"
+                />
+              </th>
+              <th class="px-5 py-3.5">Kode Aset</th>
+              <th class="px-5 py-3.5">Nama Aset &amp; Kategori</th>
+              <th class="px-5 py-3.5">Metode / Periode</th>
+              <th class="px-5 py-3.5 text-right">Nilai Perolehan</th>
+              <th class="px-5 py-3.5 text-right">Nilai Buku Sebelum</th>
+              <th class="px-5 py-3.5 text-right text-teal-600 dark:text-teal-400">Depresiasi Periode Ini</th>
+              <th class="px-5 py-3.5 text-right">Nilai Buku Sesudah</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border/60">
+            @if (eligibleAssets().length === 0) {
+              <tr>
+                <td colspan="8" class="px-5 py-12 text-center text-muted-foreground">
+                  <div class="flex flex-col items-center justify-center gap-2">
+                    <ng-icon name="phosphorCheckCircle" class="size-8 text-muted-foreground/50" />
+                    <p class="text-sm font-medium">Tidak ada aset yang perlu disusutkan pada periode {{ selectedPeriod() }}.</p>
+                    <p class="text-xs text-muted-foreground">Seluruh aset aktif mungkin telah disusutkan penuh atau belum diatur parameternya.</p>
+                  </div>
+                </td>
+              </tr>
+            } @else {
+              @for (item of eligibleAssets(); track item.assetId) {
+                <tr class="hover:bg-muted/20 transition-colors">
+                  <td class="px-5 py-4 text-center">
+                    <input
+                      type="checkbox"
+                      class="rounded-sm text-primary focus:ring-primary size-4"
+                      [checked]="selectedAssetIds().has(item.assetId)"
+                      (change)="toggleAssetSelection(item.assetId)"
+                    />
+                  </td>
+                  <td class="px-5 py-4 font-mono text-sm font-semibold text-foreground whitespace-nowrap">
+                    {{ item.assetCode }}
+                  </td>
+                  <td class="px-5 py-4">
+                    <div class="font-medium text-foreground">{{ item.name }}</div>
+                    <div class="text-xs text-muted-foreground">{{ item.categoryName }}</div>
+                  </td>
+                  <td class="px-5 py-4 whitespace-nowrap">
+                    <span class="text-xs font-medium text-foreground capitalize block">
+                      {{ item.depreciationMethod === 'straight_line' ? 'Garis Lurus' : 'Saldo Menurun' }}
+                    </span>
+                    <span class="text-xs text-muted-foreground">Bulan ke-{{ item.periodNumber }} dari {{ item.usefulLifeMonths }} bln</span>
+                  </td>
+                  <td class="px-5 py-4 text-right font-medium text-foreground whitespace-nowrap">
+                    {{ formatRupiah(item.acquisitionCost) }}
+                  </td>
+                  <td class="px-5 py-4 text-right text-muted-foreground whitespace-nowrap">
+                    {{ formatRupiah(item.bookValueBefore) }}
+                  </td>
+                  <td class="px-5 py-4 text-right font-bold text-teal-600 dark:text-teal-400 whitespace-nowrap">
+                    {{ formatRupiah(item.depreciationAmount) }}
+                  </td>
+                  <td class="px-5 py-4 text-right font-semibold text-foreground whitespace-nowrap">
+                    {{ formatRupiah(item.bookValueAfter) }}
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- 5. Konten Tab 2: Aset Belum Siap (Ineligible Assets) -->
+  @if (activeTab() === 'ineligible') {
+    <div class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
+      <div class="px-6 py-4 bg-muted/20 border-b border-border/80">
+        <h2 class="text-sm font-semibold text-foreground">Daftar Aset Belum Memenuhi Syarat Penyusutan</h2>
+        <p class="text-xs text-muted-foreground">Aset aktif yang tidak dapat disusutkan pada periode {{ selectedPeriod() }} beserta penyebab spesifiknya.</p>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-muted/40 border-b border-border/80 text-xs font-semibold uppercase text-muted-foreground">
+            <tr>
+              <th class="px-5 py-3.5">Kode Aset</th>
+              <th class="px-5 py-3.5">Nama Aset</th>
+              <th class="px-5 py-3.5">Kategori</th>
+              <th class="px-5 py-3.5 text-right">Biaya Perolehan</th>
+              <th class="px-5 py-3.5 text-right">Akum. Depresiasi</th>
+              <th class="px-5 py-3.5 text-center">Penyebab Belum Siap</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border/60">
+            @if (ineligibleAssets().length === 0) {
+              <tr>
+                <td colspan="6" class="px-5 py-12 text-center text-muted-foreground">
+                  <div class="flex flex-col items-center justify-center gap-2">
+                    <ng-icon name="phosphorCheckCircle" class="size-8 text-emerald-500/60" />
+                    <p class="text-sm font-medium">Luar biasa! Tidak ada aset yang belum siap.</p>
+                    <p class="text-xs text-muted-foreground">Seluruh unit aset aktif telah disusutkan atau memiliki parameter lengkap.</p>
+                  </div>
+                </td>
+              </tr>
+            } @else {
+              @for (item of ineligibleAssets(); track item.assetId) {
+                <tr class="hover:bg-muted/20 transition-colors">
+                  <td class="px-5 py-4 font-mono text-sm font-semibold text-foreground whitespace-nowrap">
+                    {{ item.assetCode }}
+                  </td>
+                  <td class="px-5 py-4 font-medium text-foreground">
+                    {{ item.name }}
+                  </td>
+                  <td class="px-5 py-4 text-xs text-muted-foreground whitespace-nowrap">
+                    {{ item.categoryName }}
+                  </td>
+                  <td class="px-5 py-4 text-right font-medium text-foreground whitespace-nowrap">
+                    {{ formatRupiah(item.acquisitionCost) }}
+                  </td>
+                  <td class="px-5 py-4 text-right text-muted-foreground whitespace-nowrap">
+                    {{ formatRupiah(item.accumulatedDepreciation) }}
+                  </td>
+                  <td class="px-5 py-4 text-center whitespace-nowrap">
+                    @if (item.reason === 'Perlu Pengaturan Penyusutan') {
+                      <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-300">
+                        <ng-icon name="phosphorGear" class="size-3.5" />
+                        Perlu Pengaturan Penyusutan
+                      </span>
+                    } @else if (item.reason === 'Sudah Disusutkan pada Periode Ini') {
+                      <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-700 dark:text-blue-300">
+                        <ng-icon name="phosphorCheckCircle" class="size-3.5" />
+                        Sudah Disusutkan pada Periode Ini
+                      </span>
+                    } @else if (item.reason === 'Sudah Disusutkan Penuh') {
+                      <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-zinc-500/10 text-zinc-700 dark:text-zinc-300">
+                        Sudah Disusutkan Penuh
+                      </span>
+                    } @else {
+                      <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-700 dark:text-rose-300">
+                        {{ item.reason }}
+                      </span>
+                    }
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- 6. Konten Tab 3: Riwayat Dokumen Penyusutan (History) -->
+  @if (activeTab() === 'history') {
+    <div class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
+      <div class="px-6 py-4 bg-muted/20 border-b border-border/80">
+        <h2 class="text-sm font-semibold text-foreground">Riwayat Bukti Dokumen Penyusutan (DP)</h2>
+        <p class="text-xs text-muted-foreground">Arsip seluruh bukti jurnal penyusutan bulanan yang telah diposting.</p>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-muted/40 border-b border-border/80 text-xs font-semibold uppercase text-muted-foreground">
+            <tr>
+              <th class="px-5 py-3.5">No. Bukti (DP)</th>
+              <th class="px-5 py-3.5">Periode Bulan</th>
+              <th class="px-5 py-3.5">Tanggal Pembukuan</th>
+              <th class="px-5 py-3.5 text-center">Jumlah Unit Aset</th>
+              <th class="px-5 py-3.5 text-right">Total Depresiasi</th>
+              <th class="px-5 py-3.5 text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border/60">
+            @if (history().length === 0) {
+              <tr>
+                <td colspan="6" class="px-5 py-12 text-center text-muted-foreground">
+                  <div class="flex flex-col items-center justify-center gap-2">
+                    <ng-icon name="phosphorArchive" class="size-8 text-muted-foreground/50" />
+                    <p class="text-sm font-medium">Belum ada dokumen penyusutan yang pernah diposting.</p>
+                  </div>
+                </td>
+              </tr>
+            } @else {
+              @for (doc of history(); track doc.id) {
+                <tr class="hover:bg-muted/20 transition-colors">
+                  <td class="px-5 py-4 font-mono text-sm font-semibold text-foreground whitespace-nowrap">
+                    {{ doc.documentNumber }}
+                  </td>
+                  <td class="px-5 py-4 text-xs font-semibold text-foreground whitespace-nowrap">
+                    {{ doc.periodMonth }}
+                  </td>
+                  <td class="px-5 py-4 text-xs text-muted-foreground whitespace-nowrap">
+                    {{ doc.transactionDate | date:'dd/MM/yyyy' }}
+                  </td>
+                  <td class="px-5 py-4 text-center whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground">
+                      {{ doc.assetCount }} unit
+                    </span>
+                  </td>
+                  <td class="px-5 py-4 text-right font-bold text-foreground whitespace-nowrap">
+                    {{ formatRupiah(doc.totalAmount) }}
+                  </td>
+                  <td class="px-5 py-4 text-center whitespace-nowrap">
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                      Diposting
+                    </span>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Dialog Konfirmasi Posting Penyusutan Bulanan -->
+  @if (isPostDialogOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+      <div class="relative w-full max-w-lg bg-card border border-border rounded-3xl p-6 shadow-xl space-y-4">
+        <div class="flex items-center gap-3 text-emerald-600 dark:text-emerald-400">
+          <div class="size-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+            <ng-icon name="phosphorCheckCircle" class="size-6" />
+          </div>
+          <div>
+            <h3 class="text-base font-semibold text-foreground">Konfirmasi Posting Penyusutan Bulanan</h3>
+            <p class="text-xs text-muted-foreground">Periode {{ selectedPeriod() }}</p>
+          </div>
+        </div>
+
+        <p class="text-sm text-foreground">
+          Sistem akan memproses penyusutan untuk <strong>{{ selectedAssetIds().size }} unit aset terpilih</strong> dengan total nilai beban:
+        </p>
+
+        <div class="p-4 rounded-2xl bg-muted/30 border border-border/80 space-y-2 text-xs">
+          <div class="flex justify-between">
+            <span class="text-muted-foreground">Jumlah Aset:</span>
+            <span class="font-bold text-foreground">{{ selectedAssetIds().size }} unit</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-muted-foreground">Total Beban Depresiasi:</span>
+            <span class="font-bold text-sm text-foreground">{{ formatRupiah(selectedTotalAmount()) }}</span>
+          </div>
+          <div class="pt-2 border-t border-border/60">
+            <span class="text-muted-foreground block mb-1">Rincian Jurnal Umum Berimbang:</span>
+            <div class="flex justify-between font-mono text-foreground">
+              <span>Debit: Beban Penyusutan (6-3.0.03)</span>
+              <span>{{ formatRupiah(selectedTotalAmount()) }}</span>
+            </div>
+            <div class="flex justify-between font-mono text-foreground">
+              <span>Kredit: Ak. Penyusutan (1-2.1.03)</span>
+              <span>{{ formatRupiah(selectedTotalAmount()) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label for="post-notes-input" class="block text-xs font-semibold text-foreground mb-1.5">
+            Catatan Dokumen Penyusutan
+          </label>
+          <input
+            id="post-notes-input"
+            type="text"
+            class="w-full px-3.5 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            [ngModel]="postNotes()"
+            (ngModelChange)="postNotes.set($event)"
+          />
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-2">
+          <button
+            type="button"
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm"
+            (click)="closePostDialog()"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            hlmBtn
+            class="rounded-full text-sm bg-emerald-600 text-white hover:bg-emerald-700"
+            (click)="confirmPostDepreciation()"
+            [disabled]="loading()"
+          >
+            Posting Jurnal Penyusutan
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</main>

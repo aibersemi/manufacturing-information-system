@@ -273,6 +273,60 @@ export const routes: Routes = [
             (m) => m.PeriodCloseComponent
           ),
       },
+      // Aset Tetap & Penyusutan (Fase 8: Fixed Assets & Depreciation)
+      {
+        path: 'workspace/asset-purchases',
+        loadComponent: () =>
+          import('./features/assets/purchases/asset-purchases.component').then(
+            (m) => m.AssetPurchasesComponent
+          ),
+      },
+      {
+        path: 'workspace/assets',
+        loadComponent: () =>
+          import('./features/assets/register/asset-register.component').then(
+            (m) => m.AssetRegisterComponent
+          ),
+      },
+      {
+        path: 'workspace/depreciation',
+        loadComponent: () =>
+          import('./features/assets/depreciation/monthly-depreciation.component').then(
+            (m) => m.MonthlyDepreciationComponent
+          ),
+      },
+      {
+        path: 'workspace/asset-disposals',
+        loadComponent: () =>
+          import('./features/assets/disposals/asset-disposals.component').then(
+            (m) => m.AssetDisposalsComponent
+          ),
+      },
+      {
+        path: 'asset-purchases',
+        redirectTo: 'workspace/asset-purchases',
+        pathMatch: 'full',
+      },
+      {
+        path: 'fixed-assets',
+        redirectTo: 'workspace/assets',
+        pathMatch: 'full',
+      },
+      {
+        path: 'assets',
+        redirectTo: 'workspace/assets',
+        pathMatch: 'full',
+      },
+      {
+        path: 'depreciation',
+        redirectTo: 'workspace/depreciation',
+        pathMatch: 'full',
+      },
+      {
+        path: 'asset-disposals',
+        redirectTo: 'workspace/asset-disposals',
+        pathMatch: 'full',
+      },
       {
         path: 'coa',
         redirectTo: 'workspace/finance/coa',

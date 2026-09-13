@@ -29,6 +29,7 @@ src/
 │   │   │   ├── guest.guard.ts          # Guard pencegah akses login untuk sesi aktif
 │   │   │   └── owner.guard.ts          # Guard pembatasan akses khusus peran Owner
 │   │   ├── services/
+│   │   │   ├── asset.service.ts        # Layanan Aset Tetap: Pengadaan, Register Fisik, Penyusutan Bulanan, & Pelepasan
 │   │   │   ├── auth.service.ts         # Reactive session & user state via Signals + waitForAuthReady()
 │   │   │   ├── company.service.ts      # Multi-company context, RLS tenant scope, & local storage persistence
 │   │   │   ├── finance.service.ts      # Layanan Keuangan & Buku Besar: COA, Kas/Bank, Biaya, Upah, Prepaid, SA, Jurnal, Periode
@@ -42,6 +43,11 @@ src/
 │   │   └── utils/
 │   │       └── url.util.ts             # Sanitasi URL & mitigasi Open Redirect
 │   ├── features/
+│   │   ├── assets/                     # Modul Aset Tetap & Penyusutan (Fase 8)
+│   │   │   ├── purchases/              # Pengadaan Aset Tetap (/workspace/asset-purchases)
+│   │   │   ├── register/               # Register & Pengaturan Parameter Aset (/workspace/assets)
+│   │   │   ├── depreciation/           # Pratinjau & Eksekusi Penyusutan Bulanan (/workspace/depreciation)
+│   │   │   └── disposals/              # Pelepasan Aset, Laba/Rugi & Kas Masuk (/workspace/asset-disposals)
 │   │   ├── auth/login/                 # Komponen halaman masuk login
 │   │   ├── dashboard/                  # Komponen overview metrik manufaktur
 │   │   ├── finance/                    # Modul Keuangan, Akuntansi & Buku Besar (Fase 7)
@@ -407,6 +413,70 @@ Modul Keuangan & Akuntansi (Fase 7) mengimplementasikan sistem buku besar berpas
      4. *Konsistensi Subledger*: Buku pembantu piutang, hutang, dan upah sinkron dengan saldo buku besar.
    - Penutupan via `close_accounting_period` mengunci periode dari penambahan, pengubahan, atau pembatalan transaksi dengan tanggal pada periode tersebut.
    - Pembukaan kembali (*Reopen*) via `reopen_accounting_period` dibatasi secara ketat hanya dapat dieksekusi oleh peran **Owner** dengan menyertakan alasan resmi untuk audit trail.
+
+---
+
+## Modul Aset Tetap & Penyusutan (Fixed Assets & Depreciation)
+
+Modul Aset Tetap & Penyusutan (Fase 8) mengimplementasikan tata kelola siklus hidup aset berwujud manufaktur secara menyeluruh (*End-to-End Asset Lifecycle Management*) berstandar PSAK 16 / IFRS, terintegrasi langsung dengan Buku Besar (*General Ledger*) dan modul Pengadaan (*Purchasing*):
+
+1. **Pengadaan Aset Tetap (`asset_purchase`)** (`/workspace/asset-purchases`):
+   - Pencatatan dokumen faktur pembelian/pengadaan aset tetap dari pemasok dengan nomor dokumen terstruktur `PO-AST-YYMMDD-###` (Draf) dan `AP-AST-YYMMDD-###` (Posted).
+   - Mendukung multi-baris belanja modal (*Capital Expenditure / CapEx*) dengan kuantitas unit fisik.
+   - **Pemecahan Unit Fisik Individual Atomik**: Stored procedure `post_asset_purchase` memecah satu baris invoice dengan kuantitas $N$ menjadi $N$ unit record aset fisik mandiri pada tabel `asset_record` dengan kode unik berakhiran suffix ordinal (`-1`, `-2`, ..., `-N`) dan membagi rata biaya perolehan (`acquisition_cost`) secara presisi tanpa sisa pembulatan.
+   - **Pencatatan Jurnal Akuntansi Berpasangan**: Saat diposting, otomatis membukukan jurnal umum berimbang:
+     - **Debit**: Aset Tetap / *Fixed Assets* (`1-2.0.04`) sebesar total biaya perolehan.
+     - **Kredit**: Hutang Usaha / *Supplier Payable* (`2-1.1.01`) sebesar total kewajiban pembelian.
+   - Pencatatan buku pembantu hutang (`subledger_entry` kind `supplier_payable`).
+   - **Pembatalan Aman (`cancel_asset_purchase`)**: Dokumen dapat dibatalkan secara atomik (dengan alasan wajib) membalikkan jurnal dan menandai status `cancelled`, dengan proteksi invariant ketat: pembatalan ditolak keras jika ada unit aset terkait yang sudah disusutkan (`accumulated_depreciation > 0`).
+
+2. **Register Aset Tetap & Kunci Parameter Akuntansi (`asset_record`)** (`/workspace/assets`):
+   - Manajemen inventaris fisik seluruh unit mesin pabrik (mesin jahit, obras, overdeck, sablon, boiler), komputer desain, dan kendaraan operasional.
+   - Status aset fisik: `candidate` (baru dibeli, menunggu setup parameter), `active` (siap disusutkan), `disposed` (sudah dilepas/dijual), dan `cancelled` (dibatalkan).
+   - Pengaturan parameter penyusutan via `update_asset_parameters`:
+     - Kategori Aset (`asset_category`)
+     - Metode Penyusutan (`straight_line` / `declining_balance`)
+     - Masa Manfaat dalam Bulan (`useful_life_months`)
+     - Nilai Residu / Sisa (`residual_value`)
+     - Tanggal Mulai Penyusutan (`depreciation_start_date`)
+     - Metadata Fisik: Lokasi penempatan, Penanggung Jawab (*Custodian*), dan Nomor Seri pabrikan (*Serial Number*).
+   - **Aturan Invariant Kunci Akuntansi (*Accounting Lock*)**:
+     - Begitu aset mengalami penyusutan bulanan perdana (`accumulated_depreciation > 0`), sistem secara otomatis mengunci permanen 4 parameter inti: **Metode**, **Masa Manfaat**, **Nilai Residu**, dan **Tanggal Mulai Penyusutan**.
+     - Hal ini mencegah distorsi nilai buku historis dan menjamin kepatuhan audit PSAK. Pengguna hanya diizinkan memperbarui metadata fisik (lokasi, penanggung jawab, nomor seri).
+
+3. **Pratinjau & Eksekusi Penyusutan Bulanan (`monthly_depreciation`)** (`/workspace/depreciation`):
+   - Pelaksanaan penyusutan periodik bulanan (*Periodic Depreciation Run*) berbasis batch dengan nomor dokumen `DP-YYMMDD-###`.
+   - **Pratinjau Cerdas (`get_depreciation_preview`)**: Membedah seluruh aset aktif ke dalam dua kelompok:
+     - *Eligible Assets*: Aset yang memenuhi kriteria perhitungan pada periode berjalan (parameter lengkap, tanggal mulai $\le$ akhir periode, nilai buku $>$ nilai residu, belum pernah disusutkan pada bulan tersebut).
+     - *Ineligible Assets*: Aset yang tidak memenuhi syarat beserta penjelasan alasan transparan (misal: belum disetup parameternya, belum tiba tanggal mulai penyusutan, atau telah mencapai nilai residu/masa manfaat habis).
+   - **Formula Perhitungan Standar**:
+     - **Garis Lurus (*Straight-Line*)**:
+       $$\text{Depresiasi Bulanan} = \frac{\text{Biaya Perolehan} - \text{Nilai Residu}}{\text{Masa Manfaat (Bulan)}}$$
+     - **Saldo Menurun (*Declining Balance*)**:
+       $$\text{Depresiasi Bulanan} = \text{Nilai Buku Awal} \times \left(1 - \left(\frac{\text{Nilai Residu}}{\text{Biaya Perolehan}}\right)^{\frac{1}{\text{Masa Manfaat (Bulan)}}}\right)$$
+       *(Dengan penyesuaian batas bawah nilai buku agar tidak menembus batas nilai residu).*
+   - **Eksekusi Atomik (`post_monthly_depreciation`)**:
+     - Mendukung pemilihan fleksibel unit aset yang disusutkan.
+     - Membukukan jurnal umum tunggal teragregasi secara atomik:
+       - **Debit**: Beban Penyusutan Aset Tetap / *Depreciation Expense* (`6-3.0.03`).
+       - **Kredit**: Akumulasi Penyusutan Aset Tetap / *Accumulated Depreciation* (`1-2.1.03`).
+     - Memperbarui `accumulated_depreciation` pada masing-masing unit aset dan mencatat baris rincian di `business_document_line`.
+
+4. **Pelepasan & Penjualan Aset Tetap (`asset_disposal`)** (`/workspace/asset-disposals`):
+   - Menangani penghentian pengakuan aset tetap (*Derecognition*) akibat penjualan unit bekas atau penghapusan karena rusak berat/afkir.
+   - Menggunakan stored procedure atomik `post_asset_disposal` yang menerbitkan dokumen `DISP-YYMMDD-###`.
+   - **Pengakuan Laba / Rugi Pelepasan Aset**:
+     - $\text{Nilai Buku Saat Pelepasan} = \text{Biaya Perolehan} - \text{Akumulasi Penyusutan}$
+     - $\text{Selisih Kas} = \text{Hasil Penjualan (Proceeds)} - \text{Nilai Buku}$
+     - Jika $\text{Selisih Kas} > 0$: Diakui sebagai **Laba Pelepasan Aset** (`4-2.0.03 / asset_disposal_gain`).
+     - Jika $\text{Selisih Kas} < 0$: Diakui sebagai **Rugi Pelepasan Aset** (`8-2.0.00 / asset_disposal_loss`).
+   - **Penjurnalan Otomatis**:
+     - **Debit**: Kas/Bank (`1-1.1.01`) sebesar hasil penjualan (bila ada).
+     - **Debit**: Akumulasi Penyusutan (`1-2.1.03`) untuk menutup seluruh depresiasi yang telah dibukukan.
+     - **Debit**: Rugi Pelepasan Aset (`8-2.0.00`) (jika menderita rugi).
+     - **Kredit**: Aset Tetap (`1-2.0.04`) sebesar harga perolehan historis unit aset.
+     - **Kredit**: Laba Pelepasan Aset (`4-2.0.03`) (jika menghasilkan laba).
+   - Membukukan mutasi kas masuk pada `cash_movement` jenis `asset_sale` dan mengubah status aset menjadi `disposed`.
 
 
 

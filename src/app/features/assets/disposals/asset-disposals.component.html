@@ -1,0 +1,555 @@
+<main class="flex flex-1 flex-col gap-6">
+  <!-- 1. Header Halaman & Tombol Aksi -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Pelepasan Aset Tetap</h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Pencatatan penjualan, penghapusan, atau disposisi unit aset beserta pengakuan laba/rugi pelepasan buku.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button
+        hlmBtn
+        variant="outline"
+        class="rounded-full shadow-2xs text-sm"
+        (click)="loadData()"
+        [disabled]="loading()"
+      >
+        <ng-icon name="phosphorArrowsClockwise" class="size-4 mr-1.5" [class.animate-spin]="loading()" />
+        Segarkan
+      </button>
+
+      <button
+        hlmBtn
+        class="rounded-full shadow-2xs text-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
+        (click)="openCreateModal()"
+      >
+        <ng-icon name="phosphorTrash" class="size-4 mr-1.5" />
+        Pelepasan Aset Baru
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. Kartu Metrik KPI Pelepasan Aset -->
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <!-- Total Unit Dilepas -->
+    <div class="rounded-3xl border border-border/80 bg-card p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-muted-foreground">Total Unit Dilepas</span>
+        <div class="flex size-9 items-center justify-center rounded-2xl bg-zinc-500/10 text-zinc-600 dark:text-zinc-400">
+          <ng-icon name="phosphorTrash" class="size-5" />
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-semibold tracking-tight text-foreground">
+          {{ totalDisposalsCount() }} <span class="text-sm font-normal text-muted-foreground">unit</span>
+        </div>
+        <p class="text-xs text-muted-foreground mt-1">Dikeluarkan dari pembukuan</p>
+      </div>
+    </div>
+
+    <!-- Total Hasil Penjualan (Proceeds) -->
+    <div class="rounded-3xl border border-border/80 bg-card p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-muted-foreground">Total Hasil Penjualan</span>
+        <div class="flex size-9 items-center justify-center rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400">
+          <ng-icon name="phosphorMoney" class="size-5" />
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-semibold tracking-tight text-foreground">
+          {{ formatRupiah(totalProceedsAmount()) }}
+        </div>
+        <p class="text-xs text-muted-foreground mt-1">Kas masuk dari pelepasan</p>
+      </div>
+    </div>
+
+    <!-- Laba Pelepasan Bersih -->
+    <div class="rounded-3xl border border-border/80 bg-card p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-muted-foreground">Laba Pelepasan Bersih</span>
+        <div class="flex size-9 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <ng-icon name="phosphorTrendUp" class="size-5" />
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-400">
+          +{{ formatRupiah(totalNetGain()) }}
+        </div>
+        <p class="text-xs text-emerald-600 font-medium mt-1">Hasil &gt; Nilai Buku</p>
+      </div>
+    </div>
+
+    <!-- Rugi Pelepasan Bersih -->
+    <div class="rounded-3xl border border-border/80 bg-card p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-muted-foreground">Rugi Pelepasan Bersih</span>
+        <div class="flex size-9 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400">
+          <ng-icon name="phosphorTrendDown" class="size-5" />
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-semibold tracking-tight text-rose-600 dark:text-rose-400">
+          -{{ formatRupiah(totalNetLoss()) }}
+        </div>
+        <p class="text-xs text-rose-600 font-medium mt-1">Hasil &lt; Nilai Buku</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Toolbar Pencarian -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div class="text-xs text-muted-foreground">
+      Menampilkan <strong>{{ filteredDisposals().length }}</strong> berkas pelepasan aset.
+    </div>
+
+    <div class="relative min-w-[280px]">
+      <ng-icon
+        name="phosphorMagnifyingGlass"
+        class="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
+      />
+      <input
+        type="text"
+        placeholder="Cari bukti DA, kode aset, alasan..."
+        class="w-full pl-9 pr-4 py-2 bg-card border border-border/80 rounded-full text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring shadow-2xs"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+      />
+    </div>
+  </div>
+
+  <!-- 4. Tabel Riwayat Dokumen Pelepasan Aset -->
+  <div class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-muted/40 border-b border-border/80 text-xs font-semibold uppercase text-muted-foreground">
+          <tr>
+            <th class="px-5 py-3.5">No. Bukti (DA)</th>
+            <th class="px-5 py-3.5">Tanggal</th>
+            <th class="px-5 py-3.5">Kode &amp; Nama Aset</th>
+            <th class="px-5 py-3.5 text-right">Biaya Perolehan</th>
+            <th class="px-5 py-3.5 text-right">Akum. Depresiasi</th>
+            <th class="px-5 py-3.5 text-right">Nilai Buku</th>
+            <th class="px-5 py-3.5 text-right">Hasil Penjualan</th>
+            <th class="px-5 py-3.5 text-center">Selisih Buku</th>
+            <th class="px-5 py-3.5 text-center">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border/60">
+          @if (filteredDisposals().length === 0) {
+            <tr>
+              <td colspan="9" class="px-5 py-12 text-center text-muted-foreground">
+                <div class="flex flex-col items-center justify-center gap-2">
+                  <ng-icon name="phosphorTrash" class="size-8 text-muted-foreground/50" />
+                  <p class="text-sm font-medium">Belum ada dokumen pelepasan aset tetap.</p>
+                  <p class="text-xs text-muted-foreground">Klik "Pelepasan Aset Baru" untuk menjual atau menghentikan aset.</p>
+                </div>
+              </td>
+            </tr>
+          } @else {
+            @for (item of filteredDisposals(); track item.id) {
+              <tr class="hover:bg-muted/20 transition-colors">
+                <td class="px-5 py-4 font-mono text-sm font-semibold text-foreground whitespace-nowrap">
+                  {{ item.documentNumber }}
+                </td>
+                <td class="px-5 py-4 text-xs text-muted-foreground whitespace-nowrap">
+                  {{ item.transactionDate | date:'dd/MM/yyyy' }}
+                </td>
+                <td class="px-5 py-4">
+                  <div class="font-medium text-foreground">{{ item.assetName }}</div>
+                  <div class="text-xs font-mono text-muted-foreground">{{ item.assetCode }}</div>
+                </td>
+                <td class="px-5 py-4 text-right font-medium text-foreground whitespace-nowrap">
+                  {{ formatRupiah(item.acquisitionCost) }}
+                </td>
+                <td class="px-5 py-4 text-right text-muted-foreground whitespace-nowrap">
+                  {{ formatRupiah(item.accumulatedDepreciation) }}
+                </td>
+                <td class="px-5 py-4 text-right font-medium text-foreground whitespace-nowrap">
+                  {{ formatRupiah(item.bookValue) }}
+                </td>
+                <td class="px-5 py-4 text-right font-semibold text-foreground whitespace-nowrap">
+                  {{ formatRupiah(item.proceeds) }}
+                </td>
+                <td class="px-5 py-4 text-center whitespace-nowrap">
+                  @if (item.gain > 0) {
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                      <ng-icon name="phosphorTrendUp" class="size-3.5" />
+                      Laba +{{ formatRupiah(item.gain) }}
+                    </span>
+                  } @else if (item.loss > 0) {
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                      <ng-icon name="phosphorTrendDown" class="size-3.5" />
+                      Rugi -{{ formatRupiah(item.loss) }}
+                    </span>
+                  } @else {
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+                      Impas (Rp 0)
+                    </span>
+                  }
+                </td>
+                <td class="px-5 py-4 text-center whitespace-nowrap">
+                  <button
+                    type="button"
+                    (click)="openDetailModal(item)"
+                    class="px-3 py-1 text-xs rounded-full border border-border text-foreground hover:bg-muted transition"
+                  >
+                    Rincian
+                  </button>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal 1: Form Pelepasan Aset (Create Modal) -->
+  @if (isCreateModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+      <div class="relative w-full max-w-2xl bg-card border border-border rounded-3xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+        <!-- Header Modal -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div class="flex items-center gap-3">
+            <div class="flex size-9 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-600">
+              <ng-icon name="phosphorTrash" class="size-5" />
+            </div>
+            <div>
+              <h2 class="text-base font-semibold text-foreground">Formulir Pelepasan Aset Tetap</h2>
+              <p class="text-xs text-muted-foreground">Penghapusan unit aset dari inventaris fisik dan pembukuan jurnal disposisi.</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            (click)="closeCreateModal()"
+            class="p-1.5 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted"
+          >
+            <ng-icon name="phosphorX" class="size-5" />
+          </button>
+        </div>
+
+        <!-- Body Form (Scrollable) -->
+        <div class="p-6 space-y-5 overflow-y-auto flex-1">
+          <!-- Pilih Aset Aktif -->
+          <div>
+            <label for="asset-select" class="block text-xs font-semibold text-foreground mb-1.5">
+              Pilih Unit Aset Aktif <span class="text-destructive">*</span>
+            </label>
+            <select
+              id="asset-select"
+              class="w-full px-3.5 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              [ngModel]="formAssetId()"
+              (ngModelChange)="formAssetId.set($event)"
+            >
+              <option value="" disabled>Pilih Unit Aset yang akan Dilepas</option>
+              @for (a of availableAssets(); track a.id) {
+                <option [value]="a.id">
+                  {{ a.assetCode }} - {{ a.name }} (NBV: {{ formatRupiah(a.bookValue) }})
+                </option>
+              }
+            </select>
+          </div>
+
+          <!-- Rincian Finansial Aset Terpilih -->
+          @if (formSelectedAsset()) {
+            <div class="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-muted/20 border border-border/80 text-xs">
+              <div>
+                <span class="text-muted-foreground block">Biaya Perolehan</span>
+                <span class="font-semibold text-sm text-foreground">{{ formatRupiah(formSelectedAsset()!.acquisitionCost) }}</span>
+              </div>
+              <div>
+                <span class="text-muted-foreground block">Akumulasi Depresiasi</span>
+                <span class="font-semibold text-sm text-amber-600 dark:text-amber-400">{{ formatRupiah(formSelectedAsset()!.accumulatedDepreciation) }}</span>
+              </div>
+              <div>
+                <span class="text-muted-foreground block">Nilai Buku Saat Ini</span>
+                <span class="font-bold text-sm text-foreground">{{ formatRupiah(calculatedBookValue()) }}</span>
+              </div>
+            </div>
+          }
+
+          <!-- Tanggal Pelepasan & Hasil Penjualan -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="disposal-date-input" class="block text-xs font-semibold text-foreground mb-1.5">
+                Tanggal Pelepasan / Transaksi <span class="text-destructive">*</span>
+              </label>
+              <input
+                id="disposal-date-input"
+                type="date"
+                class="w-full px-3.5 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                [ngModel]="formDisposalDate()"
+                (ngModelChange)="formDisposalDate.set($event)"
+              />
+            </div>
+
+            <div>
+              <label for="proceeds-input" class="block text-xs font-semibold text-foreground mb-1.5">
+                Hasil Penjualan Pelepasan (Proceeds)
+              </label>
+              <input
+                id="proceeds-input"
+                type="number"
+                min="0"
+                step="10000"
+                placeholder="0 jika dihapus/rusak tanpa nilai jual"
+                class="w-full px-3.5 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                [ngModel]="formProceeds()"
+                (ngModelChange)="formProceeds.set($event)"
+              />
+            </div>
+          </div>
+
+          <!-- Rekening Kas/Bank Penampung jika Proceeds > 0 -->
+          @if (formProceeds() > 0) {
+            <div>
+              <label for="cash-account-select" class="block text-xs font-semibold text-foreground mb-1.5">
+                Rekening Kas / Bank Penampung <span class="text-destructive">*</span>
+              </label>
+              <select
+                id="cash-account-select"
+                class="w-full px-3.5 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                [ngModel]="formCashAccountId()"
+                (ngModelChange)="formCashAccountId.set($event)"
+              >
+                <option value="" disabled>Pilih Rekening Kas/Bank</option>
+                @for (acc of cashAccounts(); track acc.id) {
+                  <option [value]="acc.id">{{ acc.name }} ({{ acc.code || 'Kas' }})</option>
+                }
+              </select>
+            </div>
+          }
+
+          <!-- Box Kalkulasi Real-time Selisih Laba / Rugi Pelepasan -->
+          @if (formSelectedAsset()) {
+            <div
+              class="p-4 rounded-2xl border transition-all flex items-center justify-between"
+              [class.bg-emerald-500/10]="isGain()"
+              [class.border-emerald-500/30]="isGain()"
+              [class.bg-rose-500/10]="isLoss()"
+              [class.border-rose-500/30]="isLoss()"
+              [class.bg-muted/40]="isBreakeven()"
+              [class.border-border]="isBreakeven()"
+            >
+              <div class="flex items-center gap-3">
+                <div
+                  class="size-8 rounded-full flex items-center justify-center shrink-0"
+                  [class.bg-emerald-500/20]="isGain()"
+                  [class.text-emerald-600]="isGain()"
+                  [class.bg-rose-500/20]="isLoss()"
+                  [class.text-rose-600]="isLoss()"
+                  [class.bg-muted]="isBreakeven()"
+                  [class.text-muted-foreground]="isBreakeven()"
+                >
+                  <ng-icon
+                    [name]="isGain() ? 'phosphorTrendUp' : isLoss() ? 'phosphorTrendDown' : 'phosphorMoney'"
+                    class="size-4"
+                  />
+                </div>
+                <div>
+                  <span class="text-xs font-semibold uppercase tracking-wider block">
+                    {{ isGain() ? 'Laba Pelepasan Aset (Gain)' : isLoss() ? 'Rugi Pelepasan Aset (Loss)' : 'Impas (Nilai Buku = Hasil)' }}
+                  </span>
+                  <span class="text-xs text-muted-foreground">
+                    Hasil Penjualan ({{ formatRupiah(formProceeds()) }}) - Nilai Buku ({{ formatRupiah(calculatedBookValue()) }})
+                  </span>
+                </div>
+              </div>
+
+              <div class="text-right">
+                <span
+                  class="text-lg font-bold"
+                  [class.text-emerald-600]="isGain()"
+                  [class.text-rose-600]="isLoss()"
+                  [class.text-foreground]="isBreakeven()"
+                >
+                  {{ isGain() ? '+' : '' }}{{ formatRupiah(calculatedDifference()) }}
+                </span>
+              </div>
+            </div>
+          }
+
+          <!-- Alasan Pelepasan -->
+          <div>
+            <label for="disposal-reason-input" class="block text-xs font-semibold text-foreground mb-1.5">
+              Alasan / Keterangan Pelepasan <span class="text-destructive">*</span>
+            </label>
+            <textarea
+              id="disposal-reason-input"
+              rows="3"
+              placeholder="Contoh: Mesin rusak permanen tidak dapat diperbaiki / dijual ke pihak ketiga..."
+              class="w-full px-3.5 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              [ngModel]="formReason()"
+              (ngModelChange)="formReason.set($event)"
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- Footer Modal -->
+        <div class="flex items-center justify-end gap-2.5 px-6 py-4 border-t border-border bg-muted/20">
+          <button
+            type="button"
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm"
+            (click)="closeCreateModal()"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            hlmBtn
+            class="rounded-full text-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            (click)="openConfirmDialog()"
+            [disabled]="loading() || !formAssetId() || !formReason().trim() || (formProceeds() > 0 && !formCashAccountId())"
+          >
+            Lanjutkan Pelepasan
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Dialog Konfirmasi Eksekusi Pelepasan Aset Permanen -->
+  @if (isConfirmDialogOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+      <div class="relative w-full max-w-md bg-card border border-border rounded-3xl p-6 shadow-xl space-y-4">
+        <div class="flex items-center gap-3 text-destructive">
+          <div class="size-10 rounded-2xl bg-destructive/10 flex items-center justify-center shrink-0">
+            <ng-icon name="phosphorWarningCircle" class="size-6" />
+          </div>
+          <div>
+            <h3 class="text-base font-semibold text-foreground">Konfirmasi Pelepasan Aset Permanen</h3>
+            <p class="text-xs text-muted-foreground">{{ formSelectedAsset()?.assetCode }}</p>
+          </div>
+        </div>
+
+        <p class="text-sm text-foreground">
+          Pelepasan aset bersifat permanen dan tidak dapat dibatalkan. Sistem akan:
+        </p>
+
+        <ul class="text-xs text-muted-foreground space-y-1.5 list-disc pl-5">
+          <li>Mengeluarkan aset <strong>{{ formSelectedAsset()?.name }}</strong> dari daftar aktif menjadi <em>disposed</em>.</li>
+          <li>Menghentikan seluruh jadwal penyusutan bulanan di masa depan.</li>
+          @if (formProceeds() > 0) {
+            <li>Membukukan penerimaan kas masuk sebesar <strong>{{ formatRupiah(formProceeds()) }}</strong>.</li>
+          }
+          <li>
+            Membukukan jurnal umum pelepasan: menutup akun aset tetap, akumulasi penyusutan, serta mengakui
+            <strong>{{ isGain() ? 'Laba' : 'Rugi' }} Pelepasan Aset sebesar {{ formatRupiah(Math.abs(calculatedDifference())) }}</strong>.
+          </li>
+        </ul>
+
+        <div class="flex items-center justify-end gap-2.5 pt-2">
+          <button
+            type="button"
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm"
+            (click)="closeConfirmDialog()"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            hlmBtn
+            class="rounded-full text-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            (click)="executeDisposal()"
+            [disabled]="loading()"
+          >
+            Ya, Eksekusi Pelepasan
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal 3: Rincian Dokumen Pelepasan (Detail Modal) -->
+  @if (isDetailModalOpen() && selectedDisposal()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+      <div class="relative w-full max-w-lg bg-card border border-border rounded-3xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div>
+            <h2 class="text-base font-semibold text-foreground">
+              Bukti Pelepasan {{ selectedDisposal()!.documentNumber }}
+            </h2>
+            <p class="text-xs text-muted-foreground">
+              Diposting pada {{ selectedDisposal()!.postedAt | date:'dd/MM/yyyy HH:mm' }}
+            </p>
+          </div>
+          <button
+            type="button"
+            (click)="closeDetailModal()"
+            class="p-1.5 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted"
+          >
+            <ng-icon name="phosphorX" class="size-5" />
+          </button>
+        </div>
+
+        <div class="p-6 space-y-4 overflow-y-auto flex-1">
+          <div class="space-y-2 p-4 rounded-2xl bg-muted/20 border border-border/80 text-sm">
+            <div class="flex justify-between">
+              <span class="text-xs text-muted-foreground">Kode Aset:</span>
+              <span class="font-mono font-semibold text-foreground">{{ selectedDisposal()!.assetCode }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-xs text-muted-foreground">Nama Aset:</span>
+              <span class="font-medium text-foreground">{{ selectedDisposal()!.assetName }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-xs text-muted-foreground">Tanggal Transaksi:</span>
+              <span class="font-medium text-foreground">{{ selectedDisposal()!.transactionDate | date:'dd/MM/yyyy' }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-xs text-muted-foreground">Biaya Perolehan:</span>
+              <span class="font-medium text-foreground">{{ formatRupiah(selectedDisposal()!.acquisitionCost) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-xs text-muted-foreground">Akumulasi Depresiasi:</span>
+              <span class="font-medium text-foreground">{{ formatRupiah(selectedDisposal()!.accumulatedDepreciation) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-xs text-muted-foreground">Nilai Buku:</span>
+              <span class="font-medium text-foreground">{{ formatRupiah(selectedDisposal()!.bookValue) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-xs text-muted-foreground">Hasil Penjualan (Proceeds):</span>
+              <span class="font-bold text-foreground">{{ formatRupiah(selectedDisposal()!.proceeds) }}</span>
+            </div>
+            <div class="pt-2 border-t border-border flex justify-between">
+              <span class="text-xs text-muted-foreground">Pengakuan Laba / Rugi:</span>
+              @if (selectedDisposal()!.gain > 0) {
+                <span class="font-bold text-emerald-600 dark:text-emerald-400">Laba +{{ formatRupiah(selectedDisposal()!.gain) }}</span>
+              } @else if (selectedDisposal()!.loss > 0) {
+                <span class="font-bold text-rose-600 dark:text-rose-400">Rugi -{{ formatRupiah(selectedDisposal()!.loss) }}</span>
+              } @else {
+                <span class="font-medium text-muted-foreground">Impas (Rp 0)</span>
+              }
+            </div>
+          </div>
+
+          @if (selectedDisposal()!.reason) {
+            <div class="p-3.5 rounded-2xl bg-muted/10 border border-border/60 text-xs text-foreground">
+              <strong class="font-semibold block mb-1">Alasan Pelepasan:</strong>
+              <p class="text-muted-foreground">{{ selectedDisposal()!.reason }}</p>
+            </div>
+          }
+        </div>
+
+        <div class="flex items-center justify-end px-6 py-4 border-t border-border bg-muted/20">
+          <button
+            type="button"
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm"
+            (click)="closeDetailModal()"
+          >
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</main>

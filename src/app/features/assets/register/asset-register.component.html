@@ -1,0 +1,545 @@
+<main class="flex flex-1 flex-col gap-6">
+  <!-- 1. Header Halaman & Tombol Aksi -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Register Aset &amp; Pengaturan Penyusutan</h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Buku register unit fisik aset tetap pabrik, pengaturan metode depresiasi, masa manfaat, dan alokasi operasional.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button
+        hlmBtn
+        variant="outline"
+        class="rounded-full shadow-2xs text-sm"
+        (click)="loadData()"
+        [disabled]="loading()"
+      >
+        <ng-icon name="phosphorArrowsClockwise" class="size-4 mr-1.5" [class.animate-spin]="loading()" />
+        Segarkan
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. Kartu Metrik KPI Register Aset -->
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <!-- Unit Aktif -->
+    <div class="rounded-3xl border border-border/80 bg-card p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-muted-foreground">Total Unit Aktif</span>
+        <div class="flex size-9 items-center justify-center rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400">
+          <ng-icon name="phosphorCube" class="size-5" />
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-semibold tracking-tight text-foreground">
+          {{ totalActiveUnits() }} <span class="text-sm font-normal text-muted-foreground">unit</span>
+        </div>
+        <p class="text-xs text-muted-foreground mt-1">Beroperasi di fasilitas pabrik</p>
+      </div>
+    </div>
+
+    <!-- Nilai Perolehan -->
+    <div class="rounded-3xl border border-border/80 bg-card p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-muted-foreground">Total Nilai Perolehan</span>
+        <div class="flex size-9 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
+          <ng-icon name="phosphorMoney" class="size-5" />
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-semibold tracking-tight text-foreground">
+          {{ formatRupiah(totalAcquisitionCost()) }}
+        </div>
+        <p class="text-xs text-muted-foreground mt-1">Biaya perolehan historis</p>
+      </div>
+    </div>
+
+    <!-- Akumulasi Penyusutan -->
+    <div class="rounded-3xl border border-border/80 bg-card p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-muted-foreground">Akumulasi Penyusutan</span>
+        <div class="flex size-9 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+          <ng-icon name="phosphorClock" class="size-5" />
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-semibold tracking-tight text-foreground">
+          {{ formatRupiah(totalAccumulatedDepreciation()) }}
+        </div>
+        <p class="text-xs text-amber-600 dark:text-amber-400 font-medium mt-1">Beban teralokasi berjalan</p>
+      </div>
+    </div>
+
+    <!-- Nilai Buku Bersih (NBV) -->
+    <div class="rounded-3xl border border-border/80 bg-card p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-muted-foreground">Nilai Buku Bersih</span>
+        <div class="flex size-9 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <ng-icon name="phosphorTag" class="size-5" />
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-semibold tracking-tight text-foreground">
+          {{ formatRupiah(totalNetBookValue()) }}
+        </div>
+        <p class="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">Net Book Value (NBV)</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Toolbar Pencarian & Filter Multi-Kriteria -->
+  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div class="flex flex-wrap items-center gap-2">
+      <!-- Filter Setup Status -->
+      <div class="flex items-center bg-muted/40 p-1 rounded-full border border-border/60 text-xs font-medium">
+        <button
+          type="button"
+          (click)="setupFilter.set('all')"
+          class="px-3.5 py-1.5 rounded-full transition-all"
+          [class.bg-card]="setupFilter() === 'all'"
+          [class.text-foreground]="setupFilter() === 'all'"
+          [class.shadow-2xs]="setupFilter() === 'all'"
+          [class.text-muted-foreground]="setupFilter() !== 'all'"
+        >
+          Semua Setup
+        </button>
+        <button
+          type="button"
+          (click)="setupFilter.set('ready')"
+          class="px-3.5 py-1.5 rounded-full transition-all"
+          [class.bg-card]="setupFilter() === 'ready'"
+          [class.text-foreground]="setupFilter() === 'ready'"
+          [class.shadow-2xs]="setupFilter() === 'ready'"
+          [class.text-muted-foreground]="setupFilter() !== 'ready'"
+        >
+          Siap Disusutkan
+        </button>
+        <button
+          type="button"
+          (click)="setupFilter.set('needs_setup')"
+          class="px-3.5 py-1.5 rounded-full transition-all"
+          [class.bg-card]="setupFilter() === 'needs_setup'"
+          [class.text-foreground]="setupFilter() === 'needs_setup'"
+          [class.shadow-2xs]="setupFilter() === 'needs_setup'"
+          [class.text-muted-foreground]="setupFilter() !== 'needs_setup'"
+        >
+          Perlu Pengaturan
+        </button>
+      </div>
+
+      <!-- Filter Kategori Dropdown -->
+      <div class="relative">
+        <select
+          class="h-9 px-3.5 bg-card border border-border/80 rounded-full text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring shadow-2xs cursor-pointer"
+          [ngModel]="categoryFilter()"
+          (ngModelChange)="categoryFilter.set($event)"
+        >
+          <option value="all">Semua Kategori Aset</option>
+          @for (c of categories(); track c.id) {
+            <option [value]="c.id">{{ c.name }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Filter Status Aset Dropdown -->
+      <div class="relative">
+        <select
+          class="h-9 px-3.5 bg-card border border-border/80 rounded-full text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring shadow-2xs cursor-pointer"
+          [ngModel]="statusFilter()"
+          (ngModelChange)="statusFilter.set($event)"
+        >
+          <option value="active">Status: Aktif</option>
+          <option value="disposed">Status: Dilepas (Disposed)</option>
+          <option value="cancelled">Status: Dibatalkan</option>
+          <option value="all">Status: Semua Status</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Kotak Pencarian -->
+    <div class="relative min-w-[280px]">
+      <ng-icon
+        name="phosphorMagnifyingGlass"
+        class="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
+      />
+      <input
+        type="text"
+        placeholder="Cari kode AST, nama, lokasi, serial..."
+        class="w-full pl-9 pr-4 py-2 bg-card border border-border/80 rounded-full text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring shadow-2xs"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+      />
+    </div>
+  </div>
+
+  <!-- 4. Tabel Register Aset Tetap -->
+  <div class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-muted/40 border-b border-border/80 text-xs font-semibold uppercase text-muted-foreground">
+          <tr>
+            <th class="px-5 py-3.5">Kode Aset</th>
+            <th class="px-5 py-3.5">Nama &amp; Spesifikasi</th>
+            <th class="px-5 py-3.5">Kategori</th>
+            <th class="px-5 py-3.5 text-right">Biaya Perolehan</th>
+            <th class="px-5 py-3.5 text-right">Akum. Penyusutan</th>
+            <th class="px-5 py-3.5 text-right">Nilai Buku</th>
+            <th class="px-5 py-3.5">Lokasi / Custodian</th>
+            <th class="px-5 py-3.5 text-center">Status Setup</th>
+            <th class="px-5 py-3.5 text-center">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border/60">
+          @if (filteredAssets().length === 0) {
+            <tr>
+              <td colspan="9" class="px-5 py-12 text-center text-muted-foreground">
+                <div class="flex flex-col items-center justify-center gap-2">
+                  <ng-icon name="phosphorArmchair" class="size-8 text-muted-foreground/50" />
+                  <p class="text-sm font-medium">Tidak ada aset tetap yang cocok dengan kriteria filter.</p>
+                  <p class="text-xs text-muted-foreground">Lakukan pengadaan aset terlebih dahulu atau sesuaikan filter pencarian.</p>
+                </div>
+              </td>
+            </tr>
+          } @else {
+            @for (asset of filteredAssets(); track asset.id) {
+              <tr class="hover:bg-muted/20 transition-colors">
+                <td class="px-5 py-4 font-mono text-sm font-semibold text-foreground whitespace-nowrap">
+                  {{ asset.assetCode }}
+                </td>
+                <td class="px-5 py-4">
+                  <div class="font-medium text-foreground">{{ asset.name }}</div>
+                  @if (asset.serialNumber) {
+                    <div class="text-xs text-muted-foreground font-mono">SN: {{ asset.serialNumber }}</div>
+                  }
+                </td>
+                <td class="px-5 py-4 whitespace-nowrap">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-foreground">
+                    {{ asset.categoryName || 'Belum Ditentukan' }}
+                  </span>
+                </td>
+                <td class="px-5 py-4 text-right font-medium text-foreground whitespace-nowrap">
+                  {{ formatRupiah(asset.acquisitionCost) }}
+                </td>
+                <td class="px-5 py-4 text-right text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap">
+                  {{ formatRupiah(asset.accumulatedDepreciation) }}
+                </td>
+                <td class="px-5 py-4 text-right font-semibold text-foreground whitespace-nowrap">
+                  {{ formatRupiah(asset.bookValue) }}
+                </td>
+                <td class="px-5 py-4 whitespace-nowrap">
+                  <div class="text-xs text-foreground font-medium">{{ asset.location || '-' }}</div>
+                  <div class="text-xs text-muted-foreground">{{ asset.custodian || '-' }}</div>
+                </td>
+                <td class="px-5 py-4 text-center whitespace-nowrap">
+                  @if (asset.status === 'disposed') {
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-500/10 text-zinc-600 dark:text-zinc-400">
+                      Dilepas
+                    </span>
+                  } @else if (asset.status === 'cancelled') {
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                      Dibatalkan
+                    </span>
+                  } @else if (asset.isSetupComplete) {
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                      Siap Disusutkan
+                    </span>
+                  } @else {
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                      Perlu Pengaturan
+                    </span>
+                  }
+                </td>
+                <td class="px-5 py-4 text-center whitespace-nowrap">
+                  <button
+                    type="button"
+                    (click)="openSettingsModal(asset)"
+                    class="px-3 py-1 text-xs rounded-full border border-border text-foreground hover:bg-muted transition font-medium flex items-center gap-1 mx-auto"
+                  >
+                    <ng-icon [name]="asset.isLocked ? 'phosphorLock' : 'phosphorGear'" class="size-3.5" />
+                    Pengaturan
+                  </button>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal Pengaturan Penyusutan (Settings Sheet / Modal) -->
+  @if (isSettingsModalOpen() && selectedAsset()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+      <div class="relative w-full max-w-2xl bg-card border border-border rounded-3xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+        <!-- Header Modal -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div class="flex items-center gap-3">
+            <div class="flex size-9 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <ng-icon name="phosphorGear" class="size-5" />
+            </div>
+            <div>
+              <h2 class="text-base font-semibold text-foreground">
+                Pengaturan Aset: {{ selectedAsset()!.assetCode }}
+              </h2>
+              <p class="text-xs text-muted-foreground">{{ selectedAsset()!.name }}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            (click)="closeSettingsModal()"
+            class="p-1.5 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted"
+          >
+            <ng-icon name="phosphorX" class="size-5" />
+          </button>
+        </div>
+
+        <!-- Body Form (Scrollable) -->
+        <div class="p-6 space-y-5 overflow-y-auto flex-1">
+          <!-- Banner Ringkasan Finansial Aset -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-muted/20 border border-border/80 text-xs">
+            <div>
+              <span class="text-muted-foreground block">Biaya Perolehan</span>
+              <span class="font-semibold text-sm text-foreground">{{ formatRupiah(selectedAsset()!.acquisitionCost) }}</span>
+            </div>
+            <div>
+              <span class="text-muted-foreground block">Akum. Depresiasi</span>
+              <span class="font-semibold text-sm text-amber-600 dark:text-amber-400">{{ formatRupiah(selectedAsset()!.accumulatedDepreciation) }}</span>
+            </div>
+            <div>
+              <span class="text-muted-foreground block">Nilai Buku (NBV)</span>
+              <span class="font-semibold text-sm text-foreground">{{ formatRupiah(selectedAsset()!.bookValue) }}</span>
+            </div>
+            <div>
+              <span class="text-muted-foreground block">Tanggal Perolehan</span>
+              <span class="font-semibold text-sm text-foreground">{{ selectedAsset()!.capitalizationDate | date:'dd/MM/yyyy' }}</span>
+            </div>
+          </div>
+
+          <!-- Alert Penguncian Akuntansi jika sudah ada penyusutan terposting -->
+          @if (selectedAsset()!.isLocked) {
+            <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-300 flex items-start gap-2.5">
+              <ng-icon name="phosphorLock" class="size-4 shrink-0 mt-0.5" />
+              <div>
+                <strong class="font-semibold">Parameter Akuntansi Terkunci:</strong>
+                Aset ini telah memiliki akumulasi penyusutan terposting. Metode, masa manfaat, residu, dan tanggal mulai tidak dapat diubah kembali. Anda tetap dapat memperbarui informasi operasional di bawah.
+              </div>
+            </div>
+          }
+
+          <!-- Kategori Aset -->
+          <div>
+            <label for="asset-category-select" class="block text-xs font-semibold text-foreground mb-1.5">
+              Kategori Aset Tetap
+            </label>
+            <select
+              id="asset-category-select"
+              class="w-full px-3.5 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              [ngModel]="formCategoryId()"
+              (ngModelChange)="formCategoryId.set($event)"
+            >
+              <option value="">Pilih Kategori Aset</option>
+              @for (c of categories(); track c.id) {
+                <option [value]="c.id">{{ c.name }} ({{ c.code }})</option>
+              }
+            </select>
+          </div>
+
+          <!-- Seksi Parameter Akuntansi -->
+          <div class="space-y-4 pt-2 border-t border-border/60">
+            <h3 class="text-xs font-semibold uppercase text-muted-foreground tracking-wider flex items-center gap-1.5">
+              <ng-icon [name]="selectedAsset()!.isLocked ? 'phosphorLock' : 'phosphorLockOpen'" class="size-3.5" />
+              Parameter Penyusutan Fiskal &amp; Komersial
+            </h3>
+
+            <!-- Metode Penyusutan -->
+            <div>
+              <span class="block text-xs font-semibold text-foreground mb-1.5">
+                Metode Penyusutan
+              </span>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label
+                  class="flex items-center gap-2.5 p-3 rounded-2xl border transition cursor-pointer"
+                  [class.border-primary]="formDepreciationMethod() === 'straight_line'"
+                  [class.bg-primary/5]="formDepreciationMethod() === 'straight_line'"
+                  [class.opacity-60]="selectedAsset()!.isLocked"
+                >
+                  <input
+                    type="radio"
+                    name="method"
+                    value="straight_line"
+                    [disabled]="selectedAsset()!.isLocked"
+                    [ngModel]="formDepreciationMethod()"
+                    (ngModelChange)="formDepreciationMethod.set($event)"
+                    class="text-primary"
+                  />
+                  <div>
+                    <span class="text-sm font-medium text-foreground block">Garis Lurus (Straight Line)</span>
+                    <span class="text-xs text-muted-foreground">Beban terbagi rata tiap bulan</span>
+                  </div>
+                </label>
+
+                <label
+                  class="flex items-center gap-2.5 p-3 rounded-2xl border transition cursor-pointer"
+                  [class.border-primary]="formDepreciationMethod() === 'declining_balance'"
+                  [class.bg-primary/5]="formDepreciationMethod() === 'declining_balance'"
+                  [class.opacity-60]="selectedAsset()!.isLocked"
+                >
+                  <input
+                    type="radio"
+                    name="method"
+                    value="declining_balance"
+                    [disabled]="selectedAsset()!.isLocked"
+                    [ngModel]="formDepreciationMethod()"
+                    (ngModelChange)="formDepreciationMethod.set($event)"
+                    class="text-primary"
+                  />
+                  <div>
+                    <span class="text-sm font-medium text-foreground block">Saldo Menurun Ganda (DDB)</span>
+                    <span class="text-xs text-muted-foreground">Beban lebih besar di awal masa</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Masa Manfaat & Nilai Residu -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label for="useful-life-input" class="block text-xs font-semibold text-foreground mb-1.5">
+                  Masa Manfaat (Bulan) <span class="text-destructive">*</span>
+                </label>
+                <input
+                  id="useful-life-input"
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="Contoh: 48 (4 tahun)"
+                  [disabled]="selectedAsset()!.isLocked"
+                  class="w-full px-3.5 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                  [ngModel]="formUsefulLifeMonths()"
+                  (ngModelChange)="formUsefulLifeMonths.set($event)"
+                />
+                <span class="text-xs text-muted-foreground mt-1 block">
+                  Estimasi: {{ (formUsefulLifeMonths() / 12).toFixed(1) }} tahun
+                </span>
+              </div>
+
+              <div>
+                <label for="residual-value-input" class="block text-xs font-semibold text-foreground mb-1.5">
+                  Nilai Residu / Sisa (Rp)
+                </label>
+                <input
+                  id="residual-value-input"
+                  type="number"
+                  min="0"
+                  step="10000"
+                  placeholder="Nilai sisa buku di akhir masa"
+                  [disabled]="selectedAsset()!.isLocked"
+                  class="w-full px-3.5 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                  [ngModel]="formResidualValue()"
+                  (ngModelChange)="formResidualValue.set($event)"
+                />
+                <span class="text-xs text-muted-foreground mt-1 block">
+                  Maksimum di bawah biaya perolehan
+                </span>
+              </div>
+            </div>
+
+            <!-- Tanggal Mulai Penyusutan -->
+            <div>
+              <label for="dep-start-date-input" class="block text-xs font-semibold text-foreground mb-1.5">
+                Tanggal Mulai Penyusutan <span class="text-destructive">*</span>
+              </label>
+              <input
+                id="dep-start-date-input"
+                type="date"
+                [disabled]="selectedAsset()!.isLocked"
+                class="w-full px-3.5 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                [ngModel]="formDepreciationStartDate()"
+                (ngModelChange)="formDepreciationStartDate.set($event)"
+              />
+              <span class="text-xs text-muted-foreground mt-1 block">
+                Tidak boleh lebih awal dari tanggal perolehan/kapitalisasi.
+              </span>
+            </div>
+          </div>
+
+          <!-- Seksi Lokasi & Tanggung Jawab Fisik -->
+          <div class="space-y-4 pt-2 border-t border-border/60">
+            <h3 class="text-xs font-semibold uppercase text-muted-foreground tracking-wider flex items-center gap-1.5">
+              <ng-icon name="phosphorMapPin" class="size-3.5" />
+              Alokasi Operasional &amp; Identitas Fisik
+            </h3>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label for="location-input" class="block text-xs font-semibold text-foreground mb-1.5">
+                  Lokasi Fisik
+                </label>
+                <input
+                  id="location-input"
+                  type="text"
+                  placeholder="Lantai 1 / Ruang Jahit"
+                  class="w-full px-3.5 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  [ngModel]="formLocation()"
+                  (ngModelChange)="formLocation.set($event)"
+                />
+              </div>
+
+              <div>
+                <label for="custodian-input" class="block text-xs font-semibold text-foreground mb-1.5">
+                  Penanggung Jawab (Custodian)
+                </label>
+                <input
+                  id="custodian-input"
+                  type="text"
+                  placeholder="Nama Operator / Supervisor"
+                  class="w-full px-3.5 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  [ngModel]="formCustodian()"
+                  (ngModelChange)="formCustodian.set($event)"
+                />
+              </div>
+
+              <div>
+                <label for="serial-number-input" class="block text-xs font-semibold text-foreground mb-1.5">
+                  Nomor Seri Pabrikan (SN)
+                </label>
+                <input
+                  id="serial-number-input"
+                  type="text"
+                  placeholder="Nomor barcode / pelat mesin"
+                  class="w-full px-3.5 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring font-mono"
+                  [ngModel]="formSerialNumber()"
+                  (ngModelChange)="formSerialNumber.set($event)"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer Modal -->
+        <div class="flex items-center justify-end gap-2.5 px-6 py-4 border-t border-border bg-muted/20">
+          <button
+            type="button"
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm"
+            (click)="closeSettingsModal()"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            hlmBtn
+            class="rounded-full text-sm bg-primary text-primary-foreground hover:bg-primary/90"
+            (click)="saveSettings()"
+            [disabled]="loading()"
+          >
+            Simpan Parameter
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</main>

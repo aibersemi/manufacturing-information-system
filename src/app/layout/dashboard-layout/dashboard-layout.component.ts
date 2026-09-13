@@ -29,6 +29,10 @@ import {
   phosphorUsersThree,
   phosphorWarehouse,
   phosphorX,
+  phosphorArmchair,
+  phosphorCube,
+  phosphorChartPieSlice,
+  phosphorTrash,
 } from '@ng-icons/phosphor-icons/regular';
 import { HlmAvatarImports } from '@spartan-ng/helm/avatar';
 import { HlmBadge } from '@spartan-ng/helm/badge';
@@ -79,6 +83,10 @@ import { CompanyService, Company } from '../../core/services/company.service';
       phosphorCheck,
       phosphorSliders,
       phosphorPulse,
+      phosphorArmchair,
+      phosphorCube,
+      phosphorChartPieSlice,
+      phosphorTrash,
     }),
   ],
   templateUrl: './dashboard-layout.component.html',
@@ -96,9 +104,10 @@ export class DashboardLayoutComponent {
     masterData: true,
     purchasing: true,
     sales: true,
+    finance: true,
+    assets: true,
     operations: true,
     inventory: true,
-    finance: true,
     qc: false,
     settings: false,
   });

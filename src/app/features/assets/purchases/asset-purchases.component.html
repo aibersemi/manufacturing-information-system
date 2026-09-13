@@ -1,0 +1,635 @@
+<main class="flex flex-1 flex-col gap-6">
+  <!-- 1. Header Halaman & Tombol Aksi -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Pengadaan Aset Tetap</h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Pencatatan faktur pengadaan mesin, perlengkapan, dan inventaris fisik pabrik berpenomoran otomatis (BA).
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button
+        hlmBtn
+        variant="outline"
+        class="rounded-full shadow-2xs text-sm"
+        (click)="loadData()"
+        [disabled]="loading()"
+      >
+        <ng-icon name="phosphorArrowsClockwise" class="size-4 mr-1.5" [class.animate-spin]="loading()" />
+        Segarkan
+      </button>
+
+      <button
+        hlmBtn
+        class="rounded-full shadow-2xs text-sm bg-primary text-primary-foreground hover:bg-primary/90"
+        (click)="openCreateModal()"
+      >
+        <ng-icon name="phosphorPlus" class="size-4 mr-1.5" />
+        Pengadaan Baru
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. Kartu Metrik KPI -->
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <!-- Total Dokumen Pengadaan -->
+    <div class="rounded-3xl border border-border/80 bg-card p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-muted-foreground">Total Pengadaan Aset</span>
+        <div class="flex size-9 items-center justify-center rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400">
+          <ng-icon name="phosphorShoppingCart" class="size-5" />
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-semibold tracking-tight text-foreground">
+          {{ totalPurchasesCount() }}
+        </div>
+        <p class="text-xs text-muted-foreground mt-1">Seluruh berkas pengadaan fisik</p>
+      </div>
+    </div>
+
+    <!-- Nilai Total Pengadaan -->
+    <div class="rounded-3xl border border-border/80 bg-card p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-muted-foreground">Nilai Investasi Aset</span>
+        <div class="flex size-9 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <ng-icon name="phosphorMoney" class="size-5" />
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-semibold tracking-tight text-foreground">
+          {{ formatRupiah(totalPurchaseValue()) }}
+        </div>
+        <p class="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">Total kapitalisasi aktif</p>
+      </div>
+    </div>
+
+    <!-- Menunggu Posting -->
+    <div class="rounded-3xl border border-border/80 bg-card p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-muted-foreground">Menunggu Posting</span>
+        <div class="flex size-9 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+          <ng-icon name="phosphorCube" class="size-5" />
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-2xl font-semibold tracking-tight text-foreground">
+          {{ pendingDraftsCount() }}
+        </div>
+        <p class="text-xs text-amber-600 dark:text-amber-400 font-medium mt-1">Draf belum dikapitalisasi</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Toolbar Pencarian & Filter Status -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex flex-wrap items-center gap-1.5 bg-muted/40 p-1 rounded-full border border-border/60">
+      <button
+        type="button"
+        (click)="statusFilter.set('all')"
+        class="px-4 py-1.5 rounded-full text-xs font-medium transition-all"
+        [class.bg-card]="statusFilter() === 'all'"
+        [class.text-foreground]="statusFilter() === 'all'"
+        [class.shadow-2xs]="statusFilter() === 'all'"
+        [class.text-muted-foreground]="statusFilter() !== 'all'"
+      >
+        Semua
+      </button>
+      <button
+        type="button"
+        (click)="statusFilter.set('draft')"
+        class="px-4 py-1.5 rounded-full text-xs font-medium transition-all"
+        [class.bg-card]="statusFilter() === 'draft'"
+        [class.text-foreground]="statusFilter() === 'draft'"
+        [class.shadow-2xs]="statusFilter() === 'draft'"
+        [class.text-muted-foreground]="statusFilter() !== 'draft'"
+      >
+        Draf
+      </button>
+      <button
+        type="button"
+        (click)="statusFilter.set('posted')"
+        class="px-4 py-1.5 rounded-full text-xs font-medium transition-all"
+        [class.bg-card]="statusFilter() === 'posted'"
+        [class.text-foreground]="statusFilter() === 'posted'"
+        [class.shadow-2xs]="statusFilter() === 'posted'"
+        [class.text-muted-foreground]="statusFilter() !== 'posted'"
+      >
+        Diposting
+      </button>
+      <button
+        type="button"
+        (click)="statusFilter.set('void')"
+        class="px-4 py-1.5 rounded-full text-xs font-medium transition-all"
+        [class.bg-card]="statusFilter() === 'void'"
+        [class.text-foreground]="statusFilter() === 'void'"
+        [class.shadow-2xs]="statusFilter() === 'void'"
+        [class.text-muted-foreground]="statusFilter() !== 'void'"
+      >
+        Dibatalkan
+      </button>
+    </div>
+
+    <!-- Kolom Pencarian -->
+    <div class="relative min-w-[280px]">
+      <ng-icon
+        name="phosphorMagnifyingGlass"
+        class="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
+      />
+      <input
+        type="text"
+        placeholder="Cari bukti BA, pemasok, uraian..."
+        class="w-full pl-9 pr-4 py-2 bg-card border border-border/80 rounded-full text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring shadow-2xs"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+      />
+    </div>
+  </div>
+
+  <!-- 4. Tabel Daftar Pengadaan Aset -->
+  <div class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-muted/40 border-b border-border/80 text-xs font-semibold uppercase text-muted-foreground">
+          <tr>
+            <th class="px-5 py-3.5">No. Bukti (BA)</th>
+            <th class="px-5 py-3.5">Tanggal</th>
+            <th class="px-5 py-3.5">Pemasok</th>
+            <th class="px-5 py-3.5 text-center">Unit Fisik</th>
+            <th class="px-5 py-3.5 text-right">Total Investasi</th>
+            <th class="px-5 py-3.5 text-center">Status</th>
+            <th class="px-5 py-3.5 text-center">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border/60">
+          @if (filteredPurchases().length === 0) {
+            <tr>
+              <td colspan="7" class="px-5 py-12 text-center text-muted-foreground">
+                <div class="flex flex-col items-center justify-center gap-2">
+                  <ng-icon name="phosphorCube" class="size-8 text-muted-foreground/50" />
+                  <p class="text-sm font-medium">Belum ada data pengadaan aset tetap.</p>
+                  <p class="text-xs text-muted-foreground">Klik "Pengadaan Baru" untuk mencatat aset yang diterima.</p>
+                </div>
+              </td>
+            </tr>
+          } @else {
+            @for (item of filteredPurchases(); track item.id) {
+              <tr class="hover:bg-muted/20 transition-colors">
+                <td class="px-5 py-4 font-mono text-sm font-semibold text-foreground whitespace-nowrap">
+                  {{ item.documentNumber }}
+                </td>
+                <td class="px-5 py-4 text-xs text-muted-foreground whitespace-nowrap">
+                  {{ item.transactionDate | date:'dd/MM/yyyy' }}
+                </td>
+                <td class="px-5 py-4 text-sm font-medium text-foreground">
+                  {{ item.counterpartyName || 'Pemasok Umum' }}
+                </td>
+                <td class="px-5 py-4 text-center whitespace-nowrap">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-foreground">
+                    {{ item.totalUnits }} unit
+                  </span>
+                </td>
+                <td class="px-5 py-4 text-right font-semibold text-foreground whitespace-nowrap">
+                  {{ formatRupiah(item.totalAmount) }}
+                </td>
+                <td class="px-5 py-4 text-center whitespace-nowrap">
+                  @if (item.status === 'draft') {
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                      Draf
+                    </span>
+                  } @else if (item.status === 'posted') {
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                      Diposting
+                    </span>
+                  } @else {
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                      Dibatalkan
+                    </span>
+                  }
+                </td>
+                <td class="px-5 py-4 text-center whitespace-nowrap">
+                  <div class="flex items-center justify-center gap-1.5">
+                    <button
+                      type="button"
+                      (click)="openDetailModal(item)"
+                      class="px-2.5 py-1 text-xs rounded-full border border-border text-foreground hover:bg-muted transition"
+                    >
+                      Rincian
+                    </button>
+
+                    @if (item.status === 'draft') {
+                      <button
+                        type="button"
+                        (click)="openPostDialog(item)"
+                        class="px-2.5 py-1 text-xs rounded-full bg-emerald-600 text-white hover:bg-emerald-700 transition"
+                      >
+                        Posting
+                      </button>
+                    }
+
+                    @if (item.status === 'posted' && item.paidAmount === 0) {
+                      <button
+                        type="button"
+                        (click)="openCancelDialog(item)"
+                        class="px-2.5 py-1 text-xs rounded-full bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 transition"
+                      >
+                        Batal
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal 1: Form Pengadaan Baru (Create Modal) -->
+  @if (isCreateModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+      <div class="relative w-full max-w-3xl bg-card border border-border rounded-3xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+        <!-- Header Modal -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div class="flex items-center gap-3">
+            <div class="flex size-9 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <ng-icon name="phosphorShoppingCart" class="size-5" />
+            </div>
+            <div>
+              <h2 class="text-base font-semibold text-foreground">Buat Pengadaan Aset Tetap</h2>
+              <p class="text-xs text-muted-foreground">Catat unit fisik aset baru yang diterima dari vendor.</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            (click)="closeCreateModal()"
+            class="p-1.5 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted"
+          >
+            <ng-icon name="phosphorX" class="size-5" />
+          </button>
+        </div>
+
+        <!-- Body Form (Scrollable) -->
+        <div class="p-6 space-y-5 overflow-y-auto flex-1">
+          <!-- Pemasok & Tanggal Transaksi -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="supplier-select" class="block text-xs font-semibold text-foreground mb-1.5">
+                Pemasok / Vendor Terdaftar <span class="text-destructive">*</span>
+              </label>
+              <select
+                id="supplier-select"
+                class="w-full px-3.5 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                [ngModel]="formSupplierId()"
+                (ngModelChange)="formSupplierId.set($event)"
+              >
+                <option value="" disabled>Pilih Pemasok</option>
+                @for (s of suppliers(); track s.id) {
+                  <option [value]="s.id">{{ s.name }}</option>
+                }
+              </select>
+            </div>
+
+            <div>
+              <label for="trans-date-input" class="block text-xs font-semibold text-foreground mb-1.5">
+                Tanggal Penerimaan / Kapitalisasi <span class="text-destructive">*</span>
+              </label>
+              <input
+                id="trans-date-input"
+                type="date"
+                class="w-full px-3.5 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                [ngModel]="formTransactionDate()"
+                (ngModelChange)="formTransactionDate.set($event)"
+              />
+            </div>
+          </div>
+
+          <!-- Catatan / Uraian -->
+          <div>
+            <label for="notes-input" class="block text-xs font-semibold text-foreground mb-1.5">
+              Catatan Bukti Penerimaan (Opsional)
+            </label>
+            <input
+              id="notes-input"
+              type="text"
+              placeholder="Contoh: Pengadaan 3 unit mesin obras pabrik barat..."
+              class="w-full px-3.5 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              [ngModel]="formNotes()"
+              (ngModelChange)="formNotes.set($event)"
+            />
+          </div>
+
+          <!-- Baris Rincian Aset Multi-Line -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
+                  Rincian Unit Aset Tetap
+                </span>
+                <p class="text-xs text-muted-foreground">
+                  Setiap kuantitas integer akan dimekarkan menjadi unit aset unik berpenomoran sendiri saat diposting.
+                </p>
+              </div>
+              <button
+                type="button"
+                (click)="addLine()"
+                class="px-3 py-1.5 text-xs rounded-full border border-border text-foreground hover:bg-muted font-medium flex items-center gap-1"
+              >
+                <ng-icon name="phosphorPlus" class="size-3.5" />
+                Tambah Baris
+              </button>
+            </div>
+
+            <div class="space-y-2.5">
+              @for (line of formLines(); track $index) {
+                <div class="p-3.5 rounded-2xl border border-border/80 bg-muted/20 flex flex-col sm:flex-row items-center gap-3">
+                  <div class="flex-1 w-full">
+                    <input
+                      type="text"
+                      placeholder="Nama/Deskripsi Aset (contoh: Mesin Jahit Singer)"
+                      class="w-full px-3 py-2 bg-background border border-input rounded-xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      [ngModel]="line.name"
+                      (ngModelChange)="updateLineName($index, $event)"
+                    />
+                  </div>
+
+                  <div class="w-full sm:w-28">
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="Qty Unit"
+                      class="w-full px-3 py-2 bg-background border border-input rounded-xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-center"
+                      [ngModel]="line.quantity"
+                      (ngModelChange)="updateLineQuantity($index, $event)"
+                    />
+                  </div>
+
+                  <div class="w-full sm:w-44">
+                    <input
+                      type="number"
+                      min="0"
+                      step="1000"
+                      placeholder="Harga / Unit (Rp)"
+                      class="w-full px-3 py-2 bg-background border border-input rounded-xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-right"
+                      [ngModel]="line.unitPrice"
+                      (ngModelChange)="updateLineUnitPrice($index, $event)"
+                    />
+                  </div>
+
+                  <div class="w-full sm:w-36 text-right font-semibold text-sm text-foreground whitespace-nowrap">
+                    {{ formatRupiah((line.quantity || 0) * (line.unitPrice || 0)) }}
+                  </div>
+
+                  <button
+                    type="button"
+                    (click)="removeLine($index)"
+                    class="p-1.5 text-muted-foreground hover:text-destructive rounded-full hover:bg-muted transition"
+                    title="Hapus baris"
+                  >
+                    <ng-icon name="phosphorTrash" class="size-4" />
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Total Ringkasan Nilai Pengadaan -->
+          <div class="flex items-center justify-between p-4 rounded-2xl bg-muted/40 border border-border">
+            <span class="text-sm font-medium text-muted-foreground">Total Nilai Pengadaan (Hutang Pemasok):</span>
+            <span class="text-xl font-bold text-foreground">{{ formatRupiah(formTotalAmount()) }}</span>
+          </div>
+        </div>
+
+        <!-- Footer Modal -->
+        <div class="flex items-center justify-end gap-2.5 px-6 py-4 border-t border-border bg-muted/20">
+          <button
+            type="button"
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm"
+            (click)="closeCreateModal()"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            hlmBtn
+            class="rounded-full text-sm bg-primary text-primary-foreground hover:bg-primary/90"
+            (click)="savePurchase()"
+            [disabled]="loading() || formTotalAmount() <= 0"
+          >
+            Simpan Draf Pengadaan
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal 2: Rincian Dokumen (Detail Modal) -->
+  @if (isDetailModalOpen() && selectedDoc()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+      <div class="relative w-full max-w-2xl bg-card border border-border rounded-3xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div>
+            <h2 class="text-base font-semibold text-foreground">
+              Bukti Pengadaan {{ selectedDoc()!.documentNumber }}
+            </h2>
+            <p class="text-xs text-muted-foreground">
+              Dibuat pada {{ selectedDoc()!.createdAt | date:'dd/MM/yyyy HH:mm' }}
+            </p>
+          </div>
+          <button
+            type="button"
+            (click)="closeDetailModal()"
+            class="p-1.5 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted"
+          >
+            <ng-icon name="phosphorX" class="size-5" />
+          </button>
+        </div>
+
+        <div class="p-6 space-y-4 overflow-y-auto flex-1">
+          <div class="grid grid-cols-2 gap-4 p-4 rounded-2xl bg-muted/20 border border-border/80 text-sm">
+            <div>
+              <span class="text-xs text-muted-foreground block">Pemasok</span>
+              <span class="font-medium text-foreground">{{ selectedDoc()!.counterpartyName || '-' }}</span>
+            </div>
+            <div>
+              <span class="text-xs text-muted-foreground block">Tanggal Transaksi</span>
+              <span class="font-medium text-foreground">{{ selectedDoc()!.transactionDate | date:'dd/MM/yyyy' }}</span>
+            </div>
+            <div>
+              <span class="text-xs text-muted-foreground block">Status Dokumen</span>
+              <span class="capitalize font-semibold text-foreground">{{ selectedDoc()!.status }}</span>
+            </div>
+            <div>
+              <span class="text-xs text-muted-foreground block">Total Investasi</span>
+              <span class="font-bold text-foreground">{{ formatRupiah(selectedDoc()!.totalAmount) }}</span>
+            </div>
+          </div>
+
+          @if (selectedDoc()!.notes) {
+            <div class="p-3 rounded-xl bg-muted/10 border border-border/60 text-xs text-muted-foreground">
+              <strong>Catatan:</strong> {{ selectedDoc()!.notes }}
+            </div>
+          }
+
+          <div>
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              Daftar Baris Item Fisik
+            </h3>
+            <div class="space-y-2">
+              @for (l of selectedDoc()!.lines; track l.id) {
+                <div class="flex items-center justify-between p-3 rounded-xl border border-border/60 text-sm">
+                  <div>
+                    <span class="font-medium text-foreground">{{ l.description }}</span>
+                    <span class="text-xs text-muted-foreground block">{{ l.quantity }} unit @ {{ formatRupiah(l.unitPrice) }}</span>
+                  </div>
+                  <span class="font-semibold text-foreground">{{ formatRupiah(l.totalAmount) }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-border bg-muted/20">
+          @if (selectedDoc()!.status === 'draft') {
+            <button
+              type="button"
+              hlmBtn
+              class="rounded-full text-sm bg-emerald-600 text-white hover:bg-emerald-700"
+              (click)="openPostDialog(selectedDoc()!)"
+            >
+              Posting Dokumen
+            </button>
+          }
+          @if (selectedDoc()!.status === 'posted' && selectedDoc()!.paidAmount === 0) {
+            <button
+              type="button"
+              hlmBtn
+              variant="outline"
+              class="rounded-full text-sm text-rose-600 border-rose-200 hover:bg-rose-50 dark:border-rose-900/40 dark:hover:bg-rose-950/20"
+              (click)="openCancelDialog(selectedDoc()!)"
+            >
+              Batalkan Pengadaan
+            </button>
+          }
+          <button
+            type="button"
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm"
+            (click)="closeDetailModal()"
+          >
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Dialog Konfirmasi 1: Posting Dokumen -->
+  @if (isPostDialogOpen() && selectedDoc()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+      <div class="relative w-full max-w-md bg-card border border-border rounded-3xl p-6 shadow-xl space-y-4">
+        <div class="flex items-center gap-3 text-emerald-600 dark:text-emerald-400">
+          <div class="size-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+            <ng-icon name="phosphorCheckCircle" class="size-6" />
+          </div>
+          <div>
+            <h3 class="text-base font-semibold text-foreground">Posting Pengadaan Aset</h3>
+            <p class="text-xs text-muted-foreground">{{ selectedDoc()!.documentNumber }}</p>
+          </div>
+        </div>
+
+        <p class="text-sm text-foreground">
+          Apakah Anda yakin ingin memposting pengadaan ini? Sistem akan:
+        </p>
+
+        <ul class="text-xs text-muted-foreground space-y-1.5 list-disc pl-5">
+          <li>Membentuk <strong>{{ selectedDoc()!.totalUnits }} rekaman aset aktif</strong> pada Register Aset.</li>
+          <li>Mencatat kewajiban hutang usaha vendor sebesar <strong>{{ formatRupiah(selectedDoc()!.totalAmount) }}</strong> pada buku pembantu hutang.</li>
+          <li>Membukukan jurnal umum otomatis: <em>Debit Aset Tetap</em> &amp; <em>Kredit Hutang Usaha</em>.</li>
+        </ul>
+
+        <div class="flex items-center justify-end gap-2.5 pt-2">
+          <button
+            type="button"
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm"
+            (click)="closePostDialog()"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            hlmBtn
+            class="rounded-full text-sm bg-emerald-600 text-white hover:bg-emerald-700"
+            (click)="confirmPost()"
+            [disabled]="loading()"
+          >
+            Ya, Posting Sekarang
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Dialog Konfirmasi 2: Batalkan Dokumen (Cancel) -->
+  @if (isCancelDialogOpen() && selectedDoc()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+      <div class="relative w-full max-w-md bg-card border border-border rounded-3xl p-6 shadow-xl space-y-4">
+        <div class="flex items-center gap-3 text-rose-600 dark:text-rose-400">
+          <div class="size-10 rounded-2xl bg-rose-500/10 flex items-center justify-center shrink-0">
+            <ng-icon name="phosphorWarningCircle" class="size-6" />
+          </div>
+          <div>
+            <h3 class="text-base font-semibold text-foreground">Batalkan Pengadaan Aset</h3>
+            <p class="text-xs text-muted-foreground">{{ selectedDoc()!.documentNumber }}</p>
+          </div>
+        </div>
+
+        <p class="text-sm text-foreground">
+          Pembatalan akan membuat jurnal pembalik, membatalkan entri hutang vendor, dan mengubah status aset terkait menjadi <em>cancelled</em>.
+        </p>
+
+        <div>
+          <label for="cancel-reason-input" class="block text-xs font-semibold text-foreground mb-1.5">
+            Alasan Pembatalan <span class="text-destructive">*</span>
+          </label>
+          <textarea
+            id="cancel-reason-input"
+            rows="3"
+            placeholder="Tuliskan alasan pembatalan dokumen pengadaan..."
+            class="w-full px-3.5 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            [ngModel]="cancelReason()"
+            (ngModelChange)="cancelReason.set($event)"
+          ></textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-2">
+          <button
+            type="button"
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm"
+            (click)="closeCancelDialog()"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            hlmBtn
+            class="rounded-full text-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            (click)="confirmCancel()"
+            [disabled]="loading() || !cancelReason().trim()"
+          >
+            Batalkan Pengadaan
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</main>

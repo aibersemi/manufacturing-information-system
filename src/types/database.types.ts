@@ -3164,6 +3164,15 @@ export type Database = {
         Args: { p_company_id: string; p_creator_user_id: string }
         Returns: undefined
       }
+      cancel_asset_purchase: {
+        Args: {
+          p_company_id: string
+          p_document_id: string
+          p_reason: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
       close_accounting_period: {
         Args: {
           p_company_id: string
@@ -3192,6 +3201,17 @@ export type Database = {
           p_spk_id: string
           p_success_qty: number
           p_user_id: string
+        }
+        Returns: Json
+      }
+      create_asset_purchase: {
+        Args: {
+          p_company_id: string
+          p_lines: Json
+          p_notes: string
+          p_supplier_id: string
+          p_transaction_date: string
+          p_user_id?: string
         }
         Returns: Json
       }
@@ -3272,6 +3292,10 @@ export type Database = {
           version: number
         }[]
       }
+      get_depreciation_preview: {
+        Args: { p_company_id: string; p_period_month: string }
+        Returns: Json
+      }
       get_inventory_summary: {
         Args: { p_company_id: string }
         Returns: {
@@ -3309,6 +3333,26 @@ export type Database = {
           username: string
         }[]
       }
+      post_asset_disposal: {
+        Args: {
+          p_asset_id: string
+          p_cash_account_id?: string
+          p_company_id: string
+          p_disposal_date: string
+          p_proceeds: number
+          p_reason?: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
+      post_asset_purchase: {
+        Args: {
+          p_company_id: string
+          p_document_id: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
       post_cash_transfer: {
         Args: {
           p_amount: number
@@ -3327,6 +3371,16 @@ export type Database = {
           p_description: string
           p_lines: Json
           p_transaction_date: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
+      post_monthly_depreciation: {
+        Args: {
+          p_asset_ids: Json
+          p_company_id: string
+          p_notes?: string
+          p_period_month: string
           p_user_id?: string
         }
         Returns: Json
@@ -3434,6 +3488,22 @@ export type Database = {
       sync_production_operator_profiles: {
         Args: { p_company_id: string }
         Returns: number
+      }
+      update_asset_parameters: {
+        Args: {
+          p_asset_id: string
+          p_category_id?: string
+          p_company_id: string
+          p_custodian?: string
+          p_depreciation_method?: string
+          p_depreciation_start_date?: string
+          p_location?: string
+          p_residual_value?: number
+          p_serial_number?: string
+          p_useful_life_months?: number
+          p_user_id?: string
+        }
+        Returns: Json
       }
       update_ledger_account_status: {
         Args: {
