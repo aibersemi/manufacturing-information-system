@@ -1,0 +1,69 @@
+name: Bug Report
+description: Buat laporan kendala atau bug untuk membantu perbaikan Manufacturing Information System
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Terima kasih telah meluangkan waktu untuk melaporkan kendala pada Manufacturing Information System!
+  - type: dropdown
+    id: module
+    attributes:
+      label: Affected Module / Area
+      description: Pilih modul atau area kerja tempat kendala terjadi.
+      options:
+        - Master Data
+        - Purchasing
+        - Inventory
+        - Production
+        - Sales
+        - Receivables
+        - Finance & Banking
+        - Accounting & COA
+        - Fixed Assets
+        - Financial Reports
+        - Authentication & Session
+        - UI/UX & Layout
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: Jelaskan kendala yang terjadi secara jelas dan ringkas.
+      placeholder: Contoh - Saat menyimpan formulir Purchase Order, muncul pesan error padahal data wajib sudah terisi...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Bagaimana langkah-langkah untuk mereproduksi kendala ini?
+      value: |
+        1. Buka halaman '...'
+        2. Klik tombol atau isi formulir '...'
+        3. Jalankan aksi '...'
+        4. Terjadi kesalahan berupa '...'
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser & Version
+      description: Nama dan versi browser yang digunakan (contoh: Chrome 128, Edge 128, Firefox 130, Safari 17.5)
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating System / Device
+      description: Sistem operasi atau perangkat yang digunakan (contoh: Windows 11, Ubuntu 24.04, macOS 15, Android, iOS)
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Browser Console / Network Logs (Optional)
+      description: Tempelkan pesan kesalahan dari browser developer console atau network tab jika ada (dilarang memuat kata sandi, token, atau informasi rahasia).

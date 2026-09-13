@@ -1,0 +1,50 @@
+name: Feature Request
+description: Usulkan ide atau fitur baru untuk Manufacturing Information System
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Memiliki usulan atau kebutuhan fitur untuk meningkatkan fungsionalitas Manufacturing Information System? Bagikan bersama kami!
+  - type: dropdown
+    id: module
+    attributes:
+      label: Target Module / Domain
+      description: Pilih modul operasional atau domain fitur yang diajukan.
+      options:
+        - Master Data
+        - Purchasing
+        - Inventory
+        - Production
+        - Sales
+        - Receivables
+        - Finance & Banking
+        - Accounting & COA
+        - Fixed Assets
+        - Financial Reports
+        - UI/UX & Navigation
+        - Infrastructure & Performance
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Operational Need / Problem
+      description: Apa kebutuhan operasional, kendala alur kerja, atau kebutuhan bisnis yang melatarbelakangi fitur ini?
+      placeholder: Contoh - Pengguna di departemen gudang membutuhkan kemampuan batch barcode scanning saat penerimaan barang...
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution & Workflow
+      description: Jelaskan rancangan tampilan antarmuka, alur proses bisnis, atau perilaku yang diharapkan secara rinci.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Apakah ada solusi alternatif atau cara manual yang sebelumnya telah dicoba?

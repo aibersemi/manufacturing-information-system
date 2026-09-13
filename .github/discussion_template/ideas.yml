@@ -1,0 +1,15 @@
+name: Ideas
+description: Bagikan gagasan atau usulan perbaikan untuk Manufacturing Information System
+title: "[Idea]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Memiliki gagasan perbaikan atau usulan arsitektur untuk Manufacturing Information System? Bagikan dan diskusikan bersama tim di sini!
+  - type: textarea
+    id: idea
+    attributes:
+      label: Idea Description
+      description: Jelaskan ide Anda, latar belakang, dan potensi manfaat yang dapat diperoleh secara rinci.
+    validations:
+      required: true

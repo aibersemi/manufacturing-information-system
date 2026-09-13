@@ -1,0 +1,15 @@
+name: Q&A
+description: Ajukan pertanyaan seputar penggunaan, konfigurasi, atau proses bisnis sistem
+title: "[Question]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Memiliki pertanyaan terkait penggunaan, modul, atau konfigurasi Manufacturing Information System? Tanyakan di sini!
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: Tuliskan pertanyaan atau skenario yang ingin Anda ketahui secara jelas.
+    validations:
+      required: true

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discussions & Questions
+    url: https://github.com/aibersemi/manufacturing-information-system/discussions/new?category=q-a
+    about: Memiliki pertanyaan tentang cara kerja atau alur sistem ini? Tanyakan di sini!
+  - name: Security Vulnerability Report
+    url: https://github.com/aibersemi/manufacturing-information-system/security/advisories/new
+    about: Laporkan celah keamanan secara privat agar dapat segera ditangani tanpa mengekspos data sensitif atau pengguna.
