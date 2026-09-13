@@ -34,6 +34,7 @@ src/
 │   │   │   ├── master-data.service.ts  # Layanan CRUD UOM, Pelanggan, Pemasok, Material, Produk, BOM, Pegawai, & Tarif Upah
 │   │   │   ├── production.service.ts   # Layanan Operasional Pabrik: Perintah Produksi, SPK 4 Tahap, Catat Potong/Sablon, Bundle, & Repair
 │   │   │   ├── purchasing-inventory.service.ts # Layanan Pengadaan (Bahan, Perlengkapan, Non-Produksi, Pembayaran) & Inventaris
+│   │   │   ├── sales.service.ts        # Layanan Penjualan & Piutang: Customer PO, Faktur Penjualan, Penerimaan Piutang, & Pemenuhan
 │   │   │   ├── settings.service.ts     # Layanan CRUD Perusahaan, Penugasan Pengguna, Matriks Izin, Profil, & Audit
 │   │   │   ├── storage.service.ts      # Layanan upload, signed URL, & manajemen file Supabase Storage
 │   │   │   └── supabase.service.ts     # Singleton Supabase client wrapper (PKCE Flow)
@@ -64,6 +65,11 @@ src/
 │   │   │   ├── supplies/               # Pengadaan Perlengkapan Pabrik (/workspace/purchase-supplies)
 │   │   │   ├── non-production/         # Belanja Non-Produksi & Umum (/workspace/purchase-non-production)
 │   │   │   └── payments/               # Pembayaran Hutang & Kas Keluar (/workspace/purchase-payments)
+│   │   ├── sales/                      # Modul Penjualan & Piutang Dagang (Accounts Receivable)
+│   │   │   ├── orders/                 # Pesanan Penjualan Pelanggan / Customer PO (/workspace/sales-orders)
+│   │   │   ├── invoices/               # Faktur Penjualan & Pengurangan Stok Jadi (/workspace/sales)
+│   │   │   ├── receipts/               # Penerimaan Pembayaran Piutang (/workspace/sales-receipts)
+│   │   │   └── fulfillment/            # Pelacakan Pengiriman & Pemenuhan Pesanan (/workspace/sales-fulfillment)
 │   │   └── settings/
 │   │       ├── companies/              # Manajemen fasilitas manufaktur & multi-company (/workspace/companies)
 │   │       ├── users-access/           # Penugasan staf & matriks izin akses per peran (/workspace/users-access)

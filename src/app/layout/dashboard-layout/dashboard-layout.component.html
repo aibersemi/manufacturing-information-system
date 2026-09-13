@@ -211,6 +211,63 @@
           }
         </div>
 
+        <!-- Group: Penjualan & Piutang (Fase 6) -->
+        <div class="flex flex-col">
+          <button
+            type="button"
+            (click)="toggleGroup('sales')"
+            class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-muted-foreground transition hover:bg-accent/50 hover:text-foreground"
+            [title]="isSidebarCollapsed() ? 'Penjualan & Piutang' : ''"
+          >
+            <ng-icon name="phosphorReceipt" class="size-4 shrink-0 text-foreground/80" />
+            @if (!isSidebarCollapsed()) {
+              <span class="truncate font-medium text-foreground">Penjualan &amp; Piutang</span>
+              <ng-icon
+                name="phosphorCaretRight"
+                class="ms-auto size-3.5 transition-transform duration-200"
+                [class.rotate-90]="isGroupOpen('sales')"
+              />
+            }
+          </button>
+
+          @if (!isSidebarCollapsed() && isGroupOpen('sales')) {
+            <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
+              <a
+                routerLink="/workspace/sales-orders"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Pesanan Pelanggan (PO)
+              </a>
+              <a
+                routerLink="/workspace/sales"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Faktur Penjualan
+              </a>
+              <a
+                routerLink="/workspace/sales-receipts"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Penerimaan Piutang
+              </a>
+              <a
+                routerLink="/workspace/sales-fulfillment"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Pengiriman &amp; Pemenuhan
+              </a>
+            </div>
+          }
+        </div>
+
         <!-- Group 2: Operasional Pabrik -->
         <div class="flex flex-col">
           <button

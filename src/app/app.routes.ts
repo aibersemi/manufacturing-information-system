@@ -187,6 +187,45 @@ export const routes: Routes = [
             (m) => m.ProductionProgressComponent
           ),
       },
+      // Penjualan & Piutang (Fase 6: Sales & Receivables)
+      {
+        path: 'workspace/sales-orders',
+        loadComponent: () =>
+          import('./features/sales/orders/sales-orders.component').then(
+            (m) => m.SalesOrdersComponent
+          ),
+      },
+      {
+        path: 'workspace/sales',
+        loadComponent: () =>
+          import('./features/sales/invoices/sales-invoices.component').then(
+            (m) => m.SalesInvoicesComponent
+          ),
+      },
+      {
+        path: 'workspace/sales-receipts',
+        loadComponent: () =>
+          import('./features/sales/receipts/sales-receipts.component').then(
+            (m) => m.SalesReceiptsComponent
+          ),
+      },
+      {
+        path: 'workspace/sales-fulfillment',
+        loadComponent: () =>
+          import('./features/sales/fulfillment/sales-fulfillment.component').then(
+            (m) => m.SalesFulfillmentComponent
+          ),
+      },
+      {
+        path: 'sales',
+        redirectTo: 'workspace/sales',
+        pathMatch: 'full',
+      },
+      {
+        path: 'orders',
+        redirectTo: 'workspace/sales-orders',
+        pathMatch: 'full',
+      },
       {
         path: 'purchasing',
         redirectTo: 'workspace/purchase-materials',

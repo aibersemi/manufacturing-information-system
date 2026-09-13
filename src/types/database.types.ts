@@ -3174,6 +3174,19 @@ export type Database = {
         }
         Returns: Json
       }
+      create_customer_po: {
+        Args: {
+          p_company_id: string
+          p_customer_id: string
+          p_lines?: Json
+          p_notes?: string
+          p_order_date?: string
+          p_order_number?: string
+          p_target_delivery_date?: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
       create_production_order: {
         Args: {
           p_company_id: string
@@ -3181,6 +3194,20 @@ export type Database = {
           p_notes: string
           p_target_date: string
           p_user_id: string
+        }
+        Returns: Json
+      }
+      create_sales_invoice: {
+        Args: {
+          p_cash_account_id?: string
+          p_company_id: string
+          p_customer_id: string
+          p_funding_method?: string
+          p_invoice_date?: string
+          p_lines?: Json
+          p_notes?: string
+          p_po_id?: string
+          p_user_id?: string
         }
         Returns: Json
       }
@@ -3230,6 +3257,10 @@ export type Database = {
         Args: { p_company_id: string }
         Returns: Json
       }
+      get_sales_fulfillment_summary: {
+        Args: { p_company_id: string }
+        Returns: Json
+      }
       get_user_company_ids: { Args: { p_user_id: string }; Returns: string[] }
       is_company_owner: {
         Args: { p_company_id: string; p_user_id: string }
@@ -3259,12 +3290,31 @@ export type Database = {
         }
         Returns: Json
       }
+      post_sales_invoice: {
+        Args: { p_document_id: string; p_user_id: string }
+        Returns: Json
+      }
+      post_sales_receipt: {
+        Args: {
+          p_amount: number
+          p_cash_account_id: string
+          p_invoice_id: string
+          p_notes?: string
+          p_receipt_date?: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
       sync_production_operator_profiles: {
         Args: { p_company_id: string }
         Returns: number
       }
       void_purchase_document: {
         Args: { p_document_id: string; p_reason: string; p_user_id: string }
+        Returns: Json
+      }
+      void_sales_invoice: {
+        Args: { p_document_id: string; p_reason?: string; p_user_id: string }
         Returns: Json
       }
     }

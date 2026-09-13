@@ -1,0 +1,384 @@
+<main class="flex flex-1 flex-col gap-6">
+  <!-- Header Halaman & Tombol Aksi -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Pemenuhan &amp; Pengiriman Pesanan</h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Pantau pemenuhan kuantitas pesanan pelanggan, status pengiriman, dan riwayat faktur pengiriman.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        (click)="loadData()"
+        [disabled]="isLoading()"
+        class="h-9 gap-1.5 rounded-full border-border/80 bg-card/80 px-3.5 text-sm font-medium shadow-2xs hover:bg-accent"
+      >
+        <ng-icon
+          name="phosphorArrowsClockwise"
+          class="size-4"
+          [class.animate-spin]="isLoading()"
+        />
+        <span>Segarkan</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Ringkasan Metrik / KPI Cards -->
+  <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Ringkasan Metrik Pemenuhan">
+    <!-- KPI 1: Kuantitas Dipesan -->
+    <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-muted-foreground">Total Kuantitas Dipesan</span>
+        <div class="flex size-7 items-center justify-center rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
+          <ng-icon name="phosphorPackage" class="size-4" />
+        </div>
+      </div>
+      <div class="mt-2 text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+        {{ (summary()?.totalOrderedQty || 0) | number }} <span class="text-sm font-normal text-muted-foreground">Pcs</span>
+      </div>
+      <div class="mt-1 text-xs text-muted-foreground">
+        Dari {{ summary()?.totalOrders || 0 }} pesanan PO aktif
+      </div>
+    </div>
+
+    <!-- KPI 2: Kuantitas Terkirim -->
+    <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-muted-foreground">Total Terkirim</span>
+        <div class="flex size-7 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <ng-icon name="phosphorTruck" class="size-4" />
+        </div>
+      </div>
+      <div class="mt-2 text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+        {{ (summary()?.totalDeliveredQty || 0) | number }} <span class="text-sm font-normal text-muted-foreground">Pcs</span>
+      </div>
+      <div class="mt-1 text-xs text-muted-foreground">
+        Difakturkan dan keluar gudang
+      </div>
+    </div>
+
+    <!-- KPI 3: Sisa Belum Terkirim -->
+    <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-muted-foreground">Sisa Belum Terkirim</span>
+        <div class="flex size-7 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
+          <ng-icon name="phosphorClock" class="size-4" />
+        </div>
+      </div>
+      <div class="mt-2 text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+        {{ (summary()?.totalRemainingQty || 0) | number }} <span class="text-sm font-normal text-muted-foreground">Pcs</span>
+      </div>
+      <div class="mt-1 text-xs text-muted-foreground">
+        Perlu pengiriman lanjutan
+      </div>
+    </div>
+
+    <!-- KPI 4: Rasio Pemenuhan -->
+    <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-muted-foreground">Rasio Pemenuhan</span>
+        <div class="flex size-7 items-center justify-center rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400">
+          <ng-icon name="phosphorTrendUp" class="size-4" />
+        </div>
+      </div>
+      <div class="mt-2 text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+        {{ overallFulfillmentRate() }}%
+      </div>
+      <div class="mt-1 text-xs text-muted-foreground">
+        Tingkat pemenuhan keseluruhan
+      </div>
+    </div>
+  </section>
+
+  <!-- Filter & Search Bar -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div class="relative w-full max-w-sm">
+      <ng-icon
+        name="phosphorMagnifyingGlass"
+        class="pointer-events-none absolute start-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        aria-hidden="true"
+      />
+      <input
+        type="text"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+        placeholder="Cari nomor PO atau pelanggan..."
+        class="w-full rounded-full border border-border bg-card ps-10 pe-4 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-2xs transition focus:bg-background focus:ring-2 focus:ring-ring focus:outline-hidden"
+      />
+    </div>
+
+    <div class="flex items-center gap-1 self-start rounded-full border border-border/80 bg-card p-1 shadow-2xs sm:self-auto overflow-x-auto">
+      <button
+        type="button"
+        (click)="statusFilter.set('all')"
+        [class.bg-primary]="statusFilter() === 'all'"
+        [class.text-primary-foreground]="statusFilter() === 'all'"
+        [class.text-muted-foreground]="statusFilter() !== 'all'"
+        class="rounded-full px-3 py-1 text-xs font-medium transition hover:text-foreground"
+      >
+        Semua Status
+      </button>
+      <button
+        type="button"
+        (click)="statusFilter.set('unshipped')"
+        [class.bg-primary]="statusFilter() === 'unshipped'"
+        [class.text-primary-foreground]="statusFilter() === 'unshipped'"
+        [class.text-muted-foreground]="statusFilter() !== 'unshipped'"
+        class="rounded-full px-3 py-1 text-xs font-medium transition hover:text-foreground"
+      >
+        Belum Dikirim
+      </button>
+      <button
+        type="button"
+        (click)="statusFilter.set('partial_delivery')"
+        [class.bg-primary]="statusFilter() === 'partial_delivery'"
+        [class.text-primary-foreground]="statusFilter() === 'partial_delivery'"
+        [class.text-muted-foreground]="statusFilter() !== 'partial_delivery'"
+        class="rounded-full px-3 py-1 text-xs font-medium transition hover:text-foreground"
+      >
+        Sebagian
+      </button>
+      <button
+        type="button"
+        (click)="statusFilter.set('full_delivery')"
+        [class.bg-primary]="statusFilter() === 'full_delivery'"
+        [class.text-primary-foreground]="statusFilter() === 'full_delivery'"
+        [class.text-muted-foreground]="statusFilter() !== 'full_delivery'"
+        class="rounded-full px-3 py-1 text-xs font-medium transition hover:text-foreground"
+      >
+        Selesai
+      </button>
+    </div>
+  </div>
+
+  <!-- Alert Notifikasi Error -->
+  @if (errorMessage()) {
+    <div class="flex items-center gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive shadow-2xs">
+      <ng-icon name="phosphorWarningCircle" class="size-5 shrink-0" />
+      <span class="flex-1">{{ errorMessage() }}</span>
+      <button type="button" (click)="errorMessage.set(null)" class="text-destructive hover:opacity-70">
+        <ng-icon name="phosphorX" class="size-4" />
+      </button>
+    </div>
+  }
+
+  <!-- Tabel Pelacakan Pemenuhan -->
+  <div class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
+    <div class="p-5 border-b border-border/60 flex items-center justify-between">
+      <div>
+        <h2 class="text-base font-semibold text-foreground">Pemantauan Pemenuhan Pesanan Pelanggan</h2>
+        <p class="text-xs text-muted-foreground mt-0.5">
+          Menampilkan {{ filteredItems().length }} pesanan dipantau
+        </p>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      @if (isLoading()) {
+        <div class="p-12 text-center text-sm text-muted-foreground">
+          <ng-icon name="phosphorArrowsClockwise" class="size-6 animate-spin mx-auto mb-2 text-primary" />
+          Memuat pemantauan pemenuhan...
+        </div>
+      } @else if (filteredItems().length === 0) {
+        <div class="p-12 text-center text-sm text-muted-foreground">
+          <ng-icon name="phosphorTruck" class="size-8 mx-auto mb-2 opacity-40" />
+          <p class="font-medium text-foreground">Tidak ada data pemenuhan</p>
+          <p class="text-xs text-muted-foreground mt-1">Pesanan pelanggan yang aktif akan dimonitor di sini.</p>
+        </div>
+      } @else {
+        <table class="w-full text-start text-sm">
+          <thead class="border-b border-border/60 bg-muted/30 text-xs font-semibold uppercase text-muted-foreground">
+            <tr>
+              <th class="px-5 py-3.5 text-start">Nomor PO</th>
+              <th class="px-4 py-3.5 text-start">Pelanggan</th>
+              <th class="px-4 py-3.5 text-start">Target Kirim</th>
+              <th class="px-4 py-3.5 text-start min-w-44">Progress Pemenuhan</th>
+              <th class="px-4 py-3.5 text-end">Dipesan</th>
+              <th class="px-4 py-3.5 text-end">Terkirim</th>
+              <th class="px-4 py-3.5 text-end">Sisa</th>
+              <th class="px-4 py-3.5 text-center">Status</th>
+              <th class="px-4 py-3.5 text-start">Faktur Kirim</th>
+              <th class="px-5 py-3.5 text-end">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border/60">
+            @for (item of filteredItems(); track item.id) {
+              <tr class="transition hover:bg-muted/30">
+                <td class="px-5 py-3.5 font-mono font-semibold text-foreground">
+                  {{ item.poNumber }}
+                </td>
+                <td class="px-4 py-3.5 font-medium text-foreground">
+                  {{ item.customerName }}
+                </td>
+                <td class="px-4 py-3.5 text-muted-foreground whitespace-nowrap">
+                  {{ item.targetDeliveryDate || '—' }}
+                </td>
+                <td class="px-4 py-3.5">
+                  <div class="flex items-center gap-2">
+                    <div class="h-2 w-full max-w-28 rounded-full bg-muted overflow-hidden">
+                      <div
+                        class="h-full rounded-full transition-all duration-300"
+                        [class.bg-emerald-500]="item.fulfillmentRate >= 100"
+                        [class.bg-blue-500]="item.fulfillmentRate > 0 && item.fulfillmentRate < 100"
+                        [class.bg-muted-foreground/30]="item.fulfillmentRate === 0"
+                        [style.width.%]="item.fulfillmentRate > 100 ? 100 : item.fulfillmentRate"
+                      ></div>
+                    </div>
+                    <span class="text-xs font-semibold text-foreground whitespace-nowrap">
+                      {{ item.fulfillmentRate }}%
+                    </span>
+                  </div>
+                </td>
+                <td class="px-4 py-3.5 text-end font-medium text-foreground">
+                  {{ item.totalOrderedQty | number }}
+                </td>
+                <td class="px-4 py-3.5 text-end text-emerald-600 font-semibold dark:text-emerald-400">
+                  {{ item.totalDeliveredQty | number }}
+                </td>
+                <td class="px-4 py-3.5 text-end text-muted-foreground">
+                  {{ item.remainingQty | number }}
+                </td>
+                <td class="px-4 py-3.5 text-center">
+                  @if (item.deliveryStatus === 'full_delivery') {
+                    <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                      Selesai
+                    </span>
+                  } @else if (item.deliveryStatus === 'partial_delivery') {
+                    <span class="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400">
+                      Sebagian
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                      Belum Dikirim
+                    </span>
+                  }
+                </td>
+                <td class="px-4 py-3.5 text-start">
+                  @if (item.invoiceHistory && item.invoiceHistory.length > 0) {
+                    <div class="flex flex-wrap gap-1">
+                      @for (inv of item.invoiceHistory; track inv.invoiceId) {
+                        <span class="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
+                          {{ inv.invoiceNumber }}
+                        </span>
+                      }
+                    </div>
+                  } @else {
+                    <span class="text-xs text-muted-foreground italic">Belum ada faktur</span>
+                  }
+                </td>
+                <td class="px-5 py-3.5 text-end">
+                  <button
+                    hlmBtn
+                    variant="ghost"
+                    size="sm"
+                    (click)="openDetailModal(item)"
+                    class="h-8 gap-1 rounded-full px-2.5 text-xs font-medium hover:bg-accent"
+                  >
+                    <ng-icon name="phosphorEye" class="size-3.5" />
+                    <span>Rincian SKU</span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+  </div>
+
+  <!-- Modal Rincian SKU PO -->
+  @if (isDetailModalOpen() && selectedItem(); as po) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+      <div class="w-full max-w-xl rounded-3xl border border-border/80 bg-card p-6 shadow-xl max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between pb-4 border-b border-border/60">
+          <div>
+            <h2 class="text-lg font-semibold text-foreground">Rincian Pemenuhan SKU Pesanan</h2>
+            <p class="text-xs text-muted-foreground font-mono mt-0.5">{{ po.poNumber }} - {{ po.customerName }}</p>
+          </div>
+          <button
+            type="button"
+            (click)="closeDetailModal()"
+            class="rounded-full p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            <ng-icon name="phosphorX" class="size-5" />
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto py-4 space-y-4 text-sm">
+          <div class="space-y-2">
+            @for (line of po.lines; track line.lineId) {
+              <div class="p-3.5 bg-muted/20 rounded-2xl border border-border/60">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="font-semibold text-foreground">{{ line.productName }}</span>
+                  <span class="font-mono text-xs text-muted-foreground">{{ line.sku }}</span>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 text-xs py-1">
+                  <div>
+                    <span class="text-muted-foreground block">Dipesan:</span>
+                    <span class="font-medium text-foreground">{{ line.orderedQty }} {{ line.unitCode }}</span>
+                  </div>
+                  <div>
+                    <span class="text-muted-foreground block">Terkirim:</span>
+                    <span class="font-semibold text-emerald-600 dark:text-emerald-400">{{ line.deliveredQty }} {{ line.unitCode }}</span>
+                  </div>
+                  <div>
+                    <span class="text-muted-foreground block">Sisa Belum Kirim:</span>
+                    <span class="font-semibold text-amber-600 dark:text-amber-400">{{ line.remainingQty }} {{ line.unitCode }}</span>
+                  </div>
+                </div>
+
+                <!-- Mini progress bar -->
+                <div class="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                  <div
+                    class="h-full rounded-full bg-emerald-500 transition-all"
+                    [style.width.%]="line.orderedQty > 0 ? (line.deliveredQty / line.orderedQty) * 100 : 0"
+                  ></div>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Riwayat Faktur Terbit -->
+          @if (po.invoiceHistory && po.invoiceHistory.length > 0) {
+            <div>
+              <h3 class="text-xs font-semibold uppercase text-muted-foreground tracking-wider mb-2">
+                Riwayat Faktur Pengiriman
+              </h3>
+              <div class="border border-border/60 rounded-2xl overflow-hidden divide-y divide-border/60 text-xs">
+                @for (inv of po.invoiceHistory; track inv.invoiceId) {
+                  <div class="p-3 flex items-center justify-between hover:bg-muted/20">
+                    <div>
+                      <span class="font-mono font-semibold text-foreground">{{ inv.invoiceNumber }}</span>
+                      <span class="text-muted-foreground ms-2">{{ inv.invoiceDate }}</span>
+                    </div>
+                    <div class="text-end">
+                      <span class="font-semibold text-foreground">{{ formatRupiah(inv.totalAmount) }}</span>
+                      <span class="ms-2 capitalize text-muted-foreground">({{ inv.status }})</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="flex items-center justify-end pt-4 border-t border-border/60">
+          <button
+            hlmBtn
+            variant="outline"
+            size="sm"
+            (click)="closeDetailModal()"
+            class="h-9 rounded-full px-5 text-sm font-medium"
+          >
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</main>

@@ -1,0 +1,809 @@
+<main class="flex flex-1 flex-col gap-6">
+  <!-- Header Halaman & Tombol Aksi -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Faktur Penjualan (Sales Invoice)</h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Penerbitan faktur penjualan, pemenuhan pengiriman pesanan, dan pengakuan piutang/kas.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        (click)="refreshData()"
+        [disabled]="isLoading()"
+        class="h-9 gap-1.5 rounded-full border-border/80 bg-card/80 px-3.5 text-sm font-medium shadow-2xs hover:bg-accent"
+      >
+        <ng-icon
+          name="phosphorArrowsClockwise"
+          class="size-4"
+          [class.animate-spin]="isLoading()"
+        />
+        <span>Segarkan</span>
+      </button>
+
+      <button
+        hlmBtn
+        size="sm"
+        (click)="openCreateModal()"
+        id="btn-add-sales-invoice"
+        class="h-9 gap-1.5 rounded-full px-4 text-sm font-medium shadow-xs"
+      >
+        <ng-icon name="phosphorPlus" class="size-4" />
+        <span>Buat Faktur Penjualan</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Ringkasan Metrik / KPI Cards -->
+  <section class="grid gap-3 sm:grid-cols-3" aria-label="Ringkasan Metrik Penjualan">
+    <!-- KPI 1: Total Penjualan -->
+    <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-muted-foreground">Total Penjualan Terbit</span>
+        <div class="flex size-7 items-center justify-center rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400">
+          <ng-icon name="phosphorTrendUp" class="size-4" />
+        </div>
+      </div>
+      <div class="mt-2 text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+        {{ formatRupiah(totalSalesAmount()) }}
+      </div>
+      <div class="mt-1 text-xs text-muted-foreground">
+        Faktur berstatus posted
+      </div>
+    </div>
+
+    <!-- KPI 2: Total Piutang Tertagih -->
+    <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-muted-foreground">Total Saldo Piutang Usaha</span>
+        <div class="flex size-7 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
+          <ng-icon name="phosphorCreditCard" class="size-4" />
+        </div>
+      </div>
+      <div class="mt-2 text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+        {{ formatRupiah(totalOutstandingAR()) }}
+      </div>
+      <div class="mt-1 text-xs text-muted-foreground">
+        Tagihan aktif belum lunas
+      </div>
+    </div>
+
+    <!-- KPI 3: Jumlah Faktur -->
+    <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-muted-foreground">Faktur Resmi Terbit</span>
+        <div class="flex size-7 items-center justify-center rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
+          <ng-icon name="phosphorReceipt" class="size-4" />
+        </div>
+      </div>
+      <div class="mt-2 text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+        {{ postedInvoicesCount() }} <span class="text-sm font-normal text-muted-foreground">Faktur</span>
+      </div>
+      <div class="mt-1 text-xs text-muted-foreground">
+        Dokumen resmi diposting
+      </div>
+    </div>
+  </section>
+
+  <!-- Filter & Search Bar -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div class="relative w-full max-w-sm">
+      <ng-icon
+        name="phosphorMagnifyingGlass"
+        class="pointer-events-none absolute start-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        aria-hidden="true"
+      />
+      <input
+        type="text"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+        placeholder="Cari nomor invoice, pelanggan, nomor PO..."
+        class="w-full rounded-full border border-border bg-card ps-10 pe-4 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-2xs transition focus:bg-background focus:ring-2 focus:ring-ring focus:outline-hidden"
+      />
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <!-- Filter Status Dokumen -->
+      <div class="flex items-center gap-1 self-start rounded-full border border-border/80 bg-card p-1 shadow-2xs">
+        <button
+          type="button"
+          (click)="statusFilter.set('all')"
+          [class.bg-primary]="statusFilter() === 'all'"
+          [class.text-primary-foreground]="statusFilter() === 'all'"
+          [class.text-muted-foreground]="statusFilter() !== 'all'"
+          class="rounded-full px-3 py-1 text-xs font-medium transition hover:text-foreground"
+        >
+          Semua
+        </button>
+        <button
+          type="button"
+          (click)="statusFilter.set('draft')"
+          [class.bg-primary]="statusFilter() === 'draft'"
+          [class.text-primary-foreground]="statusFilter() === 'draft'"
+          [class.text-muted-foreground]="statusFilter() !== 'draft'"
+          class="rounded-full px-3 py-1 text-xs font-medium transition hover:text-foreground"
+        >
+          Draf
+        </button>
+        <button
+          type="button"
+          (click)="statusFilter.set('posted')"
+          [class.bg-primary]="statusFilter() === 'posted'"
+          [class.text-primary-foreground]="statusFilter() === 'posted'"
+          [class.text-muted-foreground]="statusFilter() !== 'posted'"
+          class="rounded-full px-3 py-1 text-xs font-medium transition hover:text-foreground"
+        >
+          Posted
+        </button>
+        <button
+          type="button"
+          (click)="statusFilter.set('void')"
+          [class.bg-primary]="statusFilter() === 'void'"
+          [class.text-primary-foreground]="statusFilter() === 'void'"
+          [class.text-muted-foreground]="statusFilter() !== 'void'"
+          class="rounded-full px-3 py-1 text-xs font-medium transition hover:text-foreground"
+        >
+          Void
+        </button>
+      </div>
+
+      <!-- Filter Status Pembayaran -->
+      <div class="flex items-center gap-1 self-start rounded-full border border-border/80 bg-card p-1 shadow-2xs">
+        <button
+          type="button"
+          (click)="paymentStatusFilter.set('all')"
+          [class.bg-primary]="paymentStatusFilter() === 'all'"
+          [class.text-primary-foreground]="paymentStatusFilter() === 'all'"
+          [class.text-muted-foreground]="paymentStatusFilter() !== 'all'"
+          class="rounded-full px-3 py-1 text-xs font-medium transition hover:text-foreground"
+        >
+          Semua Bayar
+        </button>
+        <button
+          type="button"
+          (click)="paymentStatusFilter.set('unpaid')"
+          [class.bg-primary]="paymentStatusFilter() === 'unpaid'"
+          [class.text-primary-foreground]="paymentStatusFilter() === 'unpaid'"
+          [class.text-muted-foreground]="paymentStatusFilter() !== 'unpaid'"
+          class="rounded-full px-3 py-1 text-xs font-medium transition hover:text-foreground"
+        >
+          Belum Lunas
+        </button>
+        <button
+          type="button"
+          (click)="paymentStatusFilter.set('partial')"
+          [class.bg-primary]="paymentStatusFilter() === 'partial'"
+          [class.text-primary-foreground]="paymentStatusFilter() === 'partial'"
+          [class.text-muted-foreground]="paymentStatusFilter() !== 'partial'"
+          class="rounded-full px-3 py-1 text-xs font-medium transition hover:text-foreground"
+        >
+          Sebagian
+        </button>
+        <button
+          type="button"
+          (click)="paymentStatusFilter.set('paid')"
+          [class.bg-primary]="paymentStatusFilter() === 'paid'"
+          [class.text-primary-foreground]="paymentStatusFilter() === 'paid'"
+          [class.text-muted-foreground]="paymentStatusFilter() !== 'paid'"
+          class="rounded-full px-3 py-1 text-xs font-medium transition hover:text-foreground"
+        >
+          Lunas
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alert Notifikasi -->
+  @if (errorMessage()) {
+    <div class="flex items-center gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive shadow-2xs">
+      <ng-icon name="phosphorWarningCircle" class="size-5 shrink-0" />
+      <span class="flex-1">{{ errorMessage() }}</span>
+      <button type="button" (click)="errorMessage.set(null)" class="text-destructive hover:opacity-70">
+        <ng-icon name="phosphorX" class="size-4" />
+      </button>
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-600 shadow-2xs dark:text-emerald-400">
+      <ng-icon name="phosphorCheckCircle" class="size-5 shrink-0" />
+      <span class="flex-1">{{ successMessage() }}</span>
+      <button type="button" (click)="successMessage.set(null)" class="text-emerald-600 hover:opacity-70 dark:text-emerald-400">
+        <ng-icon name="phosphorX" class="size-4" />
+      </button>
+    </div>
+  }
+
+  <!-- Tabel Faktur Penjualan -->
+  <div class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
+    <div class="p-5 border-b border-border/60 flex items-center justify-between">
+      <div>
+        <h2 class="text-base font-semibold text-foreground">Daftar Faktur Penjualan</h2>
+        <p class="text-xs text-muted-foreground mt-0.5">
+          Menampilkan {{ filteredInvoices().length }} faktur penjualan
+        </p>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      @if (isLoading()) {
+        <div class="p-12 text-center text-sm text-muted-foreground">
+          <ng-icon name="phosphorArrowsClockwise" class="size-6 animate-spin mx-auto mb-2 text-primary" />
+          Memuat faktur penjualan...
+        </div>
+      } @else if (filteredInvoices().length === 0) {
+        <div class="p-12 text-center text-sm text-muted-foreground">
+          <ng-icon name="phosphorReceipt" class="size-8 mx-auto mb-2 opacity-40" />
+          <p class="font-medium text-foreground">Belum ada faktur penjualan</p>
+          <p class="text-xs text-muted-foreground mt-1">Klik "Buat Faktur Penjualan" untuk menerbitkan faktur baru.</p>
+        </div>
+      } @else {
+        <table class="w-full text-start text-sm">
+          <thead class="border-b border-border/60 bg-muted/30 text-xs font-semibold uppercase text-muted-foreground">
+            <tr>
+              <th class="px-5 py-3.5 text-start">Nomor Invoice</th>
+              <th class="px-4 py-3.5 text-start">Tanggal</th>
+              <th class="px-4 py-3.5 text-start">Pelanggan</th>
+              <th class="px-4 py-3.5 text-start">Asal PO</th>
+              <th class="px-4 py-3.5 text-end">Total Tagihan</th>
+              <th class="px-4 py-3.5 text-end">Terbayar</th>
+              <th class="px-4 py-3.5 text-center">Pembayaran</th>
+              <th class="px-4 py-3.5 text-center">Status</th>
+              <th class="px-5 py-3.5 text-end">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border/60">
+            @for (inv of filteredInvoices(); track inv.id) {
+              <tr class="transition hover:bg-muted/30">
+                <td class="px-5 py-3.5 font-mono font-semibold text-foreground">
+                  @if (inv.documentNumber) {
+                    {{ inv.documentNumber }}
+                  } @else {
+                    <span class="text-muted-foreground italic">Draf Baru</span>
+                  }
+                </td>
+                <td class="px-4 py-3.5 text-muted-foreground whitespace-nowrap">
+                  {{ inv.transactionDate }}
+                </td>
+                <td class="px-4 py-3.5 font-medium text-foreground">
+                  {{ inv.customerName }}
+                </td>
+                <td class="px-4 py-3.5 text-muted-foreground font-mono text-xs">
+                  {{ inv.sourceOrderNumber || 'Langsung' }}
+                </td>
+                <td class="px-4 py-3.5 text-end font-semibold text-foreground">
+                  {{ formatRupiah(inv.totalAmount) }}
+                </td>
+                <td class="px-4 py-3.5 text-end text-muted-foreground">
+                  {{ formatRupiah(inv.paidAmount) }}
+                </td>
+                <td class="px-4 py-3.5 text-center">
+                  @if (inv.paymentStatus === 'Lunas') {
+                    <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                      Lunas
+                    </span>
+                  } @else if (inv.paymentStatus === 'Sebagian Dibayar') {
+                    <span class="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                      Sebagian
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2.5 py-0.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+                      Belum Dibayar
+                    </span>
+                  }
+                </td>
+                <td class="px-4 py-3.5 text-center">
+                  @if (inv.status === 'posted') {
+                    <span class="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                      Posted
+                    </span>
+                  } @else if (inv.status === 'draft') {
+                    <span class="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                      Draft
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-medium text-destructive">
+                      Void
+                    </span>
+                  }
+                </td>
+                <td class="px-5 py-3.5 text-end">
+                  <div class="flex items-center justify-end gap-1.5">
+                    <button
+                      hlmBtn
+                      variant="ghost"
+                      size="sm"
+                      (click)="openDetailModal(inv)"
+                      class="h-8 gap-1 rounded-full px-2.5 text-xs font-medium hover:bg-accent"
+                    >
+                      <ng-icon name="phosphorEye" class="size-3.5" />
+                      <span>Detail</span>
+                    </button>
+
+                    @if (inv.status === 'draft') {
+                      <button
+                        hlmBtn
+                        size="sm"
+                        (click)="postInvoice(inv.id)"
+                        class="h-8 gap-1 rounded-full px-3 text-xs font-medium shadow-2xs"
+                      >
+                        <ng-icon name="phosphorCheckCircle" class="size-3.5" />
+                        <span>Posting</span>
+                      </button>
+                    }
+
+                    @if (inv.status === 'posted') {
+                      <button
+                        hlmBtn
+                        variant="ghost"
+                        size="sm"
+                        (click)="openVoidModal(inv)"
+                        class="h-8 gap-1 rounded-full px-2 text-xs font-medium text-destructive/80 hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <ng-icon name="phosphorXCircle" class="size-3.5" />
+                        <span>Void</span>
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+  </div>
+
+  <!-- Modal Buat Faktur Penjualan -->
+  @if (isModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+      <div class="w-full max-w-2xl rounded-3xl border border-border/80 bg-card p-6 shadow-xl max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between pb-4 border-b border-border/60">
+          <div>
+            <h2 class="text-lg font-semibold text-foreground">Buat Faktur Penjualan Baru</h2>
+            <p class="text-xs text-muted-foreground mt-0.5">Pilih sumber pesanan atau buat penjualan langsung.</p>
+          </div>
+          <button
+            type="button"
+            (click)="closeModal()"
+            class="rounded-full p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            <ng-icon name="phosphorX" class="size-5" />
+          </button>
+        </div>
+
+        @if (formError()) {
+          <div class="mt-4 flex items-center gap-2 rounded-2xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+            <ng-icon name="phosphorWarningCircle" class="size-4 shrink-0" />
+            <span>{{ formError() }}</span>
+          </div>
+        }
+
+        <div class="flex-1 overflow-y-auto py-4 space-y-4">
+          <!-- Pilihan Sumber Faktur (Dari PO atau Langsung) -->
+          <div class="bg-muted/20 p-3 rounded-2xl border border-border/60 flex items-center gap-4">
+            <span class="text-xs font-semibold text-foreground">Sumber Penjualan:</span>
+            <label class="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+              <input
+                type="radio"
+                name="sourceType"
+                [value]="'direct'"
+                [checked]="formSourceType() === 'direct'"
+                (change)="formSourceType.set('direct'); formPoId.set('')"
+                class="text-primary focus:ring-primary"
+              />
+              <span>Langsung (Tanpa PO)</span>
+            </label>
+            <label class="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+              <input
+                type="radio"
+                name="sourceType"
+                [value]="'po'"
+                [checked]="formSourceType() === 'po'"
+                (change)="formSourceType.set('po')"
+                class="text-primary focus:ring-primary"
+              />
+              <span>Dari PO Pelanggan</span>
+            </label>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Jika Dari PO: Dropdown PO -->
+            @if (formSourceType() === 'po') {
+              <div class="col-span-1 sm:col-span-2">
+                <label for="inv-po-select" class="text-xs font-medium text-muted-foreground block mb-1">
+                  Pilih Pesanan PO Pelanggan <span class="text-destructive">*</span>
+                </label>
+                <select
+                  id="inv-po-select"
+                  [ngModel]="formPoId()"
+                  (ngModelChange)="onPoSelected($event); formPoId.set($event)"
+                  class="w-full rounded-full border border-border bg-background px-3.5 py-2 text-sm text-foreground focus:ring-2 focus:ring-ring focus:outline-hidden"
+                >
+                  <option value="" disabled>Pilih Pesanan Pelanggan (PO Aktif)</option>
+                  @for (po of openOrders(); track po.id) {
+                    <option [value]="po.id">
+                      {{ po.documentNumber }} - {{ po.customerName }} ({{ formatRupiah(po.totalAmount) }})
+                    </option>
+                  }
+                </select>
+              </div>
+            }
+
+            <!-- Pelanggan -->
+            <div>
+              <label for="inv-customer-select" class="text-xs font-medium text-muted-foreground block mb-1">
+                Pelanggan <span class="text-destructive">*</span>
+              </label>
+              <select
+                id="inv-customer-select"
+                [ngModel]="formCustomerId()"
+                (ngModelChange)="formCustomerId.set($event)"
+                [disabled]="formSourceType() === 'po'"
+                class="w-full rounded-full border border-border bg-background px-3.5 py-2 text-sm text-foreground focus:ring-2 focus:ring-ring focus:outline-hidden disabled:opacity-60"
+              >
+                <option value="" disabled>Pilih Pelanggan</option>
+                @for (c of customers(); track c.id) {
+                  <option [value]="c.id">{{ c.name }}</option>
+                }
+              </select>
+            </div>
+
+            <!-- Tanggal Faktur -->
+            <div>
+              <label for="inv-date-input" class="text-xs font-medium text-muted-foreground block mb-1">
+                Tanggal Faktur <span class="text-destructive">*</span>
+              </label>
+              <input
+                id="inv-date-input"
+                type="date"
+                [ngModel]="formInvoiceDate()"
+                (ngModelChange)="formInvoiceDate.set($event)"
+                class="w-full rounded-full border border-border bg-background px-3.5 py-2 text-sm text-foreground focus:ring-2 focus:ring-ring focus:outline-hidden"
+              />
+            </div>
+
+            <!-- Metode Pembayaran -->
+            <div>
+              <label for="inv-funding-method-select" class="text-xs font-medium text-muted-foreground block mb-1">
+                Metode Pembayaran <span class="text-destructive">*</span>
+              </label>
+              <select
+                id="inv-funding-method-select"
+                [ngModel]="formFundingMethod()"
+                (ngModelChange)="formFundingMethod.set($event)"
+                class="w-full rounded-full border border-border bg-background px-3.5 py-2 text-sm text-foreground focus:ring-2 focus:ring-ring focus:outline-hidden"
+              >
+                <option value="receivable">Piutang Usaha (Termin / Kredit)</option>
+                <option value="cash">Penjualan Tunai (Kas / Bank)</option>
+              </select>
+            </div>
+
+            <!-- Jika Tunai: Pilihan Akun Kas/Bank -->
+            @if (formFundingMethod() === 'cash') {
+              <div>
+                <label for="inv-cash-account-select" class="text-xs font-medium text-muted-foreground block mb-1">
+                  Akun Kas/Bank Penerima <span class="text-destructive">*</span>
+                </label>
+                <select
+                  id="inv-cash-account-select"
+                  [ngModel]="formCashAccountId()"
+                  (ngModelChange)="formCashAccountId.set($event)"
+                  class="w-full rounded-full border border-border bg-background px-3.5 py-2 text-sm text-foreground focus:ring-2 focus:ring-ring focus:outline-hidden"
+                >
+                  <option value="" disabled>Pilih Akun Kas/Bank</option>
+                  @for (ca of cashAccounts(); track ca.id) {
+                    <option [value]="ca.id">{{ ca.name }}</option>
+                  }
+                </select>
+              </div>
+            }
+          </div>
+
+          <!-- Catatan -->
+          <div>
+            <label for="inv-notes-input" class="text-xs font-medium text-muted-foreground block mb-1">Catatan Faktur</label>
+            <input
+              id="inv-notes-input"
+              type="text"
+              [ngModel]="formNotes()"
+              (ngModelChange)="formNotes.set($event)"
+              placeholder="Keterangan faktur atau pengiriman..."
+              class="w-full rounded-full border border-border bg-background px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:outline-hidden"
+            />
+          </div>
+
+          <!-- Rincian Produk SKU -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
+                Produk Yang Dikirimkan
+              </span>
+              @if (formSourceType() === 'direct') {
+                <button
+                  type="button"
+                  (click)="addLine()"
+                  class="h-7 gap-1 rounded-full px-2.5 text-xs font-medium border border-border/80 hover:bg-accent text-foreground inline-flex items-center"
+                >
+                  <ng-icon name="phosphorPlus" class="size-3" />
+                  <span>Tambah Baris</span>
+                </button>
+              }
+            </div>
+
+            <div class="space-y-2">
+              @for (line of formLines(); track $index; let i = $index) {
+                <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-center bg-muted/20 p-2.5 rounded-2xl border border-border/60">
+                  <div class="flex-1 w-full sm:w-auto">
+                    <select
+                      [(ngModel)]="line.itemId"
+                      [disabled]="formSourceType() === 'po'"
+                      class="w-full rounded-xl border border-border bg-background px-3 py-1.5 text-sm text-foreground disabled:opacity-75"
+                    >
+                      <option value="" disabled>Pilih Produk SKU</option>
+                      @for (p of products(); track p.id) {
+                        <option [value]="p.id">{{ p.name }} ({{ p.sku }})</option>
+                      }
+                    </select>
+                  </div>
+
+                  <div class="w-full sm:w-28">
+                    <input
+                      type="number"
+                      min="1"
+                      [max]="line.maxAvailableQty || 999999"
+                      [(ngModel)]="line.quantity"
+                      placeholder="Qty"
+                      class="w-full rounded-xl border border-border bg-background px-3 py-1.5 text-sm text-foreground text-end"
+                    />
+                    @if (line.maxAvailableQty) {
+                      <span class="text-xs text-muted-foreground block text-end mt-0.5">
+                        Maks: {{ line.maxAvailableQty }}
+                      </span>
+                    }
+                  </div>
+
+                  <div class="w-full sm:w-36">
+                    <input
+                      type="number"
+                      min="0"
+                      step="1000"
+                      [(ngModel)]="line.unitPrice"
+                      placeholder="Harga Jual"
+                      class="w-full rounded-xl border border-border bg-background px-3 py-1.5 text-sm text-foreground text-end"
+                    />
+                  </div>
+
+                  <div class="w-full sm:w-28 text-end font-medium text-sm text-foreground self-center px-1">
+                    {{ formatRupiah(line.quantity * line.unitPrice) }}
+                  </div>
+
+                  @if (formSourceType() === 'direct') {
+                    <button
+                      type="button"
+                      (click)="removeLine(i)"
+                      class="rounded-full p-1.5 text-destructive/80 hover:bg-destructive/10 hover:text-destructive self-end sm:self-center"
+                    >
+                      <ng-icon name="phosphorTrash" class="size-4" />
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- Subtotal Box -->
+            <div class="mt-3 flex justify-end items-center gap-3 p-3 bg-card rounded-2xl border border-border/80">
+              <span class="text-xs text-muted-foreground font-medium">Total Nilai Faktur:</span>
+              <span class="text-lg font-bold text-foreground">{{ formatRupiah(calculateFormTotal()) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-4 border-t border-border/60">
+          <button
+            hlmBtn
+            variant="outline"
+            size="sm"
+            (click)="closeModal()"
+            [disabled]="isSubmitting()"
+            class="h-9 rounded-full px-4 text-sm font-medium"
+          >
+            Batal
+          </button>
+          <button
+            hlmBtn
+            size="sm"
+            (click)="submitInvoiceDraft()"
+            [disabled]="isSubmitting()"
+            class="h-9 gap-1.5 rounded-full px-5 text-sm font-medium shadow-xs"
+          >
+            @if (isSubmitting()) {
+              <ng-icon name="phosphorArrowsClockwise" class="size-4 animate-spin" />
+            }
+            <span>Simpan Draf Faktur</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Void Faktur -->
+  @if (isVoidModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+      <div class="w-full max-w-md rounded-3xl border border-border/80 bg-card p-6 shadow-xl flex flex-col">
+        <div class="flex items-center gap-3 pb-3 border-b border-border/60 text-destructive">
+          <ng-icon name="phosphorWarningCircle" class="size-6" />
+          <h2 class="text-base font-semibold text-foreground">Batalkan Faktur Penjualan</h2>
+        </div>
+
+        <div class="py-4 space-y-3 text-sm">
+          <p class="text-muted-foreground text-xs leading-relaxed">
+            Anda akan membatalkan faktur <strong class="text-foreground font-mono">{{ voidInvoiceNumber() }}</strong>.
+            Stok produk jadi akan dikembalikan ke inventaris gudang dan jurnal pembalik akan dibukukan secara otomatis.
+          </p>
+
+          <div>
+            <label for="inv-void-reason" class="text-xs font-medium text-foreground block mb-1">
+              Alasan Pembatalan <span class="text-destructive">*</span>
+            </label>
+            <textarea
+              id="inv-void-reason"
+              rows="3"
+              [ngModel]="voidReason()"
+              (ngModelChange)="voidReason.set($event)"
+              placeholder="Jelaskan alasan pembatalan faktur ini..."
+              class="w-full rounded-2xl border border-border bg-background p-3 text-sm text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:outline-hidden"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-border/60">
+          <button
+            hlmBtn
+            variant="outline"
+            size="sm"
+            (click)="closeVoidModal()"
+            [disabled]="isSubmitting()"
+            class="h-9 rounded-full px-4 text-sm font-medium"
+          >
+            Tutup
+          </button>
+          <button
+            hlmBtn
+            variant="destructive"
+            size="sm"
+            (click)="confirmVoid()"
+            [disabled]="isSubmitting() || !voidReason().trim()"
+            class="h-9 gap-1.5 rounded-full px-4 text-sm font-medium shadow-xs"
+          >
+            @if (isSubmitting()) {
+              <ng-icon name="phosphorArrowsClockwise" class="size-4 animate-spin" />
+            }
+            <span>Konfirmasi Batalkan Faktur</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Detail Faktur -->
+  @if (isDetailModalOpen() && selectedInvoice(); as inv) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+      <div class="w-full max-w-xl rounded-3xl border border-border/80 bg-card p-6 shadow-xl max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between pb-4 border-b border-border/60">
+          <div>
+            <h2 class="text-lg font-semibold text-foreground">Detail Faktur Penjualan</h2>
+            <p class="text-xs text-muted-foreground font-mono mt-0.5">{{ inv.documentNumber || 'Draf Sementara' }}</p>
+          </div>
+          <button
+            type="button"
+            (click)="closeDetailModal()"
+            class="rounded-full p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            <ng-icon name="phosphorX" class="size-5" />
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto py-4 space-y-4 text-sm">
+          <div class="grid grid-cols-2 gap-3 bg-muted/20 p-3.5 rounded-2xl border border-border/60">
+            <div>
+              <span class="text-xs text-muted-foreground block">Pelanggan:</span>
+              <span class="font-medium text-foreground">{{ inv.customerName }}</span>
+            </div>
+            <div>
+              <span class="text-xs text-muted-foreground block">Tanggal Faktur:</span>
+              <span class="font-medium text-foreground">{{ inv.transactionDate }}</span>
+            </div>
+            <div>
+              <span class="text-xs text-muted-foreground block">Metode Pembayaran:</span>
+              <span class="font-medium text-foreground capitalize">{{ inv.fundingMethod === 'cash' ? 'Tunai (Kas/Bank)' : 'Piutang Usaha' }}</span>
+            </div>
+            <div>
+              <span class="text-xs text-muted-foreground block">Status Dokumen:</span>
+              <span class="font-medium text-foreground uppercase text-xs">{{ inv.status }}</span>
+            </div>
+            <div>
+              <span class="text-xs text-muted-foreground block">Status Pembayaran:</span>
+              <span class="font-medium text-foreground">{{ inv.paymentStatus }}</span>
+            </div>
+            <div>
+              <span class="text-xs text-muted-foreground block">Asal Dokumen PO:</span>
+              <span class="font-mono text-xs text-foreground">{{ inv.sourceOrderNumber || 'Tanpa PO (Langsung)' }}</span>
+            </div>
+            @if (inv.notes) {
+              <div class="col-span-2">
+                <span class="text-xs text-muted-foreground block">Catatan:</span>
+                <span class="text-foreground">{{ inv.notes }}</span>
+              </div>
+            }
+            @if (inv.voidReason) {
+              <div class="col-span-2 text-destructive">
+                <span class="text-xs font-semibold block">Alasan Void:</span>
+                <span>{{ inv.voidReason }}</span>
+              </div>
+            }
+          </div>
+
+          <div>
+            <h3 class="text-xs font-semibold uppercase text-muted-foreground tracking-wider mb-2">
+              Rincian Produk Dikirim
+            </h3>
+            <div class="border border-border/60 rounded-2xl overflow-hidden divide-y divide-border/60">
+              @for (line of inv.lines || []; track line.id) {
+                <div class="p-3 flex items-center justify-between hover:bg-muted/20">
+                  <div>
+                    <div class="font-medium text-foreground">{{ line.description || line.product?.name }}</div>
+                    <div class="text-xs text-muted-foreground font-mono">{{ line.product?.sku || '—' }}</div>
+                  </div>
+                  <div class="text-end">
+                    <div class="font-semibold text-foreground">{{ formatRupiah(line.total_amount) }}</div>
+                    <div class="text-xs text-muted-foreground">{{ line.quantity }} {{ line.unit_code }} @ {{ formatRupiah(line.unit_price) }}</div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-4 border-t border-border/60">
+          <div class="text-sm">
+            <span class="text-xs text-muted-foreground block">Total Tagihan:</span>
+            <span class="text-base font-bold text-foreground">{{ formatRupiah(inv.totalAmount) }}</span>
+            @if (inv.status === 'posted' && inv.fundingMethod === 'receivable') {
+              <span class="text-xs text-muted-foreground block">
+                Sisa: <strong class="text-foreground">{{ formatRupiah(inv.outstandingAmount) }}</strong>
+              </span>
+            }
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button
+              hlmBtn
+              variant="outline"
+              size="sm"
+              (click)="closeDetailModal()"
+              class="h-9 rounded-full px-4 text-sm font-medium"
+            >
+              Tutup
+            </button>
+            @if (inv.status === 'draft') {
+              <button
+                hlmBtn
+                size="sm"
+                (click)="closeDetailModal(); postInvoice(inv.id)"
+                class="h-9 gap-1.5 rounded-full px-4 text-sm font-medium shadow-xs"
+              >
+                <ng-icon name="phosphorCheckCircle" class="size-4" />
+                <span>Posting Faktur</span>
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</main>
