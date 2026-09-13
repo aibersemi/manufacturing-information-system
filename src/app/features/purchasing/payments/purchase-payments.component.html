@@ -1,0 +1,420 @@
+<main class="flex flex-1 flex-col gap-6">
+  <!-- Header -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Bayar Pembelian (Hutang Pemasok)</h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Kelola pelunasan tagihan invoice supplier dan pantau riwayat pengeluaran kas/bank.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        (click)="loadData()"
+        [disabled]="isLoading()"
+        class="h-9 gap-1.5 rounded-full border-border/80 bg-card/80 px-3.5 text-sm font-medium shadow-2xs hover:bg-accent"
+      >
+        <ng-icon
+          name="phosphorArrowsClockwise"
+          class="size-4"
+          [class.animate-spin]="isLoading()"
+        />
+        <span>Segarkan</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div class="rounded-3xl border border-border/80 bg-card p-6 shadow-xs flex items-center gap-4">
+      <div class="rounded-2xl bg-amber-500/10 p-3.5 text-amber-600 dark:text-amber-400">
+        <ng-icon name="phosphorReceipt" class="size-6" />
+      </div>
+      <div>
+        <div class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Hutang Berjalan (AP)</div>
+        <div class="text-2xl font-bold tracking-tight text-foreground mt-1">
+          {{ formatCurrency(totalOutstanding()) }}
+        </div>
+      </div>
+    </div>
+
+    <div class="rounded-3xl border border-border/80 bg-card p-6 shadow-xs flex items-center gap-4">
+      <div class="rounded-2xl bg-primary/10 p-3.5 text-primary">
+        <ng-icon name="phosphorFileText" class="size-6" />
+      </div>
+      <div>
+        <div class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tagihan Belum Lunas</div>
+        <div class="text-2xl font-bold tracking-tight text-foreground mt-1">
+          {{ payablePurchases().length }} Dokumen
+        </div>
+      </div>
+    </div>
+
+    <div class="rounded-3xl border border-border/80 bg-card p-6 shadow-xs flex items-center gap-4">
+      <div class="rounded-2xl bg-emerald-500/10 p-3.5 text-emerald-600 dark:text-emerald-400">
+        <ng-icon name="phosphorCheckCircle" class="size-6" />
+      </div>
+      <div>
+        <div class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Pembayaran Selesai</div>
+        <div class="text-2xl font-bold tracking-tight text-foreground mt-1">
+          {{ paymentHistory().length }} Transaksi
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs Navigation & Filter -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex items-center gap-1 rounded-full border border-border/80 bg-card p-1 shadow-2xs">
+      <button
+        type="button"
+        (click)="activeTab.set('unpaid')"
+        [class.bg-primary]="activeTab() === 'unpaid'"
+        [class.text-primary-foreground]="activeTab() === 'unpaid'"
+        [class.text-muted-foreground]="activeTab() !== 'unpaid'"
+        class="rounded-full px-4 py-1.5 text-xs font-medium transition hover:text-foreground"
+      >
+        Tagihan Belum Lunas ({{ payablePurchases().length }})
+      </button>
+      <button
+        type="button"
+        (click)="activeTab.set('history')"
+        [class.bg-primary]="activeTab() === 'history'"
+        [class.text-primary-foreground]="activeTab() === 'history'"
+        [class.text-muted-foreground]="activeTab() !== 'history'"
+        class="rounded-full px-4 py-1.5 text-xs font-medium transition hover:text-foreground"
+      >
+        Riwayat Pembayaran ({{ paymentHistory().length }})
+      </button>
+    </div>
+
+    <div class="relative w-full max-w-xs">
+      <ng-icon
+        name="phosphorMagnifyingGlass"
+        class="pointer-events-none absolute start-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        aria-hidden="true"
+      />
+      <input
+        type="text"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+        placeholder="Cari nomor atau pemasok..."
+        class="w-full rounded-full border border-border bg-card ps-10 pe-4 py-1.5 text-sm text-foreground placeholder:text-muted-foreground shadow-2xs transition focus:bg-background focus:ring-2 focus:ring-ring focus:outline-hidden"
+      />
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  @if (errorMessage()) {
+    <div class="flex items-center gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive shadow-2xs">
+      <ng-icon name="phosphorWarningCircle" class="size-5 shrink-0" />
+      <span class="flex-1">{{ errorMessage() }}</span>
+      <button type="button" (click)="errorMessage.set(null)" class="text-destructive hover:opacity-70">
+        <ng-icon name="phosphorX" class="size-4" />
+      </button>
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-600 shadow-2xs dark:text-emerald-400">
+      <ng-icon name="phosphorCheckCircle" class="size-5 shrink-0" />
+      <span class="flex-1">{{ successMessage() }}</span>
+      <button type="button" (click)="successMessage.set(null)" class="text-emerald-600 hover:opacity-70 dark:text-emerald-400">
+        <ng-icon name="phosphorX" class="size-4" />
+      </button>
+    </div>
+  }
+
+  <!-- Konten Tab 1: Tagihan Belum Lunas -->
+  @if (activeTab() === 'unpaid') {
+    <div class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
+      <div class="p-6 border-b border-border/60">
+        <h2 class="text-base font-semibold text-foreground">Daftar Tagihan Hutang Belum Lunas</h2>
+        <p class="text-xs text-muted-foreground mt-0.5">
+          Pilih tagihan yang ingin dibayar sebagian atau dilunasi penuh.
+        </p>
+      </div>
+
+      <div class="overflow-x-auto">
+        @if (isLoading()) {
+          <div class="p-12 text-center text-sm text-muted-foreground">
+            <ng-icon name="phosphorArrowsClockwise" class="size-6 animate-spin mx-auto mb-2 text-primary" />
+            Memuat daftar tagihan hutang...
+          </div>
+        } @else if (filteredPurchases().length === 0) {
+          <div class="p-12 text-center">
+            <ng-icon name="phosphorCheckCircle" class="size-10 mx-auto text-emerald-500/60 mb-3" />
+            <h3 class="text-sm font-semibold text-foreground">Tidak ada tagihan hutang terbuka</h3>
+            <p class="text-xs text-muted-foreground mt-1">
+              Seluruh transaksi pembelian telah lunas atau belum ada pembelian tempo yang diposting.
+            </p>
+          </div>
+        } @else {
+          <table class="w-full text-left text-sm">
+            <thead class="bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/60">
+              <tr>
+                <th scope="col" class="px-6 py-3.5">No. Pembelian</th>
+                <th scope="col" class="px-6 py-3.5">Tanggal</th>
+                <th scope="col" class="px-6 py-3.5">Pemasok</th>
+                <th scope="col" class="px-6 py-3.5 text-right">Total Tagihan</th>
+                <th scope="col" class="px-6 py-3.5 text-right">Telah Dibayar</th>
+                <th scope="col" class="px-6 py-3.5 text-right font-bold text-rose-600 dark:text-rose-400">Sisa Hutang</th>
+                <th scope="col" class="px-6 py-3.5 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border/60">
+              @for (doc of filteredPurchases(); track doc.id) {
+                <tr class="hover:bg-muted/20 transition">
+                  <td class="px-6 py-4 font-mono font-semibold text-foreground">
+                    {{ doc.document_number }}
+                  </td>
+                  <td class="px-6 py-4 text-muted-foreground">
+                    {{ doc.transaction_date }}
+                  </td>
+                  <td class="px-6 py-4 font-medium text-foreground">
+                    {{ doc.counterparty?.name || '-' }}
+                  </td>
+                  <td class="px-6 py-4 text-right font-medium text-foreground">
+                    {{ formatCurrency(doc.total_amount) }}
+                  </td>
+                  <td class="px-6 py-4 text-right text-muted-foreground">
+                    {{ formatCurrency(doc.paid_amount) }}
+                  </td>
+                  <td class="px-6 py-4 text-right font-bold text-rose-600 dark:text-rose-400">
+                    {{ formatCurrency(doc.total_amount - (doc.paid_amount || 0)) }}
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    <button
+                      type="button"
+                      (click)="openPaymentModal(doc)"
+                      class="rounded-full bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 shadow-2xs transition"
+                    >
+                      Bayar Tagihan
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Konten Tab 2: Riwayat Pembayaran -->
+  @if (activeTab() === 'history') {
+    <div class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
+      <div class="p-6 border-b border-border/60">
+        <h2 class="text-base font-semibold text-foreground">Riwayat Pembayaran Kas Keluar</h2>
+        <p class="text-xs text-muted-foreground mt-0.5">
+          Daftar bukti pengeluaran kas/bank yang telah diposting.
+        </p>
+      </div>
+
+      <div class="overflow-x-auto">
+        @if (isLoading()) {
+          <div class="p-12 text-center text-sm text-muted-foreground">
+            <ng-icon name="phosphorArrowsClockwise" class="size-6 animate-spin mx-auto mb-2 text-primary" />
+            Memuat riwayat pembayaran...
+          </div>
+        } @else if (filteredHistory().length === 0) {
+          <div class="p-12 text-center">
+            <ng-icon name="phosphorCreditCard" class="size-10 mx-auto text-muted-foreground/50 mb-3" />
+            <h3 class="text-sm font-semibold text-foreground">Belum ada riwayat pembayaran</h3>
+            <p class="text-xs text-muted-foreground mt-1">
+              Catatan pembayaran kas keluar akan muncul di sini setelah Anda memproses pembayaran hutang.
+            </p>
+          </div>
+        } @else {
+          <table class="w-full text-left text-sm">
+            <thead class="bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/60">
+              <tr>
+                <th scope="col" class="px-6 py-3.5">No. Bukti Kas (KK)</th>
+                <th scope="col" class="px-6 py-3.5">Tanggal Bayar</th>
+                <th scope="col" class="px-6 py-3.5">Pemasok</th>
+                <th scope="col" class="px-6 py-3.5">No. Pembelian Acuan</th>
+                <th scope="col" class="px-6 py-3.5">Sumber Kas/Bank</th>
+                <th scope="col" class="px-6 py-3.5 text-right">Jumlah Dibayar</th>
+                <th scope="col" class="px-6 py-3.5 text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border/60">
+              @for (pay of filteredHistory(); track pay.id) {
+                <tr class="hover:bg-muted/20 transition">
+                  <td class="px-6 py-4 font-mono font-semibold text-foreground">
+                    {{ pay.document_number }}
+                  </td>
+                  <td class="px-6 py-4 text-muted-foreground">
+                    {{ pay.transaction_date }}
+                  </td>
+                  <td class="px-6 py-4 font-medium text-foreground">
+                    {{ pay.counterparty?.name || '-' }}
+                  </td>
+                  <td class="px-6 py-4 font-mono text-muted-foreground">
+                    {{ pay.data?.purchaseDocumentNumber || pay.purchase?.document_number || '-' }}
+                  </td>
+                  <td class="px-6 py-4 text-foreground">
+                    {{ pay.data?.cashAccountName || 'Kas/Bank' }}
+                  </td>
+                  <td class="px-6 py-4 text-right font-bold text-emerald-600 dark:text-emerald-400">
+                    {{ formatCurrency(pay.total_amount) }}
+                  </td>
+                  <td class="px-6 py-4 text-center">
+                    <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                      Posted
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Modal Form Pembayaran -->
+  @if (isPayModalOpen() && selectedPurchase()) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-200"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-payment-title"
+    >
+      <div class="relative w-full max-w-lg rounded-3xl border border-border/80 bg-card p-6 shadow-xl animate-in zoom-in-95 duration-200">
+        <button
+          type="button"
+          (click)="closePaymentModal()"
+          class="absolute top-5 end-5 rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+          aria-label="Tutup dialog"
+        >
+          <ng-icon name="phosphorX" class="size-5" />
+        </button>
+
+        <div class="flex flex-col gap-1 mb-5">
+          <h2 id="modal-payment-title" class="text-xl font-semibold tracking-tight text-foreground">
+            Form Pembayaran Hutang
+          </h2>
+          <p class="text-xs text-muted-foreground">
+            Catat pelunasan invoice pembelian ke pemasok melalui pemotongan saldo kas/bank.
+          </p>
+        </div>
+
+        @if (formError()) {
+          <div class="mb-4 rounded-2xl border border-destructive/30 bg-destructive/10 p-3.5 text-xs text-destructive flex items-center gap-2">
+            <ng-icon name="phosphorWarningCircle" class="size-4 shrink-0" />
+            <span>{{ formError() }}</span>
+          </div>
+        }
+
+        <div class="p-4 rounded-2xl bg-muted/40 border border-border/60 mb-5 flex flex-col gap-2">
+          <div class="flex justify-between text-xs">
+            <span class="text-muted-foreground">Dokumen Pembelian:</span>
+            <span class="font-mono font-semibold text-foreground">{{ selectedPurchase()?.document_number }}</span>
+          </div>
+          <div class="flex justify-between text-xs">
+            <span class="text-muted-foreground">Pemasok:</span>
+            <span class="font-medium text-foreground">{{ selectedPurchase()?.counterparty?.name }}</span>
+          </div>
+          <div class="flex justify-between text-xs">
+            <span class="text-muted-foreground">Total Nilai Dokumen:</span>
+            <span class="font-medium text-foreground">{{ formatCurrency(selectedPurchase()?.total_amount || 0) }}</span>
+          </div>
+          <div class="flex justify-between text-xs pt-1 border-t border-border/60">
+            <span class="font-semibold text-foreground">Sisa Hutang:</span>
+            <span class="font-bold text-rose-600 dark:text-rose-400">
+              {{ formatCurrency((selectedPurchase()?.total_amount || 0) - (selectedPurchase()?.paid_amount || 0)) }}
+            </span>
+          </div>
+        </div>
+
+        <form (ngSubmit)="submitPayment()" class="flex flex-col gap-4">
+          <div class="flex flex-col gap-1.5">
+            <label for="pay-amount" class="text-xs font-semibold text-foreground">
+              Jumlah Pembayaran (Rp)
+            </label>
+            <input
+              id="pay-amount"
+              type="number"
+              [ngModel]="formAmount()"
+              (ngModelChange)="formAmount.set($event)"
+              name="formAmount"
+              min="1"
+              required
+              class="w-full rounded-xl border border-border bg-background px-3.5 py-2 text-sm font-semibold text-foreground shadow-2xs focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+            />
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label for="pay-cash-account" class="text-xs font-semibold text-foreground">
+              Akun Kas / Rekening Bank Sumber
+            </label>
+            <select
+              id="pay-cash-account"
+              [ngModel]="formCashAccountId()"
+              (ngModelChange)="formCashAccountId.set($event)"
+              name="formCashAccountId"
+              required
+              class="w-full rounded-xl border border-border bg-background px-3.5 py-2 text-sm text-foreground shadow-2xs focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+            >
+              <option value="" disabled>Pilih Akun Kas/Bank</option>
+              @for (cash of cashAccounts(); track cash.id) {
+                <option [value]="cash.id">{{ cash.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label for="pay-date" class="text-xs font-semibold text-foreground">
+              Tanggal Pembayaran
+            </label>
+            <input
+              id="pay-date"
+              type="date"
+              [ngModel]="formPaymentDate()"
+              (ngModelChange)="formPaymentDate.set($event)"
+              name="formPaymentDate"
+              required
+              class="w-full rounded-xl border border-border bg-background px-3.5 py-2 text-sm text-foreground shadow-2xs focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+            />
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label for="pay-notes" class="text-xs font-semibold text-foreground">
+              Catatan / Referensi Bukti Transfer
+            </label>
+            <input
+              id="pay-notes"
+              type="text"
+              [ngModel]="formNotes()"
+              (ngModelChange)="formNotes.set($event)"
+              name="formNotes"
+              placeholder="Contoh: Transfer BCA Ref #88992"
+              class="w-full rounded-xl border border-border bg-background px-3.5 py-2 text-sm text-foreground shadow-2xs focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+            />
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-4 border-t border-border/80 mt-2">
+            <button
+              type="button"
+              (click)="closePaymentModal()"
+              class="rounded-full border border-border/80 px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              [disabled]="isSubmitting()"
+              class="rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              {{ isSubmitting() ? 'Memproses...' : 'Konfirmasi Bayar' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</main>

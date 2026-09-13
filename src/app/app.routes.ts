@@ -108,6 +108,52 @@ export const routes: Routes = [
         redirectTo: 'workspace/wage-rates',
         pathMatch: 'full',
       },
+      // Purchasing & Inventory Module
+      {
+        path: 'workspace/purchase-materials',
+        loadComponent: () =>
+          import('./features/purchasing/materials/purchase-materials.component').then(
+            (m) => m.PurchaseMaterialsComponent
+          ),
+      },
+      {
+        path: 'workspace/purchase-supplies',
+        loadComponent: () =>
+          import('./features/purchasing/supplies/purchase-supplies.component').then(
+            (m) => m.PurchaseSuppliesComponent
+          ),
+      },
+      {
+        path: 'workspace/purchase-non-production',
+        loadComponent: () =>
+          import('./features/purchasing/non-production/purchase-non-production.component').then(
+            (m) => m.PurchaseNonProductionComponent
+          ),
+      },
+      {
+        path: 'workspace/purchase-payments',
+        loadComponent: () =>
+          import('./features/purchasing/payments/purchase-payments.component').then(
+            (m) => m.PurchasePaymentsComponent
+          ),
+      },
+      {
+        path: 'workspace/inventory',
+        loadComponent: () =>
+          import('./features/inventory/inventory.component').then(
+            (m) => m.InventoryComponent
+          ),
+      },
+      {
+        path: 'purchasing',
+        redirectTo: 'workspace/purchase-materials',
+        pathMatch: 'full',
+      },
+      {
+        path: 'inventory',
+        redirectTo: 'workspace/inventory',
+        pathMatch: 'full',
+      },
       {
         path: 'workspace/companies',
         canActivate: [ownerGuard],

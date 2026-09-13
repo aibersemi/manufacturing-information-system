@@ -154,6 +154,63 @@
           }
         </div>
 
+        <!-- Group: Pengadaan & Pembelian -->
+        <div class="flex flex-col">
+          <button
+            type="button"
+            (click)="toggleGroup('purchasing')"
+            class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-muted-foreground transition hover:bg-accent/50 hover:text-foreground"
+            [title]="isSidebarCollapsed() ? 'Pengadaan & Pembelian' : ''"
+          >
+            <ng-icon name="phosphorShoppingCart" class="size-4 shrink-0 text-foreground/80" />
+            @if (!isSidebarCollapsed()) {
+              <span class="truncate font-medium text-foreground">Pengadaan &amp; Pembelian</span>
+              <ng-icon
+                name="phosphorCaretRight"
+                class="ms-auto size-3.5 transition-transform duration-200"
+                [class.rotate-90]="isGroupOpen('purchasing')"
+              />
+            }
+          </button>
+
+          @if (!isSidebarCollapsed() && isGroupOpen('purchasing')) {
+            <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
+              <a
+                routerLink="/workspace/purchase-materials"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Pembelian Bahan Baku
+              </a>
+              <a
+                routerLink="/workspace/purchase-supplies"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Pembelian Perlengkapan
+              </a>
+              <a
+                routerLink="/workspace/purchase-non-production"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Pembelian Non-Produksi
+              </a>
+              <a
+                routerLink="/workspace/purchase-payments"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Bayar Pembelian
+              </a>
+            </div>
+          }
+        </div>
+
         <!-- Group 2: Operasional Pabrik -->
         <div class="flex flex-col">
           <button
@@ -217,12 +274,12 @@
           @if (!isSidebarCollapsed() && isGroupOpen('inventory')) {
             <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
               <a
-                routerLink="/inventory"
+                routerLink="/workspace/inventory"
                 routerLinkActive="text-foreground font-semibold"
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Stok Material Wafer
+                Stok &amp; Mutasi Barang
               </a>
             </div>
           }

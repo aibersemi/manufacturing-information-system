@@ -1,0 +1,626 @@
+<main class="flex flex-1 flex-col gap-6">
+  <!-- Header -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Pembelian Non-Produksi</h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Pengadaan barang & jasa operasional umum, ATK kantor, konsumsi, dan pemeliharaan fasilitas.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        (click)="loadData()"
+        [disabled]="isLoading()"
+        class="h-9 gap-1.5 rounded-full border-border/80 bg-card/80 px-3.5 text-sm font-medium shadow-2xs hover:bg-accent"
+      >
+        <ng-icon
+          name="phosphorArrowsClockwise"
+          class="size-4"
+          [class.animate-spin]="isLoading()"
+        />
+        <span>Segarkan</span>
+      </button>
+
+      <button
+        hlmBtn
+        size="sm"
+        (click)="openCreateModal()"
+        id="btn-add-purchase-non-prod"
+        class="h-9 gap-1.5 rounded-full px-4 text-sm font-medium shadow-xs"
+      >
+        <ng-icon name="phosphorPlus" class="size-4" />
+        <span>Buat Pembelian Non-Produksi</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Filter & Search -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div class="relative w-full max-w-sm">
+      <ng-icon
+        name="phosphorMagnifyingGlass"
+        class="pointer-events-none absolute start-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        aria-hidden="true"
+      />
+      <input
+        type="text"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+        placeholder="Cari nomor dokumen atau vendor..."
+        class="w-full rounded-full border border-border bg-card ps-10 pe-4 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-2xs transition focus:bg-background focus:ring-2 focus:ring-ring focus:outline-hidden"
+      />
+    </div>
+
+    <div class="flex items-center gap-1 self-start rounded-full border border-border/80 bg-card p-1 shadow-2xs sm:self-auto">
+      <button
+        type="button"
+        (click)="statusFilter.set('all')"
+        [class.bg-primary]="statusFilter() === 'all'"
+        [class.text-primary-foreground]="statusFilter() === 'all'"
+        [class.text-muted-foreground]="statusFilter() !== 'all'"
+        class="rounded-full px-3 py-1 text-xs font-medium transition hover:text-foreground"
+      >
+        Semua
+      </button>
+      <button
+        type="button"
+        (click)="statusFilter.set('draft')"
+        [class.bg-primary]="statusFilter() === 'draft'"
+        [class.text-primary-foreground]="statusFilter() === 'draft'"
+        [class.text-muted-foreground]="statusFilter() !== 'draft'"
+        class="rounded-full px-3 py-1 text-xs font-medium transition hover:text-foreground"
+      >
+        Draft
+      </button>
+      <button
+        type="button"
+        (click)="statusFilter.set('posted')"
+        [class.bg-primary]="statusFilter() === 'posted'"
+        [class.text-primary-foreground]="statusFilter() === 'posted'"
+        [class.text-muted-foreground]="statusFilter() !== 'posted'"
+        class="rounded-full px-3 py-1 text-xs font-medium transition hover:text-foreground"
+      >
+        Posted
+      </button>
+      <button
+        type="button"
+        (click)="statusFilter.set('void')"
+        [class.bg-primary]="statusFilter() === 'void'"
+        [class.text-primary-foreground]="statusFilter() === 'void'"
+        [class.text-muted-foreground]="statusFilter() !== 'void'"
+        class="rounded-full px-3 py-1 text-xs font-medium transition hover:text-foreground"
+      >
+        Void
+      </button>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  @if (errorMessage()) {
+    <div class="flex items-center gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive shadow-2xs">
+      <ng-icon name="phosphorWarningCircle" class="size-5 shrink-0" />
+      <span class="flex-1">{{ errorMessage() }}</span>
+      <button type="button" (click)="errorMessage.set(null)" class="text-destructive hover:opacity-70">
+        <ng-icon name="phosphorX" class="size-4" />
+      </button>
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-600 shadow-2xs dark:text-emerald-400">
+      <ng-icon name="phosphorCheckCircle" class="size-5 shrink-0" />
+      <span class="flex-1">{{ successMessage() }}</span>
+      <button type="button" (click)="successMessage.set(null)" class="text-emerald-600 hover:opacity-70 dark:text-emerald-400">
+        <ng-icon name="phosphorX" class="size-4" />
+      </button>
+    </div>
+  }
+
+  <!-- Tabel Dokumen Pembelian Non-Produksi -->
+  <div class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
+    <div class="p-6 border-b border-border/60 flex items-center justify-between">
+      <div>
+        <h2 class="text-base font-semibold text-foreground">Daftar Pengadaan Barang & Jasa Non-Produksi</h2>
+        <p class="text-xs text-muted-foreground mt-0.5">
+          Menampilkan {{ filteredDocuments().length }} dokumen pembelian non-produksi
+        </p>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      @if (isLoading()) {
+        <div class="p-12 text-center text-sm text-muted-foreground">
+          <ng-icon name="phosphorArrowsClockwise" class="size-6 animate-spin mx-auto mb-2 text-primary" />
+          Memuat daftar pembelian non-produksi...
+        </div>
+      } @else if (filteredDocuments().length === 0) {
+        <div class="p-12 text-center">
+          <ng-icon name="phosphorFileText" class="size-10 mx-auto text-muted-foreground/50 mb-3" />
+          <h3 class="text-sm font-semibold text-foreground">Belum ada dokumen pembelian non-produksi</h3>
+          <p class="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+            Catat belanja perlengkapan kantor, konsumsi, dan biaya operasional langsung melalui tombol Buat Pembelian.
+          </p>
+        </div>
+      } @else {
+        <table class="w-full text-left text-sm">
+          <thead class="bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/60">
+            <tr>
+              <th scope="col" class="px-6 py-3.5">No. Dokumen</th>
+              <th scope="col" class="px-6 py-3.5">Tanggal</th>
+              <th scope="col" class="px-6 py-3.5">Pemasok / Vendor</th>
+              <th scope="col" class="px-6 py-3.5">Metode Bayar</th>
+              <th scope="col" class="px-6 py-3.5 text-right">Total Nilai</th>
+              <th scope="col" class="px-6 py-3.5 text-center">Status Lunas</th>
+              <th scope="col" class="px-6 py-3.5 text-center">Status</th>
+              <th scope="col" class="px-6 py-3.5 text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border/60">
+            @for (doc of filteredDocuments(); track doc.id) {
+              <tr class="hover:bg-muted/20 transition">
+                <td class="px-6 py-4 font-mono font-semibold text-foreground">
+                  {{ doc.document_number || 'DRAFT (Belum Diposting)' }}
+                </td>
+                <td class="px-6 py-4 text-muted-foreground">
+                  {{ doc.transaction_date }}
+                </td>
+                <td class="px-6 py-4 font-medium text-foreground">
+                  {{ doc.counterparty?.name || '-' }}
+                </td>
+                <td class="px-6 py-4">
+                  @if (doc.data?.['fundingMethod'] === 'cash') {
+                    <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                      <ng-icon name="phosphorCreditCard" class="size-3" />
+                      Tunai
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                      <ng-icon name="phosphorReceipt" class="size-3" />
+                      Hutang
+                    </span>
+                  }
+                </td>
+                <td class="px-6 py-4 text-right font-semibold text-foreground">
+                  {{ formatCurrency(doc.total_amount) }}
+                </td>
+                <td class="px-6 py-4 text-center">
+                  @if (doc.status === 'void') {
+                    <span class="text-xs text-muted-foreground">-</span>
+                  } @else if (doc.paid_amount >= doc.total_amount) {
+                    <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                      Lunas
+                    </span>
+                  } @else if (doc.paid_amount > 0) {
+                    <span class="inline-flex items-center rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400">
+                      Sebagian
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center rounded-full bg-rose-500/10 px-2.5 py-0.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+                      Belum Lunas
+                    </span>
+                  }
+                </td>
+                <td class="px-6 py-4 text-center">
+                  @if (doc.status === 'posted') {
+                    <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                      Posted
+                    </span>
+                  } @else if (doc.status === 'draft') {
+                    <span class="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                      Draft
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center rounded-full bg-zinc-500/10 px-2.5 py-0.5 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                      Void
+                    </span>
+                  }
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <div class="flex items-center justify-end gap-1.5">
+                    <button
+                      type="button"
+                      (click)="openDetailModal(doc)"
+                      class="rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      title="Lihat Detail"
+                      aria-label="Lihat Detail Dokumen"
+                    >
+                      <ng-icon name="phosphorEye" class="size-4" />
+                    </button>
+
+                    @if (doc.status === 'draft') {
+                      <button
+                        type="button"
+                        (click)="postDocument(doc)"
+                        class="rounded-full px-3 py-1 text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 shadow-2xs"
+                      >
+                        Posting
+                      </button>
+                    }
+
+                    @if (doc.status === 'posted' && doc.paid_amount === 0) {
+                      <button
+                        type="button"
+                        (click)="openVoidModal(doc)"
+                        class="rounded-full p-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                        title="Batalkan (Void)"
+                        aria-label="Batalkan Pembelian"
+                      >
+                        <ng-icon name="phosphorXCircle" class="size-4" />
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+  </div>
+
+  <!-- Modal Form Buat Pembelian Non-Produksi -->
+  @if (isModalOpen()) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-200"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-nonprod-title"
+    >
+      <div class="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl border border-border/80 bg-card p-6 shadow-xl animate-in zoom-in-95 duration-200">
+        <button
+          type="button"
+          (click)="closeModal()"
+          class="absolute top-5 end-5 rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+          aria-label="Tutup dialog"
+        >
+          <ng-icon name="phosphorX" class="size-5" />
+        </button>
+
+        <div class="flex flex-col gap-1 mb-6">
+          <h2 id="modal-nonprod-title" class="text-xl font-semibold tracking-tight text-foreground">
+            Buat Pembelian Non-Produksi
+          </h2>
+          <p class="text-xs text-muted-foreground">
+            Input belanja langsung keperluan kantor, pemeliharaan, dan biaya non-manufaktur.
+          </p>
+        </div>
+
+        @if (formError()) {
+          <div class="mb-4 rounded-2xl border border-destructive/30 bg-destructive/10 p-3.5 text-xs text-destructive flex items-center gap-2">
+            <ng-icon name="phosphorWarningCircle" class="size-4 shrink-0" />
+            <span>{{ formError() }}</span>
+          </div>
+        }
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div class="flex flex-col gap-1.5">
+            <label for="pnp-supplier" class="text-xs font-semibold text-foreground">
+              Pemasok / Vendor
+            </label>
+            <select
+              id="pnp-supplier"
+              [ngModel]="formSupplierId()"
+              (ngModelChange)="formSupplierId.set($event)"
+              class="w-full rounded-xl border border-border bg-background px-3.5 py-2 text-sm text-foreground shadow-2xs focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+            >
+              <option value="" disabled>Pilih Vendor</option>
+              @for (sup of suppliers(); track sup.id) {
+                <option [value]="sup.id">{{ sup.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label for="pnp-date" class="text-xs font-semibold text-foreground">
+              Tanggal Transaksi
+            </label>
+            <input
+              id="pnp-date"
+              type="date"
+              [ngModel]="formTransactionDate()"
+              (ngModelChange)="formTransactionDate.set($event)"
+              class="w-full rounded-xl border border-border bg-background px-3.5 py-2 text-sm text-foreground shadow-2xs focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+            />
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label for="pnp-funding" class="text-xs font-semibold text-foreground">
+              Metode Pembayaran
+            </label>
+            <select
+              id="pnp-funding"
+              [ngModel]="formFundingMethod()"
+              (ngModelChange)="formFundingMethod.set($event)"
+              class="w-full rounded-xl border border-border bg-background px-3.5 py-2 text-sm text-foreground shadow-2xs focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+            >
+              <option value="payable">Hutang Vendor (Tempo)</option>
+              <option value="cash">Tunai Langsung (Kas/Bank)</option>
+            </select>
+          </div>
+        </div>
+
+        @if (formFundingMethod() === 'cash') {
+          <div class="mb-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+            <label for="pnp-cash-acc" class="text-xs font-semibold text-foreground block mb-1.5">
+              Pilih Akun Kas/Bank Pembayaran
+            </label>
+            <select
+              id="pnp-cash-acc"
+              [ngModel]="formCashAccountId()"
+              (ngModelChange)="formCashAccountId.set($event)"
+              class="w-full max-w-sm rounded-xl border border-border bg-background px-3.5 py-2 text-sm text-foreground shadow-2xs focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+            >
+              <option value="" disabled>Pilih Akun Kas</option>
+              @for (cash of cashAccounts(); track cash.id) {
+                <option [value]="cash.id">{{ cash.name }}</option>
+              }
+            </select>
+          </div>
+        }
+
+        <!-- Tabel Rincian Non-Produksi -->
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-foreground">Rincian Belanja Non-Produksi</h3>
+            <button
+              type="button"
+              (click)="addLine()"
+              class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium border border-border/80 bg-muted/40 hover:bg-muted text-foreground transition"
+            >
+              <ng-icon name="phosphorPlus" class="size-3.5" />
+              <span>Tambah Baris</span>
+            </button>
+          </div>
+
+          <div class="rounded-2xl border border-border/80 overflow-hidden">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-muted/40 text-xs font-semibold text-muted-foreground border-b border-border/60">
+                <tr>
+                  <th scope="col" class="px-4 py-2.5">Deskripsi Belanja / Keperluan</th>
+                  <th scope="col" class="px-4 py-2.5 w-28">Satuan</th>
+                  <th scope="col" class="px-4 py-2.5 w-24">Jumlah</th>
+                  <th scope="col" class="px-4 py-2.5 w-36 text-right">Biaya Satuan</th>
+                  <th scope="col" class="px-4 py-2.5 w-36 text-right">Subtotal</th>
+                  <th scope="col" class="px-4 py-2.5 w-12 text-center"></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border/60">
+                @for (line of formLines(); track $index; let idx = $index) {
+                  <tr>
+                    <td class="p-2">
+                      <label [for]="'pnp-desc-' + idx" class="sr-only">Deskripsi Baris {{ idx + 1 }}</label>
+                      <input
+                        [id]="'pnp-desc-' + idx"
+                        type="text"
+                        [ngModel]="line.description"
+                        (ngModelChange)="updateLineField(idx, 'description', $event)"
+                        placeholder="Contoh: Kertas HVS A4, Konsumsi Lembur, Servis Kompresor"
+                        class="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm text-foreground focus:outline-hidden"
+                      />
+                    </td>
+                    <td class="p-2">
+                      <label [for]="'pnp-unit-' + idx" class="sr-only">Satuan Baris {{ idx + 1 }}</label>
+                      <input
+                        [id]="'pnp-unit-' + idx"
+                        type="text"
+                        [ngModel]="line.unitCode"
+                        (ngModelChange)="updateLineField(idx, 'unitCode', $event)"
+                        placeholder="unit"
+                        class="w-full uppercase rounded-lg border border-border bg-background px-2 py-1 text-sm text-foreground focus:outline-hidden"
+                      />
+                    </td>
+                    <td class="p-2">
+                      <label [for]="'pnp-qty-' + idx" class="sr-only">Jumlah Baris {{ idx + 1 }}</label>
+                      <input
+                        [id]="'pnp-qty-' + idx"
+                        type="number"
+                        [ngModel]="line.quantity"
+                        (ngModelChange)="updateLineField(idx, 'quantity', $event)"
+                        min="1"
+                        step="1"
+                        class="w-full rounded-lg border border-border bg-background px-2 py-1 text-sm text-foreground focus:outline-hidden"
+                      />
+                    </td>
+                    <td class="p-2 text-right">
+                      <label [for]="'pnp-price-' + idx" class="sr-only">Harga Satuan Baris {{ idx + 1 }}</label>
+                      <input
+                        [id]="'pnp-price-' + idx"
+                        type="number"
+                        [ngModel]="line.unitPrice"
+                        (ngModelChange)="updateLineField(idx, 'unitPrice', $event)"
+                        min="0"
+                        step="1000"
+                        class="w-full text-right rounded-lg border border-border bg-background px-2 py-1 text-sm text-foreground focus:outline-hidden"
+                      />
+                    </td>
+                    <td class="p-2 text-right font-medium text-foreground">
+                      {{ formatCurrency(line.quantity * line.unitPrice) }}
+                    </td>
+                    <td class="p-2 text-center">
+                      <button
+                        type="button"
+                        (click)="removeLine(idx)"
+                        [disabled]="formLines().length <= 1"
+                        class="text-muted-foreground hover:text-destructive disabled:opacity-30"
+                        aria-label="Hapus Baris"
+                      >
+                        <ng-icon name="phosphorTrash" class="size-4" />
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-border/80">
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-muted-foreground">Total Nilai:</span>
+            <span class="text-xl font-bold text-foreground">{{ formatCurrency(totalFormAmount()) }}</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              (click)="closeModal()"
+              class="rounded-full border border-border/80 px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              (click)="saveDraft()"
+              [disabled]="isSubmitting()"
+              class="rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition disabled:opacity-50"
+            >
+              {{ isSubmitting() ? 'Menyimpan...' : 'Simpan Draft' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Detail Dokumen Non-Produksi -->
+  @if (isDetailModalOpen() && selectedDoc()) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-200"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-detail-nonprod-title"
+    >
+      <div class="relative w-full max-w-3xl max-h-[85vh] overflow-y-auto rounded-3xl border border-border/80 bg-card p-6 shadow-xl">
+        <button
+          type="button"
+          (click)="closeDetailModal()"
+          class="absolute top-5 end-5 rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+          aria-label="Tutup dialog"
+        >
+          <ng-icon name="phosphorX" class="size-5" />
+        </button>
+
+        <div class="flex flex-col gap-1 mb-6">
+          <h2 id="modal-detail-nonprod-title" class="text-xl font-semibold tracking-tight text-foreground">
+            Detail Pembelian: {{ selectedDoc()?.document_number || 'DRAFT' }}
+          </h2>
+          <p class="text-xs text-muted-foreground">
+            Informasi pengadaan non-produksi operasional.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-2xl bg-muted/30 border border-border/60 mb-6">
+          <div>
+            <div class="text-xs text-muted-foreground">Tanggal Transaksi</div>
+            <div class="text-sm font-medium text-foreground mt-0.5">{{ selectedDoc()?.transaction_date }}</div>
+          </div>
+          <div>
+            <div class="text-xs text-muted-foreground">Pemasok</div>
+            <div class="text-sm font-medium text-foreground mt-0.5">{{ selectedDoc()?.counterparty?.name || '-' }}</div>
+          </div>
+          <div>
+            <div class="text-xs text-muted-foreground">Metode Bayar</div>
+            <div class="text-sm font-medium text-foreground mt-0.5 uppercase">{{ selectedDoc()?.data?.['fundingMethod'] || 'payable' }}</div>
+          </div>
+          <div>
+            <div class="text-xs text-muted-foreground">Total Nilai</div>
+            <div class="text-sm font-bold text-foreground mt-0.5">{{ formatCurrency(selectedDoc()?.total_amount || 0) }}</div>
+          </div>
+        </div>
+
+        <h3 class="text-sm font-semibold text-foreground mb-3">Rincian Item Belanja</h3>
+        <div class="rounded-2xl border border-border/80 overflow-hidden mb-6">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-muted/40 text-xs font-semibold text-muted-foreground border-b border-border/60">
+              <tr>
+                <th scope="col" class="px-4 py-2.5">Keterangan</th>
+                <th scope="col" class="px-4 py-2.5 w-24">Satuan</th>
+                <th scope="col" class="px-4 py-2.5 w-24 text-right">Kuantitas</th>
+                <th scope="col" class="px-4 py-2.5 w-36 text-right">Harga Satuan</th>
+                <th scope="col" class="px-4 py-2.5 w-36 text-right">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border/60">
+              @for (line of selectedDoc()?.lines; track line.id) {
+                <tr>
+                  <td class="px-4 py-3 font-medium text-foreground">{{ line.description || '-' }}</td>
+                  <td class="px-4 py-3 uppercase text-xs font-medium">{{ line.unit_code }}</td>
+                  <td class="px-4 py-3 text-right">{{ line.quantity }}</td>
+                  <td class="px-4 py-3 text-right">{{ formatCurrency(line.unit_price) }}</td>
+                  <td class="px-4 py-3 text-right font-semibold text-foreground">{{ formatCurrency(line.total_amount) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="flex justify-end pt-4 border-t border-border/80">
+          <button
+            type="button"
+            (click)="closeDetailModal()"
+            class="rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Void Dokumen Non-Produksi -->
+  @if (isVoidModalOpen()) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-200"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-void-nonprod-title"
+    >
+      <div class="relative w-full max-w-md rounded-3xl border border-border/80 bg-card p-6 shadow-xl">
+        <div class="flex flex-col gap-1 mb-4">
+          <h2 id="modal-void-nonprod-title" class="text-lg font-semibold tracking-tight text-destructive">
+            Batalkan Pembelian Non-Produksi
+          </h2>
+          <p class="text-xs text-muted-foreground">
+            Tindakan ini akan membalik jurnal beban dan kewajiban/kas terkait.
+          </p>
+        </div>
+
+        <div class="flex flex-col gap-2 mb-6">
+          <label for="void-nonprod-reason" class="text-xs font-semibold text-foreground">
+            Alasan Pembatalan
+          </label>
+          <textarea
+            id="void-nonprod-reason"
+            [ngModel]="voidReason()"
+            (ngModelChange)="voidReason.set($event)"
+            rows="3"
+            placeholder="Contoh: Kesalahan nota atau pembatalan jasa servis"
+            class="w-full rounded-xl border border-border bg-background px-3.5 py-2 text-sm text-foreground shadow-2xs focus:border-destructive focus:ring-1 focus:ring-destructive focus:outline-hidden"
+          ></textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            (click)="closeVoidModal()"
+            class="rounded-full border border-border/80 px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            (click)="confirmVoid()"
+            [disabled]="isSubmitting() || !voidReason().trim()"
+            class="rounded-full bg-destructive px-5 py-2 text-sm font-medium text-destructive-foreground hover:opacity-90 disabled:opacity-50"
+          >
+            {{ isSubmitting() ? 'Membatalkan...' : 'Ya, Batalkan Dokumen' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</main>

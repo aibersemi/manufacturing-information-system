@@ -32,6 +32,7 @@ src/
 │   │   │   ├── auth.service.ts         # Reactive session & user state via Signals + waitForAuthReady()
 │   │   │   ├── company.service.ts      # Multi-company context, RLS tenant scope, & local storage persistence
 │   │   │   ├── master-data.service.ts  # Layanan CRUD UOM, Pelanggan, Pemasok, Material, Produk, BOM, Pegawai, & Tarif Upah
+│   │   │   ├── purchasing-inventory.service.ts # Layanan Pengadaan (Bahan, Perlengkapan, Non-Produksi, Pembayaran) & Inventaris
 │   │   │   ├── settings.service.ts     # Layanan CRUD Perusahaan, Penugasan Pengguna, Matriks Izin, Profil, & Audit
 │   │   │   ├── storage.service.ts      # Layanan upload, signed URL, & manajemen file Supabase Storage
 │   │   │   └── supabase.service.ts     # Singleton Supabase client wrapper (PKCE Flow)
@@ -40,6 +41,7 @@ src/
 │   ├── features/
 │   │   ├── auth/login/                 # Komponen halaman masuk login
 │   │   ├── dashboard/                  # Komponen overview metrik manufaktur
+│   │   ├── inventory/                  # Modul Buku Besar Inventaris, Kartu Mutasi, & Roll (/workspace/inventory)
 │   │   ├── master-data/                # Modul Master Data & Bill of Materials
 │   │   │   ├── bom/                    # Komponen resep Bill of Materials (/workspace/bom)
 │   │   │   ├── customers/              # Komponen pelanggan (/workspace/customers)
@@ -49,6 +51,11 @@ src/
 │   │   │   ├── suppliers/              # Komponen pemasok bahan baku (/workspace/suppliers)
 │   │   │   ├── uom/                    # Komponen satuan pengukuran standar (/workspace/materials/uom)
 │   │   │   └── wage-rates/             # Komponen matriks tarif upah borongan (/workspace/wage-rates)
+│   │   ├── purchasing/                 # Modul Pengadaan & Pembelian
+│   │   │   ├── materials/              # Pengadaan Bahan Baku (/workspace/purchase-materials)
+│   │   │   ├── supplies/               # Pengadaan Perlengkapan Pabrik (/workspace/purchase-supplies)
+│   │   │   ├── non-production/         # Belanja Non-Produksi & Umum (/workspace/purchase-non-production)
+│   │   │   └── payments/               # Pembayaran Hutang & Kas Keluar (/workspace/purchase-payments)
 │   │   └── settings/
 │   │       ├── companies/              # Manajemen fasilitas manufaktur & multi-company (/workspace/companies)
 │   │       ├── users-access/           # Penugasan staf & matriks izin akses per peran (/workspace/users-access)
@@ -207,4 +214,42 @@ Modul Master Data mengelola seluruh entitas pondasi proses manufaktur:
    - Master operator/karyawan dan stasiun kerja utama (Cutting, Sewing, Finishing, QC, Packing).
 8. **Matriks Tarif Upah (`wage_rate`)** (`/workspace/wage-rates`):
    - Tarif upah borongan per produk dan tahap pengerjaan (`cutting`, `sewing`, `finishing`, dll) dengan format kode `WR-${SKU}-${service_kind}`.
+
+---
+
+## Modul Pengadaan (Purchasing) & Buku Besar Inventaris (Inventory Ledger)
+
+Modul ini mengelola siklus lengkap pengadaan barang operasional dan pencatatan buku besar inventaris perpetual yang terintegrasi secara ACID:
+
+1. **Pengadaan Bahan Baku (`purchase_material`)** (`/workspace/purchase-materials`):
+   - Pengadaan kain dan material utama tekstil dengan penomoran otomatis `BL-YYMMDD-###`.
+   - Pemilihan pemasok terdaftar (`master_record` kind `supplier`), metode pembayaran (*Hutang/Payable* vs *Tunai/Cash*), dan penentuan rincian unit kemasan fisik roll kain.
+   - Posting dokumen via stored procedure atomik `post_purchase_document`:
+     - Menghasilkan buku besar mutasi stok (`inventory_movement`) tipe `purchase_receipt`.
+     - Meng-generate unit fisik roll kain (`production_material_unit`) dengan kode fisik unik `BL-YYMMDD-###-L{line}-{roll}` berstatus `available`.
+     - Mencatat jurnal akuntansi persediaan dan buku pembantu hutang dagang (`subledger_entry` kind `supplier_payable`).
+   - Pembatalan transaksi dokumen berstatus posted via `void_purchase_document` yang membatalkan mutasi stok, menandai roll `voided`, dan membalikkan jurnal keuangan.
+
+2. **Pengadaan Perlengkapan Pabrik (`purchase_supply`)** (`/workspace/purchase-supplies`):
+   - Pengadaan perlengkapan operasional pabrik (benang, kancing, jarum, plastik kemasan, dll) dengan prefix nomor `BP-YYMMDD-###`.
+   - Pencatatan mutasi stok perpetual perlengkapan manufaktur (`inventory_state = 'production_supply'`).
+
+3. **Belanja Non-Produksi & Umum (`purchase_non_production`)** (`/workspace/purchase-non-production`):
+   - Pengeluaran belanja umum, ATK kantor, dan operasional non-manufaktur dengan prefix nomor `BN-YYMMDD-###`.
+   - Pembebanan langsung ke akun biaya/beban operasional tanpa mutasi inventaris fisik.
+
+4. **Pembayaran Hutang & Kas Keluar (`purchase_payment`)** (`/workspace/purchase-payments`):
+   - Mengelola pelunasan kewajiban hutang pemasok atas pembelian berstatus posted yang belum lunas (`paid_amount < total_amount`).
+   - Posting pembayaran via stored procedure `post_purchase_payment`:
+     - Membuat bukti pengeluaran kas (`business_document` kind `purchase_payment`) dengan nomor `KK-YYMMDD-###`.
+     - Mengurangi saldo hutang pada dokumen pembelian acuan (`paid_amount`).
+     - Mencatat pergerakan kas keluar (`cash_movement` jenis `expense`) terhadap akun kas/bank yang dipilih.
+     - Mengupdate buku pembantu hutang pemasok (`subledger_entry`) dan membukukan jurnal debet hutang dagang vs kredit kas/bank.
+   - Menyediakan tab riwayat pembayaran kas keluar lengkap beserta detail bukti transaksi.
+
+5. **Buku Besar Inventaris & Pelacakan Roll (`inventory`)** (`/workspace/inventory`):
+   - **Ringkasan Valuasi Stok (`get_inventory_summary`)**: Menampilkan posisi stok terkini, kuantitas masuk, kuantitas keluar, harga rata-rata bergerak (*Moving Average Cost*), dan estimasi total valuasi aset gudang per item.
+   - **Buku Besar Kartu Mutasi (`inventory_movement`)**: Jejak transaksi mutasi persediaan perpetual berurutan waktu lengkap dengan referensi dokumen acuan.
+   - **Pelacakan Unit Fisik Roll Kain (`production_material_unit`)**: Pemantauan fisik unit kemasan roll kain, kuantitas awal, sisa kuantitas dasar, satuan stok, dan status fisik (`available`, `allocated`, `consumed`, `voided`).
+
 

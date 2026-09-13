@@ -21,6 +21,7 @@ import {
   phosphorSidebarSimple,
   phosphorSignOut,
   phosphorSliders,
+  phosphorShoppingCart,
   phosphorUser,
   phosphorUsersThree,
   phosphorWarehouse,
@@ -58,6 +59,7 @@ import { CompanyService, Company } from '../../core/services/company.service';
       phosphorWarehouse,
       phosphorShieldCheck,
       phosphorGear,
+      phosphorShoppingCart,
       phosphorCaretRight,
       phosphorCaretDown,
       phosphorBell,
@@ -86,6 +88,7 @@ export class DashboardLayoutComponent {
 
   readonly openNavGroups = signal<Record<string, boolean>>({
     masterData: true,
+    purchasing: true,
     operations: true,
     inventory: true,
     qc: false,

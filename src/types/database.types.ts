@@ -3155,6 +3155,21 @@ export type Database = {
           version: number
         }[]
       }
+      get_inventory_summary: {
+        Args: { p_company_id: string }
+        Returns: {
+          current_stock: number
+          inventory_state: string
+          item_id: string
+          item_kind: string
+          item_name: string
+          moving_avg_cost: number
+          total_in: number
+          total_out: number
+          total_valuation: number
+          unit_code: string
+        }[]
+      }
       get_user_company_ids: { Args: { p_user_id: string }; Returns: string[] }
       is_company_owner: {
         Args: { p_company_id: string; p_user_id: string }
@@ -3168,6 +3183,25 @@ export type Database = {
           user_id: string
           username: string
         }[]
+      }
+      post_purchase_document: {
+        Args: { p_document_id: string; p_user_id: string }
+        Returns: Json
+      }
+      post_purchase_payment: {
+        Args: {
+          p_amount: number
+          p_cash_account_id: string
+          p_date: string
+          p_notes: string
+          p_purchase_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      void_purchase_document: {
+        Args: { p_document_id: string; p_reason: string; p_user_id: string }
+        Returns: Json
       }
     }
     Enums: {
