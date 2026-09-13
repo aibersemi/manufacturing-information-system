@@ -21,7 +21,11 @@ Panduan wajib bagi agen AI saat bekerja di repositori ini.
 - Tempatkan informasi pada dokumen yang cakupannya paling relevan. Hindari duplikasi detail antardokumen; gunakan link relatif jika suatu topik perlu dirujuk dari dokumen lain.
 - Update AGENTS.md jika panduan untuk agen AI berubah.
 
-## Frontend & AI Tooling Guidelines
+## UI/UX Standards
+
+- Seluruh pembuatan halaman fitur baru, kartu metrik, form, tabel, dan komponen antarmuka **wajib** mengikuti panduan desain sistem pada [docs/ui-ux-standards.md](docs/ui-ux-standards.md) (struktur blueprint halaman, font minimal `text-sm` untuk teks utama/input dan `text-xs` untuk metadata, tombol & filter berbentuk pill, kartu `rounded-3xl`, serta Phosphor Icons). Dilarang keras menggunakan font `text-[10px]` atau `text-[11px]`.
+
+## Application Guidance
 
 - Ikuti standar modern Angular v22+ (Signals, Standalone, Zoneless, Signal Forms, native control flow `@if`/`@for`, fungsi `input()`/`output()`, dan `inject()`). Aturan rinci tercantum pada [.agents/rules/angular.md](.agents/rules/angular.md).
 - Frontend dilarang keras memuat credential administratif seperti `SERVICE_ROLE_KEY`. Hanya `SUPABASE_URL` dan `SUPABASE_ANON_KEY` yang diizinkan untuk bundle client.
@@ -37,4 +41,12 @@ Panduan wajib bagi agen AI saat bekerja di repositori ini.
 - Seluruh pengujian interaktif, verifikasi browser, atau visual testing wajib dilakukan langsung ke domain produksi nyata `https://mis.mrmads.net`, bukan ke `localhost`.
 - Jika diminta backup simpan di `/data/backups/manufacturing-information-system/<jenis-backup>/<YYYYMMDD-HHMMSS>/`.
 - Logging mengikuti mekanisme native Ubuntu.
+
+### Database Testing and Security
+
+- Pengujian yang melakukan mutasi database wajib menggunakan database test atau lingkungan terisolasi, bukan database produksi.
+- Setelah pengujian selesai, kembalikan database dan konfigurasi terkait ke kondisi sebelum pengujian.
+- Hapus hanya data yang dibuat oleh pengujian dan rollback setiap migrasi atau perubahan skema sementara.
+- Verifikasi bahwa data serta struktur database awal tetap utuh.
+- Jika pemulihan tidak dapat dilakukan dengan aman atau data pengujian tidak dapat dibedakan dari data yang sudah ada, hentikan proses dan minta arahan user.
 

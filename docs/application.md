@@ -1,6 +1,6 @@
-# Frontend Architecture and Angular Integration
+# Application Architecture and Angular Integration
 
-Dokumen ini menjelaskan arsitektur frontend Manufacturing Information System (MIS) yang dibangun menggunakan Angular v22+, integrasi reaktif dengan Supabase, pengelolaan environment, dan perintah operasional.
+Dokumen ini menjelaskan arsitektur aplikasi Manufacturing Information System (MIS) yang dibangun menggunakan Angular v22+, integrasi reaktif dengan Supabase, pengelolaan environment, dan perintah operasional.
 
 ---
 
@@ -11,7 +11,8 @@ Dokumen ini menjelaskan arsitektur frontend Manufacturing Information System (MI
 - **State Management**: Angular Signals (`signal()`, `computed()`, `linkedSignal()`, `resource()`)
 - **UI Library**: spartan/ui v1.4.1 (Brain primitives + Helm components bergaya Luma)
 - **Styling**: Tailwind CSS v4 dengan CSS design tokens OKLCH
-- **Icons**: `@ng-icons/core` & `@ng-icons/lucide`
+- **Typography**: `@fontsource-variable/inter` (Inter Variable)
+- **Icons**: `@ng-icons/core` & `@ng-icons/phosphor-icons` (Phosphor Regular)
 - **Notifications**: `@spartan-ng/brain/sonner` & `@spartan-ng/helm/sonner`
 - **Backend SDK**: `@supabase/supabase-js` dengan schema types otomatis dari PostgreSQL
 
@@ -81,6 +82,7 @@ Proyek ini telah dikonfigurasi dengan:
 - **Local Agent Skills**: `.agents/skills/angular-developer`, `.agents/skills/angular-new-app`, `.agents/skills/spartan`, `.agents/skills/supabase`, dan `.agents/skills/supabase-postgres-best-practices`.
 - **Local MCP Servers**: [.agents/mcp_config.json](../.agents/mcp_config.json) yang mencakup **Angular CLI MCP** (`get_best_practices`, `run_target`, `devserver`), **Spartan MCP** (`spartan_components_get`, `spartan_blocks_get`, `spartan_accessibility_check`, dokumentasi UI), dan **Supabase DB MCP** (`query`, `execute`, `list_tables`, `describe_table`).
 - **Frontend Guidelines**: [.agents/rules/angular.md](../.agents/rules/angular.md) untuk memastikan penulisan kode modern bebas dari pola legacy.
+- **UI/UX Design System Standards**: [docs/ui-ux-standards.md](ui-ux-standards.md) sebagai acuan baku tata letak, ukuran font, palet, dan blueprint halaman baru.
 
 ---
 

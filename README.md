@@ -4,7 +4,8 @@ Manufacturing Information System (MIS) adalah aplikasi web internal multi-compan
 
 ## Documentation
 
-- [Frontend Architecture and Angular Integration](docs/frontend.md) - Panduan arsitektur frontend Angular v22+, Signals, environment security, dan integrasi Supabase SDK.
+- [Application Architecture and Angular Integration](docs/application.md) - Panduan arsitektur aplikasi Angular v22+, Signals, environment security, dan integrasi Supabase SDK.
+- [UI/UX Standards and Layout Blueprint](docs/ui-ux-standards.md) - Panduan standar desain visual, atmosfer, tipografi, ukuran font, shell layout, dan blueprint halaman baru.
 - [Operations and Runtime Guide](docs/operations.md) - Panduan operasional sistem, manajemen systemd service, prosedur build & deployment, logging, health check, serta backup dan disaster recovery.
 - [Public Routing and Edge Proxy](docs/routing-public.md) - Panduan arsitektur routing publik, reverse proxy Caddy edge server, dan tunnel WireGuard.
 - [Security Architecture and Guidelines](docs/security.md) - Panduan arsitektur keamanan berlapis (defense-in-depth), standar Angular XSS/CSP, dan Supabase RLS multi-company.
