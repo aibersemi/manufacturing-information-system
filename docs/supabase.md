@@ -54,6 +54,38 @@ node scripts/setup-storage.mjs
 
 ---
 
+## Database Schema & Multi-Company Isolation
+
+Database PostgreSQL 17 pada stack Supabase mengelola 40 tabel inti yang mencakup modul Administrasi, Akuntansi & Keuangan, Manufaktur & Produksi Semikonduktor, Logistik & Inventaris, serta Notifikasi & Audit.
+
+### Struktur Skema & Row Level Security (RLS)
+
+- **Isolasi Multi-Company**: Seluruh data operasional diisolasi berbasis kolom `company_id` dengan Row Level Security (`FORCE ROW LEVEL SECURITY`) aktif pada setiap tabel.
+- **Kebijakan Akses Pengguna**: Hak akses pengguna terhadap data suatu entitas diverifikasi melalui relasi tabel `user_company_assignment` yang dioptimalkan dengan fungsi `SECURITY DEFINER` (`public.get_user_company_ids()` dan `public.is_company_owner()`) guna mencegah rekursi kebijakan RLS.
+- **Prosedur Bootstrap Otomatis**: Prosedur tersimpan `bootstrap_company_data(p_company_id uuid, p_creator_user_id uuid)` secara otomatis mengisi data awal (*seed*) saat entitas perusahaan baru dibentuk, meliputi:
+  - 11 Unit Pengukuran (*Unit of Measure* / UOM).
+  - 9 Kategori Konfigurasi (*Configuration Category*).
+  - 106 Akun Buku Besar (*Chart of Accounts* / COA) dengan struktur hierarki 3 level.
+  - 21 Pemetaan Akun Akuntansi (*Accounting Mapping*) untuk integrasi otomatis jurnal transaksi.
+  - 53 Pemetaan Laporan Keuangan (*Financial Report Mapping*) untuk Neraca & Laba Rugi.
+  - 1 Periode Akuntansi Awal (*Accounting Period*).
+  - 273 Matriks Izin Akses (*Access Permissions*) untuk 6 peran pengguna (*owner*, *kepala_konveksi*, *finance*, *operator_potong*, *operator_jahit*, *operator_finishing*).
+  - 13 Urutan Nomor Dokumen (*Document Sequence*) dengan format penomoran standar.
+
+### Eksekusi Migrasi & Type Generator
+
+- File migrasi SQL tersimpan di `supabase/migrations/20260913000001_foundation_schema.sql`.
+- Script eksekusi migrasi mandiri:
+  ```bash
+  node scripts/apply-migration.mjs
+  ```
+- Generate ulang kontrak tipe TypeScript skema database ke `src/types/database.types.ts`:
+  ```bash
+  npm run types:db
+  ```
+
+---
+
 ## Endpoint & Network Verification
 
 Hasil pengujian konektivitas endpoint dan jaringan:

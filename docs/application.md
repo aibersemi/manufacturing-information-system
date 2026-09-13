@@ -29,6 +29,7 @@ src/
 │   │   │   └── guest.guard.ts          # Guard pencegah akses login untuk sesi aktif
 │   │   ├── services/
 │   │   │   ├── auth.service.ts         # Reactive session & user state via Signals + waitForAuthReady()
+│   │   │   ├── company.service.ts      # Multi-company context, RLS tenant scope, & local storage persistence
 │   │   │   ├── storage.service.ts      # Layanan upload, signed URL, & manajemen file Supabase Storage
 │   │   │   └── supabase.service.ts     # Singleton Supabase client wrapper (PKCE Flow)
 │   │   └── utils/

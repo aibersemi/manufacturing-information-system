@@ -32,6 +32,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { toast } from '@spartan-ng/brain/sonner';
 import { AuthService } from '../../core/services/auth.service';
+import { CompanyService, Company } from '../../core/services/company.service';
 
 @Component({
   selector: 'app-dashboard-layout',
@@ -77,6 +78,7 @@ import { AuthService } from '../../core/services/auth.service';
 })
 export class DashboardLayoutComponent {
   private readonly authService = inject(AuthService);
+  private readonly companyService = inject(CompanyService);
   private readonly router = inject(Router);
 
   readonly isSidebarCollapsed = signal(false);
@@ -90,12 +92,13 @@ export class DashboardLayoutComponent {
     settings: false,
   });
 
-  readonly companies = [
-    'Pabrik Semikonduktor Aiber',
-    'Fabrikasi Wafer Line B',
-    'Cleanroom IC Packaging',
-  ];
-  readonly activeCompany = signal('Pabrik Semikonduktor Aiber');
+  readonly availableCompanies = computed(() => this.companyService.availableCompanies());
+  readonly activeCompanyId = computed(() => this.companyService.activeCompanyId());
+  readonly activeCompany = computed(() => {
+    const current = this.companyService.activeCompany();
+    if (current) return current.name;
+    return this.companyService.isLoading() ? 'Memuat...' : 'Pilih Fasilitas';
+  });
 
   readonly currentUser = computed(() => this.authService.currentUser());
 
@@ -117,6 +120,16 @@ export class DashboardLayoutComponent {
   });
 
   readonly userRoleLabel = computed(() => {
+    const roles = this.companyService.userRoles();
+    if (roles.includes('owner') || this.companyService.isOwner()) {
+      return 'Owner / Direksi';
+    }
+    if (roles.includes('kepala_konveksi') || roles.includes('head')) {
+      return 'Head of Operations';
+    }
+    if (roles.includes('finance')) {
+      return 'Finance Lead';
+    }
     const role = this.userRole().toLowerCase();
     switch (role) {
       case 'owner':
@@ -159,9 +172,9 @@ export class DashboardLayoutComponent {
     return !!this.openNavGroups()[groupKey];
   }
 
-  selectCompany(company: string): void {
-    this.activeCompany.set(company);
-    toast.success(`Beralih ke ${company}`);
+  selectCompany(company: Company): void {
+    this.companyService.setActiveCompany(company.id);
+    toast.success(`Beralih ke ${company.name}`);
   }
 
   async logout(): Promise<void> {

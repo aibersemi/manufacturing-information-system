@@ -285,17 +285,25 @@
                 Pabrik / Fasilitas Aktif
               </div>
               <div hlmDropdownMenuSeparator></div>
-              @for (company of companies; track company) {
+              @for (company of availableCompanies(); track company.id) {
                 <button
                   hlmDropdownMenuItem
                   (click)="selectCompany(company)"
                   class="flex items-center justify-between rounded-xl px-2.5 py-2 text-sm"
                 >
-                  <span class="truncate">{{ company }}</span>
-                  @if (company === activeCompany()) {
-                    <ng-icon name="phosphorCheck" class="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <div class="flex flex-col text-start truncate">
+                    <span class="truncate font-medium">{{ company.name }}</span>
+                    <span class="text-xs text-muted-foreground">{{ company.code }}</span>
+                  </div>
+                  @if (company.id === activeCompanyId()) {
+                    <ng-icon name="phosphorCheck" class="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 ms-2" />
                   }
                 </button>
+              }
+              @if (availableCompanies().length === 0) {
+                <div class="px-2.5 py-2 text-xs text-muted-foreground italic">
+                  Tidak ada fasilitas terdaftar
+                </div>
               }
             </div>
           </ng-template>
