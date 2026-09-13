@@ -18,6 +18,97 @@ export const routes: Routes = [
           import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
       },
       {
+        path: 'workspace/customers',
+        loadComponent: () =>
+          import('./features/master-data/customers/customers.component').then(
+            (m) => m.CustomersComponent
+          ),
+      },
+      {
+        path: 'workspace/suppliers',
+        loadComponent: () =>
+          import('./features/master-data/suppliers/suppliers.component').then(
+            (m) => m.SuppliersComponent
+          ),
+      },
+      {
+        path: 'workspace/materials',
+        loadComponent: () =>
+          import('./features/master-data/materials/materials.component').then(
+            (m) => m.MaterialsComponent
+          ),
+      },
+      {
+        path: 'workspace/materials/uom',
+        loadComponent: () =>
+          import('./features/master-data/uom/uom.component').then(
+            (m) => m.UomComponent
+          ),
+      },
+      {
+        path: 'workspace/products',
+        loadComponent: () =>
+          import('./features/master-data/products/products.component').then(
+            (m) => m.ProductsComponent
+          ),
+      },
+      {
+        path: 'workspace/bom',
+        loadComponent: () =>
+          import('./features/master-data/bom/bom.component').then(
+            (m) => m.BomComponent
+          ),
+      },
+      {
+        path: 'workspace/employees',
+        loadComponent: () =>
+          import('./features/master-data/employees/employees.component').then(
+            (m) => m.EmployeesComponent
+          ),
+      },
+      {
+        path: 'workspace/wage-rates',
+        loadComponent: () =>
+          import('./features/master-data/wage-rates/wage-rates.component').then(
+            (m) => m.WageRatesComponent
+          ),
+      },
+      {
+        path: 'customers',
+        redirectTo: 'workspace/customers',
+        pathMatch: 'full',
+      },
+      {
+        path: 'suppliers',
+        redirectTo: 'workspace/suppliers',
+        pathMatch: 'full',
+      },
+      {
+        path: 'materials',
+        redirectTo: 'workspace/materials',
+        pathMatch: 'full',
+      },
+      {
+        path: 'products',
+        redirectTo: 'workspace/products',
+        pathMatch: 'full',
+      },
+      {
+        path: 'bom',
+        redirectTo: 'workspace/bom',
+        pathMatch: 'full',
+      },
+      {
+        path: 'employees',
+        redirectTo: 'workspace/employees',
+        pathMatch: 'full',
+      },
+      {
+        path: 'wage-rates',
+        redirectTo: 'workspace/wage-rates',
+        pathMatch: 'full',
+      },
+      {
         path: 'workspace/companies',
         canActivate: [ownerGuard],
         loadComponent: () =>

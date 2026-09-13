@@ -87,20 +87,68 @@
           @if (!isSidebarCollapsed() && isGroupOpen('masterData')) {
             <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
               <a
-                routerLink="/inventory"
+                routerLink="/workspace/customers"
                 routerLinkActive="text-foreground font-semibold"
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Bahan &amp; Material
+                Pelanggan
               </a>
               <a
-                routerLink="/work-orders"
+                routerLink="/workspace/suppliers"
                 routerLinkActive="text-foreground font-semibold"
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Komponen Semikonduktor
+                Pemasok
+              </a>
+              <a
+                routerLink="/workspace/materials"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Bahan Baku
+              </a>
+              <a
+                routerLink="/workspace/materials/uom"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Satuan Ukuran (UOM)
+              </a>
+              <a
+                routerLink="/workspace/products"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Produk &amp; SKU
+              </a>
+              <a
+                routerLink="/workspace/bom"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Bill of Materials (BOM)
+              </a>
+              <a
+                routerLink="/workspace/employees"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Tenaga Kerja
+              </a>
+              <a
+                routerLink="/workspace/wage-rates"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Tarif Upah Borongan
               </a>
             </div>
           }

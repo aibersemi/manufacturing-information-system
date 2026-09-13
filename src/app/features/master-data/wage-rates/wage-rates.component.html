@@ -1,0 +1,276 @@
+<div class="space-y-6">
+  <!-- Page Header & Action Bar -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Tarif Upah Borongan</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+        Kelola matriks tarif ongkos kerja borongan per unit SKU untuk tahapan proses potong, sablon, jahit, dan packing.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        class="rounded-full shadow-xs gap-2 px-4 h-9 text-xs font-semibold"
+        [disabled]="isLoading()"
+        (click)="loadRates()"
+      >
+        <ng-icon
+          name="phosphorArrowsClockwise"
+          class="text-sm"
+          [class.animate-spin]="isLoading()"
+        ></ng-icon>
+        <span>Segarkan</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Card Container -->
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm p-5 sm:p-6 space-y-6">
+    <!-- Toolbar: Search -->
+    <div class="flex items-center justify-between gap-4">
+      <div class="relative w-full sm:w-80">
+        <ng-icon
+          name="phosphorMagnifyingGlass"
+          class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"
+        ></ng-icon>
+        <input
+          type="text"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+          placeholder="Cari SKU atau nama produk..."
+          class="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 dark:text-white"
+        />
+      </div>
+
+      <div class="text-xs font-semibold text-slate-500 dark:text-slate-400">
+        Total: {{ productRates().length }} Produk
+      </div>
+    </div>
+
+    <!-- Table or Empty State -->
+    @if (isLoading()) {
+      <div class="py-16 flex flex-col items-center justify-center text-slate-400 gap-3">
+        <ng-icon name="phosphorCircleNotch" class="text-3xl animate-spin text-blue-500"></ng-icon>
+        <p class="text-sm font-medium">Memuat matriks tarif upah...</p>
+      </div>
+    } @else if (filteredProductRates().length === 0) {
+      <div class="py-16 flex flex-col items-center justify-center text-center px-4">
+        <div class="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500 mb-3">
+          <ng-icon name="phosphorCurrencyDollar" class="text-2xl"></ng-icon>
+        </div>
+        <h3 class="text-base font-semibold text-slate-800 dark:text-slate-200">Tidak ada data tarif upah</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-1 mb-4">
+          @if (searchQuery()) {
+            Tidak ditemukan produk yang cocok dengan pencarian Anda.
+          } @else {
+            Belum ada produk aktif yang terdaftar untuk dikonfigurasikan tarif upahnya.
+          }
+        </p>
+      </div>
+    } @else {
+      <div class="overflow-x-auto -mx-5 sm:mx-0">
+        <table class="w-full text-left border-collapse min-w-[800px]">
+          <thead>
+            <tr class="border-b border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-500 dark:text-slate-400">
+              <th class="py-3 px-4">SKU / Nama Produk</th>
+              <th class="py-3 px-4 text-right">Potong (Cutting)</th>
+              <th class="py-3 px-4 text-right">Sablon (Printing)</th>
+              <th class="py-3 px-4 text-right">Jahit (Sewing)</th>
+              <th class="py-3 px-4 text-right">Packing</th>
+              <th class="py-3 px-4 text-right font-bold text-slate-800 dark:text-slate-200">Total Upah / Pcs</th>
+              <th class="py-3 px-4 text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 text-sm">
+            @for (item of filteredProductRates(); track item.productId) {
+              @let total = getTotalRate(item);
+              <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                <td class="py-3.5 px-4 font-semibold text-slate-900 dark:text-white">
+                  <div class="font-mono font-bold text-xs text-blue-600 dark:text-blue-400">{{ item.sku }}</div>
+                  <div class="mt-0.5">{{ item.productName }}</div>
+                </td>
+                <td class="py-3.5 px-4 text-right text-slate-600 dark:text-slate-300">
+                  {{ item.cutting | currency:'IDR':'symbol':'1.0-0' }}
+                </td>
+                <td class="py-3.5 px-4 text-right text-slate-600 dark:text-slate-300">
+                  {{ item.printing | currency:'IDR':'symbol':'1.0-0' }}
+                </td>
+                <td class="py-3.5 px-4 text-right text-slate-600 dark:text-slate-300">
+                  {{ item.sewing | currency:'IDR':'symbol':'1.0-0' }}
+                </td>
+                <td class="py-3.5 px-4 text-right text-slate-600 dark:text-slate-300">
+                  {{ item.packing | currency:'IDR':'symbol':'1.0-0' }}
+                </td>
+                <td class="py-3.5 px-4 text-right">
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200 dark:border-blue-800/60">
+                    {{ total | currency:'IDR':'symbol':'1.0-0' }}
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 text-right">
+                  <button
+                    type="button"
+                    hlmBtn
+                    size="sm"
+                    variant="outline"
+                    class="rounded-full px-3.5 h-8 text-xs font-semibold gap-1.5"
+                    (click)="openEditModal(item)"
+                  >
+                    <ng-icon name="phosphorPencilSimple" class="text-xs"></ng-icon>
+                    <span>Ubah Tarif</span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  <!-- Edit Wage Rates Modal Dialog -->
+  @if (isModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 dark:text-white">
+              Atur Tarif Upah Borongan
+            </h2>
+            @if (selectedItem(); as item) {
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <span class="font-bold text-blue-600 dark:text-blue-400">{{ item.sku }}</span> - {{ item.productName }}
+              </p>
+            }
+          </div>
+          <button
+            type="button"
+            class="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            (click)="closeModal()"
+          >
+            <ng-icon name="phosphorX" class="text-lg"></ng-icon>
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <form (ngSubmit)="saveRates()" class="p-6 space-y-4 overflow-y-auto flex-1">
+          @if (formError()) {
+            <div class="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-xs text-rose-700 dark:text-rose-400">
+              {{ formError() }}
+            </div>
+          }
+
+          <div>
+            <label for="rateCutting" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
+              <ng-icon name="phosphorScissors" class="text-blue-500 text-sm"></ng-icon>
+              <span>Tarif Potong / Cutting (Rp / pcs)</span>
+            </label>
+            <input
+              id="rateCutting"
+              type="number"
+              min="0"
+              [ngModel]="formCutting()"
+              (ngModelChange)="formCutting.set($event)"
+              name="cutting"
+              required
+              class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-900 dark:text-white"
+            />
+          </div>
+
+          <div>
+            <label for="ratePrinting" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
+              <ng-icon name="phosphorPaintBrush" class="text-purple-500 text-sm"></ng-icon>
+              <span>Tarif Sablon / Printing (Rp / pcs)</span>
+            </label>
+            <input
+              id="ratePrinting"
+              type="number"
+              min="0"
+              [ngModel]="formPrinting()"
+              (ngModelChange)="formPrinting.set($event)"
+              name="printing"
+              required
+              class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-900 dark:text-white"
+            />
+          </div>
+
+          <div>
+            <label for="rateSewing" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
+              <ng-icon name="phosphorTShirt" class="text-amber-500 text-sm"></ng-icon>
+              <span>Tarif Jahit / Sewing (Rp / pcs)</span>
+            </label>
+            <input
+              id="rateSewing"
+              type="number"
+              min="0"
+              [ngModel]="formSewing()"
+              (ngModelChange)="formSewing.set($event)"
+              name="sewing"
+              required
+              class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-900 dark:text-white"
+            />
+          </div>
+
+          <div>
+            <label for="ratePacking" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
+              <ng-icon name="phosphorPackage" class="text-emerald-500 text-sm"></ng-icon>
+              <span>Tarif Packing & Finishing (Rp / pcs)</span>
+            </label>
+            <input
+              id="ratePacking"
+              type="number"
+              min="0"
+              [ngModel]="formPacking()"
+              (ngModelChange)="formPacking.set($event)"
+              name="packing"
+              required
+              class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-900 dark:text-white"
+            />
+          </div>
+
+          <!-- Total Accumulation Card -->
+          <div class="p-4 rounded-2xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 flex items-center justify-between">
+            <div>
+              <div class="text-xs font-semibold text-slate-600 dark:text-slate-300">Total Upah Borongan:</div>
+              <div class="text-xs text-slate-400 mt-0.5">Biaya Tenaga Kerja Langsung (BTKL) per pcs</div>
+            </div>
+            <div class="text-lg font-bold text-blue-700 dark:text-blue-300">
+              {{ totalFormRate() | currency:'IDR':'symbol':'1.0-0' }}
+            </div>
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              hlmBtn
+              variant="outline"
+              size="sm"
+              class="rounded-full px-5 h-9 text-xs font-semibold"
+              [disabled]="isSubmitting()"
+              (click)="closeModal()"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              hlmBtn
+              size="sm"
+              class="rounded-full px-5 h-9 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white"
+              [disabled]="isSubmitting()"
+            >
+              @if (isSubmitting()) {
+                <ng-icon name="phosphorCircleNotch" class="animate-spin text-sm mr-1.5"></ng-icon>
+                <span>Menyimpan...</span>
+              } @else {
+                <span>Simpan Tarif</span>
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

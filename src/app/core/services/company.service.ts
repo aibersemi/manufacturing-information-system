@@ -48,6 +48,23 @@ export class CompanyService {
   }
 
   /**
+   * Menunggu resolusi perusahaan aktif selesai saat inisialisasi aplikasi
+   */
+  async waitForActiveCompany(): Promise<string | null> {
+    if (this.activeCompanyId()) {
+      return this.activeCompanyId();
+    }
+    await this.authService.waitForAuthReady();
+    if (!this.authService.currentUser()) {
+      return null;
+    }
+    if (this.availableCompanies().length === 0) {
+      await this.loadUserCompanies();
+    }
+    return this.activeCompanyId();
+  }
+
+  /**
    * Mengambil daftar perusahaan yang ditugaskan kepada pengguna saat ini
    * dan menetapkan perusahaan aktif dari cache localStorage atau default.
    */

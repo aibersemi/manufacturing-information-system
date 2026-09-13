@@ -1,0 +1,321 @@
+<main class="flex flex-1 flex-col gap-6">
+  <!-- Header -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Pelanggan (Customers)</h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Kelola basis data pembeli, mitra bisnis, kontak, dan alamat pengiriman pesanan.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        (click)="loadCustomers()"
+        [disabled]="isLoading()"
+        class="h-9 gap-1.5 rounded-full border-border/80 bg-card/80 px-3.5 text-sm font-medium shadow-2xs hover:bg-accent"
+      >
+        <ng-icon
+          name="phosphorArrowsClockwise"
+          class="size-4"
+          [class.animate-spin]="isLoading()"
+        />
+        <span>Segarkan</span>
+      </button>
+
+      <button
+        hlmBtn
+        size="sm"
+        (click)="openCreateModal()"
+        id="btn-add-customer"
+        class="h-9 gap-1.5 rounded-full px-4 text-sm font-medium shadow-xs"
+      >
+        <ng-icon name="phosphorPlus" class="size-4" />
+        <span>Tambah Pelanggan</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Filter & Search -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div class="relative w-full max-w-sm">
+      <ng-icon
+        name="phosphorMagnifyingGlass"
+        class="pointer-events-none absolute start-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        aria-hidden="true"
+      />
+      <input
+        type="text"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+        placeholder="Cari nama, telepon, atau alamat..."
+        class="w-full rounded-full border border-border bg-card ps-10 pe-4 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-2xs transition focus:bg-background focus:ring-2 focus:ring-ring focus:outline-hidden"
+      />
+    </div>
+
+    <div class="flex items-center gap-1 self-start rounded-full border border-border/80 bg-card p-1 shadow-2xs sm:self-auto">
+      <button
+        type="button"
+        (click)="setStatusFilter('all')"
+        [class.bg-muted]="statusFilter() === 'all'"
+        [class.text-foreground]="statusFilter() === 'all'"
+        [class.font-semibold]="statusFilter() === 'all'"
+        class="rounded-full px-3.5 py-1 text-sm text-muted-foreground transition hover:text-foreground"
+      >
+        Semua
+      </button>
+      <button
+        type="button"
+        (click)="setStatusFilter('active')"
+        [class.bg-muted]="statusFilter() === 'active'"
+        [class.text-foreground]="statusFilter() === 'active'"
+        [class.font-semibold]="statusFilter() === 'active'"
+        class="rounded-full px-3.5 py-1 text-sm text-muted-foreground transition hover:text-foreground"
+      >
+        Aktif
+      </button>
+      <button
+        type="button"
+        (click)="setStatusFilter('inactive')"
+        [class.bg-muted]="statusFilter() === 'inactive'"
+        [class.text-foreground]="statusFilter() === 'inactive'"
+        [class.font-semibold]="statusFilter() === 'inactive'"
+        class="rounded-full px-3.5 py-1 text-sm text-muted-foreground transition hover:text-foreground"
+      >
+        Nonaktif
+      </button>
+    </div>
+  </div>
+
+  <!-- Data Table Card -->
+  <div hlmCard class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
+    <div hlmCardHeader class="border-b border-border/60 px-5 py-4">
+      <h2 hlmCardTitle class="text-base font-semibold tracking-tight text-foreground">
+        Daftar Pelanggan Terdaftar
+      </h2>
+      <p hlmCardDescription class="text-sm text-muted-foreground">
+        Total {{ filteredCustomers().length }} entitas pelanggan pada fasilitas manufaktur ini.
+      </p>
+    </div>
+
+    <div hlmCardContent class="p-0">
+      @if (isLoading()) {
+        <div class="flex items-center justify-center p-12 text-center text-muted-foreground">
+          <ng-icon name="phosphorArrowsClockwise" class="size-6 animate-spin me-2" />
+          <span class="text-sm">Memuat data pelanggan...</span>
+        </div>
+      } @else if (filteredCustomers().length === 0) {
+        <div class="flex flex-col items-center justify-center p-12 text-center text-muted-foreground">
+          <div class="flex size-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground mb-3">
+            <ng-icon name="phosphorUser" class="size-6" />
+          </div>
+          <p class="text-sm font-medium text-foreground">Tidak ada pelanggan yang ditemukan</p>
+          <p class="text-xs text-muted-foreground mt-1">Coba gunakan kata kunci pencarian lain.</p>
+        </div>
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="w-full text-start text-sm">
+            <thead class="bg-muted/40 border-b border-border/60 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <tr>
+                <th class="px-5 py-3 text-start">Nama Pelanggan</th>
+                <th class="px-5 py-3 text-start">No. Telepon / WA</th>
+                <th class="px-5 py-3 text-start">Alamat Lengkap</th>
+                <th class="px-5 py-3 text-center">Status</th>
+                <th class="px-5 py-3 text-end">Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border/60">
+              @for (customer of filteredCustomers(); track customer.id) {
+                <tr class="transition hover:bg-muted/30">
+                  <td class="px-5 py-3.5 font-medium text-foreground">
+                    {{ customer.name }}
+                  </td>
+                  <td class="px-5 py-3.5 text-xs text-muted-foreground font-mono whitespace-nowrap">
+                    {{ getCustomerPhone(customer) }}
+                  </td>
+                  <td class="px-5 py-3.5 text-xs text-muted-foreground max-w-xs truncate">
+                    {{ getCustomerAddress(customer) }}
+                  </td>
+                  <td class="px-5 py-3.5 text-center whitespace-nowrap">
+                    @if (customer.is_active) {
+                      <span class="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                        Aktif
+                      </span>
+                    } @else {
+                      <span class="inline-flex items-center rounded-full bg-muted border border-border px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                        Nonaktif
+                      </span>
+                    }
+                  </td>
+                  <td class="px-5 py-3.5 text-end whitespace-nowrap">
+                    <div class="flex items-center justify-end gap-1.5">
+                      <button
+                        hlmBtn
+                        variant="ghost"
+                        size="sm"
+                        (click)="openEditModal(customer)"
+                        class="h-8 gap-1 rounded-full px-2.5 text-xs font-medium hover:bg-accent"
+                      >
+                        <ng-icon name="phosphorPencilSimple" class="size-3.5" />
+                        <span>Edit</span>
+                      </button>
+
+                      <button
+                        hlmBtn
+                        variant="ghost"
+                        size="sm"
+                        (click)="toggleStatus(customer)"
+                        class="h-8 gap-1 rounded-full px-2.5 text-xs font-medium hover:bg-accent"
+                      >
+                        <ng-icon
+                          [name]="customer.is_active ? 'phosphorToggleRight' : 'phosphorToggleLeft'"
+                          class="size-4"
+                          [class.text-emerald-500]="customer.is_active"
+                          [class.text-muted-foreground]="!customer.is_active"
+                        />
+                        <span>{{ customer.is_active ? 'Nonaktifkan' : 'Aktifkan' }}</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Modal Dialog -->
+  @if (isModalOpen()) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-200"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-cust-title"
+    >
+      <div class="relative w-full max-w-md rounded-2xl border border-border/80 bg-card p-6 shadow-xl animate-in zoom-in-95 duration-200">
+        <button
+          type="button"
+          (click)="closeModal()"
+          class="absolute top-4 end-4 rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+          aria-label="Tutup dialog"
+        >
+          <ng-icon name="phosphorX" class="size-5" />
+        </button>
+
+        <div class="flex flex-col gap-1 mb-5">
+          <h2 id="modal-cust-title" class="text-lg font-semibold tracking-tight text-foreground">
+            {{ modalMode() === 'create' ? 'Tambah Pelanggan Baru' : 'Edit Data Pelanggan' }}
+          </h2>
+          <p class="text-xs text-muted-foreground">
+            Lengkapi nama identitas dan kontak perwakilan pelanggan.
+          </p>
+        </div>
+
+        @if (formError()) {
+          <div class="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+            {{ formError() }}
+          </div>
+        }
+
+        <form (ngSubmit)="saveCustomer()" class="flex flex-col gap-4">
+          <div class="flex flex-col gap-1.5">
+            <label for="cust-name" class="text-xs font-semibold text-foreground">
+              Nama Pelanggan / Perusahaan
+            </label>
+            <input
+              id="cust-name"
+              type="text"
+              [ngModel]="formName()"
+              (ngModelChange)="formName.set($event)"
+              name="formName"
+              placeholder="Contoh: CV Makmur Abadi, PT Maju Bersama"
+              required
+              class="w-full rounded-xl border border-border bg-background px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-2xs focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+            />
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label for="cust-phone" class="text-xs font-semibold text-foreground">
+              Nomor Telepon / WhatsApp
+            </label>
+            <input
+              id="cust-phone"
+              type="tel"
+              [ngModel]="formPhone()"
+              (ngModelChange)="formPhone.set($event)"
+              name="formPhone"
+              placeholder="Contoh: 08123456789"
+              class="w-full rounded-xl border border-border bg-background px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-2xs focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+            />
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label for="cust-address" class="text-xs font-semibold text-foreground">
+              Alamat Pengiriman / Kantor
+            </label>
+            <textarea
+              id="cust-address"
+              [ngModel]="formAddress()"
+              (ngModelChange)="formAddress.set($event)"
+              name="formAddress"
+              rows="2"
+              placeholder="Contoh: Jl. Sukajadi No. 45, Bandung"
+              class="w-full rounded-xl border border-border bg-background px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-2xs focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+            ></textarea>
+          </div>
+
+          @if (modalMode() === 'edit') {
+            <div class="flex items-center justify-between rounded-xl border border-border/80 bg-muted/30 p-3">
+              <div class="flex flex-col">
+                <span class="text-xs font-semibold text-foreground">Status Aktif</span>
+                <span class="text-xs text-muted-foreground">
+                  Pelanggan nonaktif tidak dapat dipilih pada order penjualan baru.
+                </span>
+              </div>
+              <label class="relative inline-flex cursor-pointer items-center">
+                <input
+                  type="checkbox"
+                  [ngModel]="formIsActive()"
+                  (ngModelChange)="formIsActive.set($event)"
+                  name="formIsActive"
+                  class="peer sr-only"
+                />
+                <div class="peer h-6 w-11 rounded-full bg-muted peer-checked:bg-primary after:absolute after:start-[2px] after:top-[2px] after:size-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full"></div>
+              </label>
+            </div>
+          }
+
+          <div class="mt-3 flex items-center justify-end gap-2 border-t border-border/60 pt-4">
+            <button
+              type="button"
+              hlmBtn
+              variant="outline"
+              size="sm"
+              (click)="closeModal()"
+              [disabled]="isSubmitting()"
+              class="h-9 rounded-full px-4 text-sm font-medium"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              hlmBtn
+              size="sm"
+              [disabled]="isSubmitting()"
+              class="h-9 gap-1.5 rounded-full px-5 text-sm font-medium shadow-xs"
+            >
+              @if (isSubmitting()) {
+                <ng-icon name="phosphorArrowsClockwise" class="size-4 animate-spin" />
+              }
+              <span>{{ isSubmitting() ? 'Menyimpan...' : 'Simpan Pelanggan' }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</main>

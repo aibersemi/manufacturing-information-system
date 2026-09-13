@@ -31,6 +31,7 @@ src/
 │   │   ├── services/
 │   │   │   ├── auth.service.ts         # Reactive session & user state via Signals + waitForAuthReady()
 │   │   │   ├── company.service.ts      # Multi-company context, RLS tenant scope, & local storage persistence
+│   │   │   ├── master-data.service.ts  # Layanan CRUD UOM, Pelanggan, Pemasok, Material, Produk, BOM, Pegawai, & Tarif Upah
 │   │   │   ├── settings.service.ts     # Layanan CRUD Perusahaan, Penugasan Pengguna, Matriks Izin, Profil, & Audit
 │   │   │   ├── storage.service.ts      # Layanan upload, signed URL, & manajemen file Supabase Storage
 │   │   │   └── supabase.service.ts     # Singleton Supabase client wrapper (PKCE Flow)
@@ -39,6 +40,15 @@ src/
 │   ├── features/
 │   │   ├── auth/login/                 # Komponen halaman masuk login
 │   │   ├── dashboard/                  # Komponen overview metrik manufaktur
+│   │   ├── master-data/                # Modul Master Data & Bill of Materials
+│   │   │   ├── bom/                    # Komponen resep Bill of Materials (/workspace/bom)
+│   │   │   ├── customers/              # Komponen pelanggan (/workspace/customers)
+│   │   │   ├── employees/              # Komponen tenaga kerja/operator (/workspace/employees)
+│   │   │   ├── materials/              # Komponen bahan baku & inventory cost (/workspace/materials)
+│   │   │   ├── products/               # Komponen produk SKU & alur routing (/workspace/products)
+│   │   │   ├── suppliers/              # Komponen pemasok bahan baku (/workspace/suppliers)
+│   │   │   ├── uom/                    # Komponen satuan pengukuran standar (/workspace/materials/uom)
+│   │   │   └── wage-rates/             # Komponen matriks tarif upah borongan (/workspace/wage-rates)
 │   │   └── settings/
 │   │       ├── companies/              # Manajemen fasilitas manufaktur & multi-company (/workspace/companies)
 │   │       ├── users-access/           # Penugasan staf & matriks izin akses per peran (/workspace/users-access)
@@ -174,3 +184,27 @@ export class QcUploadComponent {
   }
 }
 ```
+
+---
+
+## Modul Master Data & Bill of Materials (BOM)
+
+Modul Master Data mengelola seluruh entitas pondasi proses manufaktur:
+
+1. **Satuan Pengukuran (`unit_definition`)** (`/workspace/materials/uom`):
+   - Standarisasi UOM global & multi-company (`m`, `yard`, `kg`, `gram`, `pcs`, `lusin`, dll).
+2. **Pelanggan (`customer`)** (`/workspace/customers`):
+   - Data kontak, telepon, dan alamat pengiriman pesanan produksi.
+3. **Pemasok (`supplier`)** (`/workspace/suppliers`):
+   - Rekanan vendor bahan baku dengan nomor kontak dan alamat.
+4. **Bahan Baku (`material`)** (`/workspace/materials`):
+   - Master material dengan kalkulasi unit price otomatis (`default_price / unit_size`).
+5. **Produk & SKU (`product`)** (`/workspace/products`):
+   - Pengelolaan SKU unik per perusahaan, harga jual, dan alur proses routing cetak/sablon (`production_product_routing`).
+6. **Bill of Materials (`bom`)** (`/workspace/bom`):
+   - Definisi resep komponen bahan baku (`bom_item`), rasio kebutuhan per output produk, dan estimasi biaya standar.
+7. **Tenaga Kerja (`employee`)** (`/workspace/employees`):
+   - Master operator/karyawan dan stasiun kerja utama (Cutting, Sewing, Finishing, QC, Packing).
+8. **Matriks Tarif Upah (`wage_rate`)** (`/workspace/wage-rates`):
+   - Tarif upah borongan per produk dan tahap pengerjaan (`cutting`, `sewing`, `finishing`, dll) dengan format kode `WR-${SKU}-${service_kind}`.
+

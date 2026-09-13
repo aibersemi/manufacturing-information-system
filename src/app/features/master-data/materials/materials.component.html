@@ -1,0 +1,439 @@
+<div class="space-y-6">
+  <!-- Page Header & Action Bar -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Bahan Baku</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+        Kelola master bahan baku, satuan kemasan, rasio konversi ke satuan dasar, dan estimasi harga perolehan.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        class="rounded-full shadow-xs gap-2 px-4 h-9 text-xs font-semibold"
+        [disabled]="isLoading()"
+        (click)="loadData()"
+      >
+        <ng-icon
+          name="phosphorArrowsClockwise"
+          class="text-sm"
+          [class.animate-spin]="isLoading()"
+        ></ng-icon>
+        <span>Segarkan</span>
+      </button>
+
+      <button
+        hlmBtn
+        variant="default"
+        size="sm"
+        class="rounded-full shadow-xs gap-2 px-5 h-9 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white"
+        (click)="openCreateModal()"
+      >
+        <ng-icon name="phosphorPlus" class="text-sm"></ng-icon>
+        <span>Tambah Bahan Baku</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Card Container -->
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm p-5 sm:p-6 space-y-6">
+    <!-- Toolbar: Search & Pill Filters -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="relative w-full sm:w-80">
+        <ng-icon
+          name="phosphorMagnifyingGlass"
+          class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"
+        ></ng-icon>
+        <input
+          type="text"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+          placeholder="Cari nama material atau satuan..."
+          class="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 dark:text-white"
+        />
+      </div>
+
+      <!-- Filter Pills -->
+      <div class="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-full self-stretch sm:self-auto overflow-x-auto">
+        <button
+          type="button"
+          (click)="setStatusFilter('all')"
+          class="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
+          [class.bg-white]="statusFilter() === 'all'"
+          [class.dark:bg-slate-700]="statusFilter() === 'all'"
+          [class.text-slate-900]="statusFilter() === 'all'"
+          [class.dark:text-white]="statusFilter() === 'all'"
+          [class.shadow-xs]="statusFilter() === 'all'"
+          [class.text-slate-600]="statusFilter() !== 'all'"
+          [class.dark:text-slate-400]="statusFilter() !== 'all'"
+        >
+          Semua ({{ materials().length }})
+        </button>
+        <button
+          type="button"
+          (click)="setStatusFilter('active')"
+          class="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
+          [class.bg-white]="statusFilter() === 'active'"
+          [class.dark:bg-slate-700]="statusFilter() === 'active'"
+          [class.text-slate-900]="statusFilter() === 'active'"
+          [class.dark:text-white]="statusFilter() === 'active'"
+          [class.shadow-xs]="statusFilter() === 'active'"
+          [class.text-slate-600]="statusFilter() !== 'active'"
+          [class.dark:text-slate-400]="statusFilter() !== 'active'"
+        >
+          Aktif
+        </button>
+        <button
+          type="button"
+          (click)="setStatusFilter('inactive')"
+          class="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
+          [class.bg-white]="statusFilter() === 'inactive'"
+          [class.dark:bg-slate-700]="statusFilter() === 'inactive'"
+          [class.text-slate-900]="statusFilter() === 'inactive'"
+          [class.dark:text-white]="statusFilter() === 'inactive'"
+          [class.shadow-xs]="statusFilter() === 'inactive'"
+          [class.text-slate-600]="statusFilter() !== 'inactive'"
+          [class.dark:text-slate-400]="statusFilter() !== 'inactive'"
+        >
+          Nonaktif
+        </button>
+      </div>
+    </div>
+
+    <!-- Table or Empty State -->
+    @if (isLoading()) {
+      <div class="py-16 flex flex-col items-center justify-center text-slate-400 gap-3">
+        <ng-icon name="phosphorCircleNotch" class="text-3xl animate-spin text-blue-500"></ng-icon>
+        <p class="text-sm font-medium">Memuat data bahan baku...</p>
+      </div>
+    } @else if (filteredMaterials().length === 0) {
+      <div class="py-16 flex flex-col items-center justify-center text-center px-4">
+        <div class="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500 mb-3">
+          <ng-icon name="phosphorCube" class="text-2xl"></ng-icon>
+        </div>
+        <h3 class="text-base font-semibold text-slate-800 dark:text-slate-200">Tidak ada data bahan baku</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-1 mb-4">
+          @if (searchQuery() || statusFilter() !== 'all') {
+            Tidak ditemukan bahan baku yang cocok dengan filter saat ini.
+          } @else {
+            Mulai daftarkan bahan baku produksi seperti kain, benang, kancing, atau aksesoris lainnya.
+          }
+        </p>
+        @if (!searchQuery() && statusFilter() === 'all') {
+          <button
+            hlmBtn
+            size="sm"
+            class="rounded-full gap-2 px-4 h-9 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white"
+            (click)="openCreateModal()"
+          >
+            <ng-icon name="phosphorPlus" class="text-sm"></ng-icon>
+            <span>Tambah Bahan Baku Pertama</span>
+          </button>
+        }
+      </div>
+    } @else {
+      <div class="overflow-x-auto -mx-5 sm:mx-0">
+        <table class="w-full text-left border-collapse min-w-[700px]">
+          <thead>
+            <tr class="border-b border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-500 dark:text-slate-400">
+              <th class="py-3 px-4">Nama Bahan Baku</th>
+              <th class="py-3 px-4">Satuan Kemasan</th>
+              <th class="py-3 px-4">Konversi Satuan Dasar</th>
+              <th class="py-3 px-4">Harga Kemasan</th>
+              <th class="py-3 px-4">Est. Harga / Satuan Dasar</th>
+              <th class="py-3 px-4">Status</th>
+              <th class="py-3 px-4 text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 text-sm">
+            @for (material of filteredMaterials(); track material.id) {
+              @let data = getMaterialData(material);
+              <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                <td class="py-3.5 px-4 font-semibold text-slate-900 dark:text-white">
+                  <div>{{ material.name }}</div>
+                  @if (data.notes) {
+                    <div class="text-xs font-normal text-slate-400 mt-0.5 max-w-xs truncate">{{ data.notes }}</div>
+                  }
+                </td>
+                <td class="py-3.5 px-4 text-slate-600 dark:text-slate-300">
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                    {{ data.packagingQuantity || 1 }} {{ data.packagingUnit }}
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 text-slate-600 dark:text-slate-300">
+                  <div class="text-xs font-medium">
+                    1 {{ data.packagingUnit }} = {{ data.conversionFactor }} {{ data.baseUnit }}
+                  </div>
+                </td>
+                <td class="py-3.5 px-4 text-slate-900 dark:text-slate-100 font-medium">
+                  {{ data.referencePackagePrice | currency:'IDR':'symbol':'1.0-0' }}
+                </td>
+                <td class="py-3.5 px-4">
+                  <div class="font-semibold text-blue-600 dark:text-blue-400 text-xs">
+                    {{ getBaseUnitPrice(data) | currency:'IDR':'symbol':'1.0-0' }} / {{ data.baseUnit }}
+                  </div>
+                </td>
+                <td class="py-3.5 px-4">
+                  @if (material.is_active) {
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      Aktif
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                      <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                      Nonaktif
+                    </span>
+                  }
+                </td>
+                <td class="py-3.5 px-4 text-right">
+                  <div class="flex items-center justify-end gap-1">
+                    <button
+                      type="button"
+                      class="p-2 rounded-full text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      title="Ubah Bahan Baku"
+                      (click)="openEditModal(material)"
+                    >
+                      <ng-icon name="phosphorPencilSimple" class="text-base"></ng-icon>
+                    </button>
+                    <button
+                      type="button"
+                      class="p-2 rounded-full transition-colors"
+                      [title]="material.is_active ? 'Nonaktifkan' : 'Aktifkan'"
+                      [class.text-emerald-600]="material.is_active"
+                      [class.hover:bg-emerald-50]="material.is_active"
+                      [class.text-slate-400]="!material.is_active"
+                      [class.hover:bg-slate-100]="!material.is_active"
+                      (click)="toggleStatus(material)"
+                    >
+                      <ng-icon
+                        [name]="material.is_active ? 'phosphorToggleRight' : 'phosphorToggleLeft'"
+                        class="text-xl"
+                      ></ng-icon>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  <!-- Create/Edit Modal Dialog -->
+  @if (isModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <h2 class="text-base font-bold text-slate-900 dark:text-white">
+            {{ modalMode() === 'create' ? 'Tambah Bahan Baku Baru' : 'Ubah Bahan Baku' }}
+          </h2>
+          <button
+            type="button"
+            class="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            (click)="closeModal()"
+          >
+            <ng-icon name="phosphorX" class="text-lg"></ng-icon>
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <form (ngSubmit)="saveMaterial()" class="p-6 space-y-4 overflow-y-auto flex-1">
+          @if (formError()) {
+            <div class="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-xs text-rose-700 dark:text-rose-400">
+              {{ formError() }}
+            </div>
+          }
+
+          <div>
+            <label for="matName" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Nama Bahan Baku <span class="text-rose-500">*</span>
+            </label>
+            <input
+              id="matName"
+              type="text"
+              [ngModel]="formName()"
+              (ngModelChange)="formName.set($event)"
+              name="name"
+              placeholder="Contoh: Cotton Combed 30s Reaktif"
+              required
+              class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-900 dark:text-white"
+            />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="matPkgUnit" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Satuan Kemasan Beli
+              </label>
+              <select
+                id="matPkgUnit"
+                [ngModel]="formPackagingUnit()"
+                (ngModelChange)="formPackagingUnit.set($event)"
+                name="packagingUnit"
+                class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-900 dark:text-white"
+              >
+                @for (u of units(); track u.code) {
+                  <option [value]="u.code">{{ u.code }} ({{ u.name }})</option>
+                }
+              </select>
+            </div>
+
+            <div>
+              <label for="matPkgQty" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Kuantitas Satuan Kemasan
+              </label>
+              <input
+                id="matPkgQty"
+                type="number"
+                min="0.01"
+                step="any"
+                [ngModel]="formPackagingQuantity()"
+                (ngModelChange)="formPackagingQuantity.set($event)"
+                name="packagingQuantity"
+                required
+                class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-900 dark:text-white"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="matBaseUnit" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Satuan Dasar Produksi
+              </label>
+              <select
+                id="matBaseUnit"
+                [ngModel]="formBaseUnit()"
+                (ngModelChange)="formBaseUnit.set($event)"
+                name="baseUnit"
+                class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-900 dark:text-white"
+              >
+                @for (u of units(); track u.code) {
+                  <option [value]="u.code">{{ u.code }} ({{ u.name }})</option>
+                }
+              </select>
+            </div>
+
+            <div>
+              <label for="matConvFactor" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Faktor Konversi (ke Satuan Dasar)
+              </label>
+              <input
+                id="matConvFactor"
+                type="number"
+                min="0.01"
+                step="any"
+                [ngModel]="formConversionFactor()"
+                (ngModelChange)="formConversionFactor.set($event)"
+                name="conversionFactor"
+                required
+                class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-900 dark:text-white"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label for="matPkgPrice" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Harga Pembelian Kemasan (Rp)
+            </label>
+            <input
+              id="matPkgPrice"
+              type="number"
+              min="0"
+              [ngModel]="formReferencePackagePrice()"
+              (ngModelChange)="formReferencePackagePrice.set($event)"
+              name="referencePackagePrice"
+              placeholder="Contoh: 3000000"
+              class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-900 dark:text-white"
+            />
+          </div>
+
+          <!-- Price Calculation Preview Card -->
+          <div class="p-3.5 rounded-2xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40">
+            <div class="text-xs text-slate-500 dark:text-slate-400">
+              Kalkulasi Biaya Satuan Dasar:
+            </div>
+            <div class="text-sm font-semibold text-blue-700 dark:text-blue-300 mt-0.5">
+              {{ calculatedUnitPrice() | currency:'IDR':'symbol':'1.0-0' }} / {{ formBaseUnit() }}
+            </div>
+            <div class="text-xs text-slate-400 mt-1">
+              (1 {{ formPackagingUnit() }} = {{ formPackagingQuantity() * formConversionFactor() }} {{ formBaseUnit() }})
+            </div>
+          </div>
+
+          <div>
+            <label for="matNotes" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Catatan & Spesifikasi
+            </label>
+            <textarea
+              id="matNotes"
+              [ngModel]="formNotes()"
+              (ngModelChange)="formNotes.set($event)"
+              name="notes"
+              rows="2"
+              placeholder="Contoh: Warna jet black, gramasi 150-160 gsm"
+              class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-900 dark:text-white"
+            ></textarea>
+          </div>
+
+          @if (modalMode() === 'edit') {
+            <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div>
+                <div class="text-xs font-semibold text-slate-700 dark:text-slate-300">Status Aktif</div>
+                <div class="text-xs text-slate-400">Bahan baku nonaktif tidak akan muncul di form produksi baru.</div>
+              </div>
+              <button
+                type="button"
+                (click)="formIsActive.set(!formIsActive())"
+                class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden"
+                [class.bg-blue-600]="formIsActive()"
+                [class.bg-slate-300]="!formIsActive()"
+                [class.dark:bg-slate-700]="!formIsActive()"
+              >
+                <span
+                  class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out"
+                  [class.translate-x-5]="formIsActive()"
+                  [class.translate-x-0]="!formIsActive()"
+                ></span>
+              </button>
+            </div>
+          }
+
+          <!-- Modal Footer -->
+          <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              hlmBtn
+              variant="outline"
+              size="sm"
+              class="rounded-full px-5 h-9 text-xs font-semibold"
+              [disabled]="isSubmitting()"
+              (click)="closeModal()"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              hlmBtn
+              size="sm"
+              class="rounded-full px-5 h-9 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white"
+              [disabled]="isSubmitting()"
+            >
+              @if (isSubmitting()) {
+                <ng-icon name="phosphorCircleNotch" class="animate-spin text-sm mr-1.5"></ng-icon>
+                <span>Menyimpan...</span>
+              } @else {
+                <span>{{ modalMode() === 'create' ? 'Tambah Bahan Baku' : 'Simpan Perubahan' }}</span>
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>
