@@ -19,7 +19,7 @@ describe('PurchasingInventoryService', () => {
     user_metadata: {},
     aud: 'authenticated',
     created_at: '2026-01-01T00:00:00Z',
-    email: 'purchasing@mis.mrmads.net',
+    email: 'purchasing@example.com',
   };
 
   beforeEach(() => {

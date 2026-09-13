@@ -69,7 +69,7 @@ describe('CompanyService', () => {
 
     mockCurrentUser = signal({
       id: 'u-1',
-      email: 'supergadangzzz@mis.mrmads.net',
+      email: 'supergadangzzz@example.com',
       app_metadata: { role: 'owner' },
       user_metadata: { role: 'owner' },
     } as unknown);

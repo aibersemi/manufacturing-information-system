@@ -18,7 +18,7 @@ describe('MasterDataService', () => {
     user_metadata: {},
     aud: 'authenticated',
     created_at: '2026-01-01T00:00:00Z',
-    email: 'admin@mis.mrmads.net',
+    email: 'admin@example.com',
   };
 
   beforeEach(() => {

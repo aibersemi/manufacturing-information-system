@@ -24,7 +24,7 @@ describe('SettingsService', () => {
     },
     aud: 'authenticated',
     created_at: '2026-01-01T00:00:00Z',
-    email: 'budi@mis.mrmads.net',
+    email: 'budi@example.com',
   };
 
   beforeEach(() => {

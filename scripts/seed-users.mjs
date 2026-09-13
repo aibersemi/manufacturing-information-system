@@ -26,12 +26,12 @@ function parseEnv(filePath) {
   return env;
 }
 
-function resolveEmails(username) {
+function resolveEmails(username, appDomain) {
   if (username.includes('@')) {
     return [username];
   }
-  // Daftarkan ke domain sistem mis.mrmads.net dan mrmads.net
-  return [`${username}@mis.mrmads.net`, `${username}@mrmads.net`];
+  const domain = appDomain || 'localhost';
+  return [`${username}@${domain}`];
 }
 
 async function seedUsers() {
@@ -84,7 +84,7 @@ async function seedUsers() {
   const existingUsers = usersData?.users || [];
 
   for (const def of definitions) {
-    const emails = resolveEmails(def.username);
+    const emails = resolveEmails(def.username, env.APP_DOMAIN);
 
     for (const email of emails) {
       const existing = existingUsers.find(

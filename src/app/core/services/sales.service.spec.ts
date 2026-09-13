@@ -24,7 +24,7 @@ describe('SalesService', () => {
     user_metadata: {},
     aud: 'authenticated',
     created_at: '2026-01-01T00:00:00Z',
-    email: 'sales@mis.mrmads.net',
+    email: 'sales@example.com',
   };
 
   beforeEach(() => {

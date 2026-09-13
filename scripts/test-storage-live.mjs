@@ -29,10 +29,11 @@ async function testStorageLive() {
   const env = parseEnv(envPath);
   const supabaseUrl = env.SUPABASE_URL;
   const anonKey = env.SUPABASE_ANON_KEY;
+  const appDomain = env.APP_DOMAIN || 'localhost';
   const e2eUser = env.E2E_USER_USERNAME;
   const e2ePass = env.E2E_USER_PASSWORD;
 
-  const email = e2eUser.includes('@') ? e2eUser : `${e2eUser}@mis.mrmads.net`;
+  const email = e2eUser.includes('@') ? e2eUser : `${e2eUser}@${appDomain}`;
 
   // 1. Inisialisasi client publik seperti halnya Angular di browser
   const client = createClient(supabaseUrl, anonKey, {

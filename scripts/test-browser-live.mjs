@@ -25,11 +25,13 @@ function parseEnv(filePath) {
 }
 
 const env = parseEnv(envPath);
+const appDomain = env.APP_DOMAIN || 'localhost';
+const baseUrl = `https://${appDomain}`;
 const superUser = env.SUPER_USER_USERNAME;
 const superPass = env.SUPER_USER_PASSWORD;
-const email = superUser.includes('@') ? superUser : `${superUser}@mis.mrmads.net`;
+const email = superUser.includes('@') ? superUser : `${superUser}@${appDomain}`;
 
-console.log('--- TEST LIVE BROWSER: https://mis.mrmads.net ---');
+console.log(`--- TEST LIVE BROWSER: ${baseUrl} ---`);
 
 // 1. Jalankan Chrome headless
 const chromeProcess = spawn('google-chrome', [
@@ -99,8 +101,8 @@ async function main() {
     await send('Page.enable');
     await send('Runtime.enable');
 
-    console.log('1. Membuka https://mis.mrmads.net/login ...');
-    await send('Page.navigate', { url: 'https://mis.mrmads.net/login' });
+    console.log(`1. Membuka ${baseUrl}/login ...`);
+    await send('Page.navigate', { url: `${baseUrl}/login` });
     await delay(2500);
 
     // Evaluasi apakah halaman login termuat
@@ -197,7 +199,7 @@ async function main() {
       throw new Error('Role badge "Owner / Direksi" tidak ditemukan di UI!');
     }
 
-    console.log('✓ Verifikasi UI live browser pada https://mis.mrmads.net SUKSES PENUH!');
+    console.log(`✓ Verifikasi UI live browser pada ${baseUrl} SUKSES PENUH!`);
   } finally {
     if (ws) ws.close();
     chromeProcess.kill('SIGTERM');

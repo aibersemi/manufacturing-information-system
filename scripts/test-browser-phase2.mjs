@@ -25,11 +25,13 @@ function parseEnv(filePath) {
 }
 
 const env = parseEnv(envPath);
+const appDomain = env.APP_DOMAIN || 'localhost';
+const baseUrl = `https://${appDomain}`;
 const superUser = env.SUPER_USER_USERNAME;
 const superPass = env.SUPER_USER_PASSWORD;
-const email = superUser.includes('@') ? superUser : `${superUser}@mis.mrmads.net`;
+const email = superUser.includes('@') ? superUser : `${superUser}@${appDomain}`;
 
-console.log('--- VERIFIKASI LIVE BROWSER FASE 2: https://mis.mrmads.net ---');
+console.log(`--- VERIFIKASI LIVE BROWSER FASE 2: ${baseUrl} ---`);
 
 // Jalankan Chrome headless dengan flags aman
 const chromeProcess = spawn('google-chrome', [
@@ -99,8 +101,8 @@ async function main() {
     await send('Runtime.enable');
 
     // 1. Buka halaman /login
-    console.log('1. Membuka https://mis.mrmads.net/login ...');
-    await send('Page.navigate', { url: 'https://mis.mrmads.net/login' });
+    console.log(`1. Membuka ${baseUrl}/login ...`);
+    await send('Page.navigate', { url: `${baseUrl}/login` });
     await delay(2000);
 
     // Cek jika sudah login (redirect ke dashboard / root)
@@ -146,8 +148,8 @@ async function main() {
     }
 
     // 2. Verifikasi Navigasi ke /workspace/companies
-    console.log('3. Menavigasi ke https://mis.mrmads.net/workspace/companies ...');
-    await send('Page.navigate', { url: 'https://mis.mrmads.net/workspace/companies' });
+    console.log(`3. Menavigasi ke ${baseUrl}/workspace/companies ...`);
+    await send('Page.navigate', { url: `${baseUrl}/workspace/companies` });
     await delay(3000);
 
     const companiesDom = await send('Runtime.evaluate', {
@@ -170,8 +172,8 @@ async function main() {
     console.log('✓ Halaman Perusahaan (/workspace/companies) terverifikasi dengan data AIBER001.');
 
     // 3. Verifikasi Navigasi ke /workspace/users-access
-    console.log('4. Menavigasi ke https://mis.mrmads.net/workspace/users-access ...');
-    await send('Page.navigate', { url: 'https://mis.mrmads.net/workspace/users-access' });
+    console.log(`4. Menavigasi ke ${baseUrl}/workspace/users-access ...`);
+    await send('Page.navigate', { url: `${baseUrl}/workspace/users-access` });
     await delay(3000);
 
     const usersDom = await send('Runtime.evaluate', {
@@ -227,8 +229,8 @@ async function main() {
     console.log('✓ Halaman Pengguna & Hak Akses serta Matriks Izin terverifikasi.');
 
     // 4. Verifikasi Navigasi ke /workspace/profile
-    console.log('6. Menavigasi ke https://mis.mrmads.net/workspace/profile ...');
-    await send('Page.navigate', { url: 'https://mis.mrmads.net/workspace/profile' });
+    console.log(`6. Menavigasi ke ${baseUrl}/workspace/profile ...`);
+    await send('Page.navigate', { url: `${baseUrl}/workspace/profile` });
     await delay(2500);
 
     const profileDom = await send('Runtime.evaluate', {

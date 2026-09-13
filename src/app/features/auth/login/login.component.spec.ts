@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { environment } from '../../../../environments/environment';
 import { LoginComponent } from './login.component';
 
 describe('LoginComponent', () => {
@@ -99,9 +100,13 @@ describe('LoginComponent', () => {
     expect(component.isSubmitting()).toBe(false);
   });
 
-  it('should normalize plain username to @mis.mrmads.net when submitted', async () => {
+  it('should normalize plain username to domain when submitted', async () => {
+    const expectedDomain =
+      environment.appDomain || (typeof window !== 'undefined' ? window.location.hostname : 'localhost');
+    const expectedEmail = `e2e_playwright@${expectedDomain}`;
+
     mockAuthService.signInWithPassword.mockResolvedValue({
-      user: { id: 'u1', email: 'e2e_playwright@mis.mrmads.net' },
+      user: { id: 'u1', email: expectedEmail },
       session: { access_token: 'token' },
     });
     vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
@@ -114,7 +119,7 @@ describe('LoginComponent', () => {
     await component.onSubmit();
 
     expect(mockAuthService.signInWithPassword).toHaveBeenCalledWith({
-      email: 'e2e_playwright@mis.mrmads.net',
+      email: expectedEmail,
       password: 'validpassword',
     });
   });

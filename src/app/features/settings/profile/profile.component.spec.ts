@@ -8,7 +8,7 @@ describe('ProfileComponent', () => {
 
   const mockProfile = {
     id: 'user-1',
-    email: 'budi@mis.mrmads.net',
+    email: 'budi@example.com',
     fullName: 'Budi Santoso',
     phone: '08123456789',
     address: 'Jl. Merdeka No. 5',

@@ -63,7 +63,7 @@
           "options": {
             "port": 8015,
             "host": "0.0.0.0",
-            "allowedHosts": ["mis.mrmads.net", "10.50.0.2", "localhost", "127.0.0.1"]
+            "allowedHosts": true
           },
           "configurations": {
             "production": {

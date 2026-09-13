@@ -67,7 +67,7 @@ export class DashboardComponent {
   readonly currentUser = computed(() => this.authService.currentUser());
 
   readonly userEmail = computed(() => {
-    return this.currentUser()?.email ?? 'supergadangzzz@mis.mrmads.net';
+    return this.currentUser()?.email ?? '';
   });
 
   readonly userRole = computed(() => {

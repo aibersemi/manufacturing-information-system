@@ -15,7 +15,7 @@ describe('UsersAccessComponent', () => {
     {
       company_id: 'c1',
       user_id: 'u-owner-1',
-      email: 'owner@mis.mrmads.net',
+      email: 'owner@example.com',
       full_name: 'Budi Owner',
       username: 'budi_owner',
       roles: ['owner'],
@@ -27,7 +27,7 @@ describe('UsersAccessComponent', () => {
     {
       company_id: 'c1',
       user_id: 'u-op-2',
-      email: 'operator@mis.mrmads.net',
+      email: 'operator@example.com',
       full_name: 'Siti Jahit',
       username: 'siti_jahit',
       roles: ['operator_jahit'],
@@ -75,7 +75,7 @@ describe('UsersAccessComponent', () => {
     mockSettingsService = {
       getCompanyUsers: vi.fn().mockResolvedValue(mockUsers),
       listAvailableSystemUsers: vi.fn().mockResolvedValue([
-        { user_id: 'u-new', email: 'baru@mis.mrmads.net', full_name: 'Staf Baru', username: 'staf_baru' },
+        { user_id: 'u-new', email: 'baru@example.com', full_name: 'Staf Baru', username: 'staf_baru' },
       ]),
       getUserPermissions: vi.fn().mockResolvedValue(mockPermissions),
       assignUserRole: vi.fn().mockResolvedValue({
@@ -96,7 +96,7 @@ describe('UsersAccessComponent', () => {
     };
 
     mockAuthService = {
-      currentUser: signal({ id: 'u-owner-1', email: 'owner@mis.mrmads.net' }),
+      currentUser: signal({ id: 'u-owner-1', email: 'owner@example.com' }),
     };
 
     await TestBed.configureTestingModule({

@@ -26,16 +26,18 @@ function parseEnv(filePath) {
 }
 
 const env = parseEnv(envPath);
+const appDomain = env.APP_DOMAIN || 'localhost';
+const baseUrl = `https://${appDomain}`;
 const superUser = env.SUPER_USER_USERNAME;
 const superPass = env.SUPER_USER_PASSWORD;
-const email = superUser.includes('@') ? superUser : `${superUser}@mis.mrmads.net`;
+const email = superUser.includes('@') ? superUser : `${superUser}@${appDomain}`;
 
 const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
 
 console.log('--- VERIFIKASI LIVE BROWSER FASE 5: PRODUCTION & SPK WORKFLOWS ---');
-console.log('Target URL: https://mis.mrmads.net');
+console.log(`Target URL: ${baseUrl}`);
 
 const tempProfileDir = `/tmp/chrome-test-p5-${Date.now()}`;
 const chromeProcess = spawn('google-chrome', [
@@ -434,9 +436,9 @@ async function main() {
     await send('Page.enable');
     await send('Runtime.enable');
 
-    // Navigasi ke https://mis.mrmads.net
-    console.log('Navigasi ke https://mis.mrmads.net ...');
-    await send('Page.navigate', { url: 'https://mis.mrmads.net/login' });
+    // Navigasi ke baseUrl
+    console.log(`Navigasi ke ${baseUrl} ...`);
+    await send('Page.navigate', { url: `${baseUrl}/login` });
     await delay(3000);
 
     // Lakukan login jika form login muncul
@@ -479,7 +481,7 @@ async function main() {
 
     for (const r of productionRoutes) {
       console.log(`Mengakses rute: ${r.path} ...`);
-      await send('Page.navigate', { url: `https://mis.mrmads.net${r.path}` });
+      await send('Page.navigate', { url: `${baseUrl}${r.path}` });
       await delay(2500);
 
       const pageCheck = await evaluate(`
@@ -634,7 +636,7 @@ async function main() {
 
     // Uji 3: Kunjungi kembali UI di browser untuk memastikan data live muncul di tabel/kartu
     console.log('\n--- VERIFIKASI TAMPILAN LIVE BROWSER DENGAN DATA NYATA ---');
-    await send('Page.navigate', { url: 'https://mis.mrmads.net/workspace/production-orders' });
+    await send('Page.navigate', { url: `${baseUrl}/workspace/production-orders` });
     await delay(3500);
     const orderDocFound = await evaluate(`
       (function() {
@@ -644,7 +646,7 @@ async function main() {
     `);
     console.log(`  ✓ Nomor PP ${ppResult.documentNumber} terlihat di UI Production Orders: ${orderDocFound}`);
 
-    await send('Page.navigate', { url: 'https://mis.mrmads.net/workspace/spk' });
+    await send('Page.navigate', { url: `${baseUrl}/workspace/spk` });
     await delay(3500);
     const spkDocFound = await evaluate(`
       (function() {
@@ -654,7 +656,7 @@ async function main() {
     `);
     console.log(`  ✓ Nomor SPK terlihat di UI Daftar SPK: ${spkDocFound}`);
 
-    await send('Page.navigate', { url: 'https://mis.mrmads.net/workspace/production-repairs' });
+    await send('Page.navigate', { url: `${baseUrl}/workspace/production-repairs` });
     await delay(3500);
     const repairFound = await evaluate(`
       (function() {
@@ -664,7 +666,7 @@ async function main() {
     `);
     console.log(`  ✓ Kasus Repair terlihat di UI Kasus Perbaikan: ${repairFound}`);
 
-    await send('Page.navigate', { url: 'https://mis.mrmads.net/workspace/production-progress' });
+    await send('Page.navigate', { url: `${baseUrl}/workspace/production-progress` });
     await delay(3500);
     const progressFound = await evaluate(`
       (function() {

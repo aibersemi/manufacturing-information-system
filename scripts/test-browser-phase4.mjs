@@ -26,16 +26,18 @@ function parseEnv(filePath) {
 }
 
 const env = parseEnv(envPath);
+const appDomain = env.APP_DOMAIN || 'localhost';
+const baseUrl = `https://${appDomain}`;
 const superUser = env.SUPER_USER_USERNAME;
 const superPass = env.SUPER_USER_PASSWORD;
-const email = superUser.includes('@') ? superUser : `${superUser}@mis.mrmads.net`;
+const email = superUser.includes('@') ? superUser : `${superUser}@${appDomain}`;
 
 const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
 
 console.log('--- VERIFIKASI LIVE BROWSER FASE 4: PURCHASING & INVENTORY ---');
-console.log('Target URL: https://mis.mrmads.net');
+console.log(`Target URL: ${baseUrl}`);
 
 // Jalankan Chrome headless dengan remote debugging
 const tempProfileDir = `/tmp/chrome-test-p4-${Date.now()}`;
@@ -113,8 +115,8 @@ async function main() {
     await send('Runtime.enable');
 
     // 1. Buka halaman /login
-    console.log('1. Membuka https://mis.mrmads.net/login ...');
-    await send('Page.navigate', { url: 'https://mis.mrmads.net/login' });
+    console.log(`1. Membuka ${baseUrl}/login ...`);
+    await send('Page.navigate', { url: `${baseUrl}/login` });
     await delay(2500);
 
     const checkUrl = await send('Runtime.evaluate', {
@@ -165,7 +167,7 @@ async function main() {
     // Helper untuk cek halaman dan font size check
     async function verifyPage(urlPath, expectedH1Title) {
       console.log(`\nMemeriksa halaman ${urlPath} ...`);
-      await send('Page.navigate', { url: `https://mis.mrmads.net${urlPath}` });
+      await send('Page.navigate', { url: `${baseUrl}${urlPath}` });
       await delay(2500);
 
       const pageCheck = await send('Runtime.evaluate', {
@@ -359,7 +361,7 @@ async function main() {
 
     // Verifikasi di UI Browser: Buka /workspace/inventory
     console.log('Membuka /workspace/inventory di browser untuk memverifikasi Roll...');
-    await send('Page.navigate', { url: 'https://mis.mrmads.net/workspace/inventory' });
+    await send('Page.navigate', { url: `${baseUrl}/workspace/inventory` });
     await delay(3000);
 
     // Klik tab Roll Kain
@@ -390,7 +392,7 @@ async function main() {
 
     // Buka /workspace/purchase-payments di browser untuk cek tagihan
     console.log('Membuka /workspace/purchase-payments di browser untuk memverifikasi Tagihan...');
-    await send('Page.navigate', { url: 'https://mis.mrmads.net/workspace/purchase-payments' });
+    await send('Page.navigate', { url: `${baseUrl}/workspace/purchase-payments` });
     await delay(3000);
 
     const checkPayableInUI = await send('Runtime.evaluate', {
@@ -419,7 +421,7 @@ async function main() {
 
     // Refresh halaman pembayaran dan cek tab riwayat
     console.log('Membuka /workspace/purchase-payments dan cek Riwayat Pembayaran...');
-    await send('Page.navigate', { url: 'https://mis.mrmads.net/workspace/purchase-payments' });
+    await send('Page.navigate', { url: `${baseUrl}/workspace/purchase-payments` });
     await delay(3000);
 
     const clickHistoryTab = await send('Runtime.evaluate', {

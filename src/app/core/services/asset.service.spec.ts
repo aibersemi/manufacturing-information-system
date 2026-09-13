@@ -19,7 +19,7 @@ describe('AssetService', () => {
     user_metadata: {},
     aud: 'authenticated',
     created_at: '2026-01-01T00:00:00Z',
-    email: 'finance@mis.mrmads.net',
+    email: 'finance@example.com',
   };
 
   beforeEach(() => {

@@ -30,6 +30,7 @@ function parseEnv(filePath) {
 const env = parseEnv(envPath);
 const supabaseUrl = env.SUPABASE_URL || '';
 const supabaseAnonKey = env.SUPABASE_ANON_KEY || '';
+const appDomain = env.APP_DOMAIN || '';
 
 if (!fs.existsSync(environmentsDir)) {
   fs.mkdirSync(environmentsDir, { recursive: true });
@@ -42,6 +43,7 @@ export const environment = {
   production: false,
   supabaseUrl: ${JSON.stringify(supabaseUrl)},
   supabaseAnonKey: ${JSON.stringify(supabaseAnonKey)},
+  appDomain: ${JSON.stringify(appDomain)},
 };
 `;
 
@@ -52,6 +54,7 @@ export const environment = {
   production: true,
   supabaseUrl: ${JSON.stringify(supabaseUrl)},
   supabaseAnonKey: ${JSON.stringify(supabaseAnonKey)},
+  appDomain: ${JSON.stringify(appDomain)},
 };
 `;
 

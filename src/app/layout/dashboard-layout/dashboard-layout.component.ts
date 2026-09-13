@@ -130,12 +130,12 @@ export class DashboardLayoutComponent {
 
   readonly userEmail = computed(() => {
     const user = this.currentUser();
-    return user?.email ?? 'admin@mrmads.net';
+    return user?.email ?? '';
   });
 
   readonly userName = computed(() => {
     const email = this.userEmail();
-    return email.split('@')[0] || 'Operator';
+    return email ? (email.split('@')[0] || 'Operator') : 'Operator';
   });
 
   readonly userRole = computed(() => {

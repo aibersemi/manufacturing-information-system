@@ -19,6 +19,7 @@ import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmInputImports } from '@spartan-ng/helm/input';
 import { HlmLabelImports } from '@spartan-ng/helm/label';
 import { toast } from '@spartan-ng/brain/sonner';
+import { environment } from '../../../../environments/environment';
 import { AuthService } from '../../../core/services/auth.service';
 import { getSafeReturnUrl } from '../../../core/utils/url.util';
 
@@ -83,9 +84,11 @@ export class LoginComponent {
     this.errorMessage.set(null);
 
     const { email, password } = this.form.getRawValue();
+    const defaultDomain =
+      environment.appDomain || (typeof window !== 'undefined' ? window.location.hostname : 'localhost');
     const normalizedEmail = email.trim().includes('@')
       ? email.trim()
-      : `${email.trim()}@mis.mrmads.net`;
+      : `${email.trim()}@${defaultDomain}`;
 
     try {
       await this.authService.signInWithPassword({ email: normalizedEmail, password });

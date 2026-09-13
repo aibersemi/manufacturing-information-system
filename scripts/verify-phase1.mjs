@@ -34,9 +34,10 @@ console.log('Supabase URL:', supabaseUrl);
 const supabase = createClient(supabaseUrl, anonKey);
 
 async function runVerification() {
+  const appDomain = env.APP_DOMAIN || 'localhost';
   const superUser = env.SUPER_USER_USERNAME;
   const superPass = env.SUPER_USER_PASSWORD;
-  const email = superUser.includes('@') ? superUser : `${superUser}@mis.mrmads.net`;
+  const email = superUser.includes('@') ? superUser : `${superUser}@${appDomain}`;
 
   console.log(`1. Melakukan login sebagai ${email}...`);
   const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -123,10 +124,10 @@ async function runVerification() {
   console.log('8. Sign out...');
   await supabase.auth.signOut();
 
-  console.log('9. Menguji login sebagai e2e_playwright@mis.mrmads.net...');
+  console.log('9. Menguji login sebagai E2E user...');
   const e2eUser = env.E2E_USER_USERNAME;
   const e2ePass = env.E2E_USER_PASSWORD;
-  const e2eEmail = e2eUser.includes('@') ? e2eUser : `${e2eUser}@mis.mrmads.net`;
+  const e2eEmail = e2eUser.includes('@') ? e2eUser : `${e2eUser}@${appDomain}`;
 
   const { data: e2eAuth, error: e2eError } = await supabase.auth.signInWithPassword({
     email: e2eEmail,
