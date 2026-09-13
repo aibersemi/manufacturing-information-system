@@ -6,8 +6,6 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=mrdev
-Group=mrmads-group
 WorkingDirectory=/opt/services/manufacturing-information-system
 EnvironmentFile=/opt/services/manufacturing-information-system/.env
 ExecStart=/usr/bin/node scripts/serve-prod.mjs

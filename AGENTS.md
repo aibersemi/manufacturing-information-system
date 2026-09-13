@@ -38,7 +38,7 @@ Panduan wajib bagi agen AI saat bekerja di repositori ini.
 
 - Gunakan `sudo` jika terjadi kendala izin.
 - Setelah perubahan source code atau konfigurasi runtime, jalankan: `npm run lint` (perbaiki seluruh error hingga bersih), `npm run build`, lalu `sudo systemctl restart manufacturing-information-system.service`.
-- Seluruh pengujian interaktif, verifikasi browser, atau visual testing wajib dilakukan langsung ke domain produksi nyata `https://mis.mrmads.net`, bukan ke `localhost`.
+- Seluruh pengujian interaktif, verifikasi browser, atau visual testing wajib dilakukan langsung ke domain produksi nyata `https://${APP_DOMAIN}`, bukan ke `localhost`.
 - Jika diminta backup simpan di `/data/backups/manufacturing-information-system/<jenis-backup>/<YYYYMMDD-HHMMSS>/`.
 - Logging mengikuti mekanisme native Ubuntu.
 
@@ -49,4 +49,3 @@ Panduan wajib bagi agen AI saat bekerja di repositori ini.
 - Hapus hanya data yang dibuat oleh pengujian dan rollback setiap migrasi atau perubahan skema sementara.
 - Verifikasi bahwa data serta struktur database awal tetap utuh.
 - Jika pemulihan tidak dapat dilakukan dengan aman atau data pengujian tidak dapat dibedakan dari data yang sudah ada, hentikan proses dan minta arahan user.
-

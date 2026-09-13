@@ -12,7 +12,6 @@ Dokumen ini adalah panduan operasional (*canonical runbook*) untuk Manufacturing
 | **Systemd Service Unit** | `manufacturing-information-system.service` |
 | **Unit File Location** | `/etc/systemd/system/manufacturing-information-system.service` |
 | **Unit Template** | `scripts/systemd/manufacturing-information-system.service` |
-| **Runtime User & Group** | `mrdev` / `mrmads-group` |
 | **Production Server Script** | `scripts/serve-prod.mjs` (Node.js Native HTTP Server, SPA fallback, Gzip) |
 | **Production Build Directory** | `dist/manufacturing-information-system/browser` |
 | **Syslog Identifier** | `mis-frontend` |
@@ -29,7 +28,7 @@ Layanan berjalan di atas host Ubuntu native secara terkelola melalui *systemd*, 
 ## Operational Rules
 
 1. **Hak Akses File & Direktori**:
-   - Seluruh file dan direktori dalam repositori dimiliki oleh user `mrdev` dan group `mrmads-group` dengan umask `0002` agar tetap *group-writable*. Gunakan `sudo` jika operasi memerlukan izin administratif.
+   - Seluruh file dan direktori dalam repositori dimiliki oleh group dengan umask `0002` agar tetap *group-writable*. Gunakan `sudo` jika operasi memerlukan izin administratif.
 2. **Zero Hardcoded Secrets**:
    - Dilarang keras menuliskan nilai rahasia, port mentah, IP mentah, atau token ke dalam kode sumber, git history, maupun dokumentasi.
 3. **Isolasi Bundle Klien**:
@@ -251,7 +250,6 @@ tar --exclude='./node_modules' \
     -czf "${BACKUP_DIR}/mis-source-${TIMESTAMP}.tar.gz" \
     -C /opt/services/manufacturing-information-system .
 
-sudo chown -R mrdev:mrmads-group "${BACKUP_DIR}"
 ```
 
 ### 2. Backup File Konfigurasi Lingkungan (.env)
@@ -264,7 +262,6 @@ sudo mkdir -p "${BACKUP_DIR}"
 
 sudo cp /opt/services/manufacturing-information-system/.env "${BACKUP_DIR}/.env"
 sudo chmod 600 "${BACKUP_DIR}/.env"
-sudo chown mrdev:mrmads-group "${BACKUP_DIR}/.env"
 ```
 
 ### 3. Backup Database PostgreSQL Supabase
@@ -283,7 +280,6 @@ PGPASSWORD="${POSTGRES_PASSWORD}" pg_dump \
   -F c \
   -f "${BACKUP_DIR}/mis-db-${TIMESTAMP}.dump"
 
-sudo chown -R mrdev:mrmads-group "${BACKUP_DIR}"
 ```
 
 ### 4. Prosedur Disaster Recovery (Restore)
@@ -293,7 +289,6 @@ Jika server perlu dipulihkan secara penuh pada instance baru:
 1. **Persiapan Direktori & Ekstraksi Source**:
    ```bash
    sudo mkdir -p /opt/services/manufacturing-information-system
-   sudo chown mrdev:mrmads-group /opt/services/manufacturing-information-system
    tar -xzf "/data/backups/manufacturing-information-system/application-source/<TIMESTAMP>/mis-source-<TIMESTAMP>.tar.gz" \
        -C /opt/services/manufacturing-information-system
    ```

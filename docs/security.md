@@ -3,7 +3,7 @@
 Dokumen ini menetapkan arsitektur keamanan, standar *defense-in-depth*, dan panduan operasional resmi untuk Manufacturing Information System (MIS). Panduan ini mengintegrasikan standar keamanan resmi dari [Angular Security Guide](https://angular.dev/guide/security) dan [Supabase Production Security Best Practices](https://supabase.com/docs/guides/database/postgres/row-level-security).
 
 > [!IMPORTANT]
-> Seluruh nilai rahasia, kredensial, token, password, parameter koneksi (URL/port/IP), dan API key sensitif hanya disimpan di dalam file `.env` dan dilarang keras dicantumkan secara langsung pada dokumentasi maupun kode publik. Dokumen ini hanya merujuk nama variabel lingkungan.
+> Seluruh nilai rahasia, kredensial, token, user, password, parameter koneksi (URL/port/IP), dan API key sensitif hanya disimpan di dalam file `.env` dan dilarang keras dicantumkan secara langsung pada dokumentasi maupun kode publik. Dokumen ini hanya merujuk nama variabel lingkungan.
 
 ---
 
@@ -131,7 +131,7 @@ Fungsi yang dieksekusi dengan hak akses pembuat (*elevated privileges*):
 2. **Tunneling Terisolasi (WireGuard)**:
    * Komunikasi antara VPS Edge dan Host Server MIS berjalan melalui antarmuka WireGuard internal privat (`10.50.0.x`). Port aplikasi tidak diekspos langsung ke alamat IP publik host.
 3. **Penyimpanan Kredensial**:
-   * Kredensial murni berada di `.env` (izin file dibatasi ke user `mrdev`). Template publik [.env.example](file:///.env.example) hanya memuat nama variabel kosong tanpa data sensitif.
+   * Kredensial murni berada di `.env`. Template publik [.env.example](file:///.env.example) hanya memuat nama variabel kosong tanpa data sensitif.
 
 ---
 
