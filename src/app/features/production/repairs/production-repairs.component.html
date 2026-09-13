@@ -1,0 +1,388 @@
+<div class="flex flex-col gap-6 p-4 md:p-6 lg:p-8">
+  <!-- Blueprint Header -->
+  <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div>
+      <div class="flex items-center gap-2">
+        <span class="rounded-full bg-amber-500/10 p-1.5 text-amber-600 dark:text-amber-400">
+          <ng-icon name="phosphorWrench" class="size-5" />
+        </span>
+        <h1 class="text-2xl font-bold tracking-tight text-foreground">Perbaikan Produksi / Retur Cacat</h1>
+      </div>
+      <p class="text-sm text-muted-foreground mt-1">
+        Pelacakan kasus cacat produksi (rework), penugasan SPK perbaikan kepada operator, dan penetapan kompensasi upah.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        (click)="loadData()"
+        class="inline-flex items-center gap-2 rounded-full border border-border/80 bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
+        title="Muat Ulang Data"
+      >
+        <ng-icon name="phosphorArrowsClockwise" class="size-4" [class.animate-spin]="isLoading()" />
+        <span>Segarkan</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  @if (successMessage()) {
+    <div class="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
+      <ng-icon name="phosphorCheckCircle" class="size-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+      <span class="font-medium">{{ successMessage() }}</span>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300">
+      <ng-icon name="phosphorWarningCircle" class="size-5 shrink-0 text-rose-600 dark:text-rose-400" />
+      <span class="font-medium">{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- KPI Cards -->
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="rounded-3xl border border-border/80 bg-card p-5 shadow-xs">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Menunggu Penugasan</span>
+        <div class="flex size-9 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
+          <ng-icon name="phosphorClock" class="size-5" />
+        </div>
+      </div>
+      <div class="mt-3 flex items-baseline gap-2">
+        <span class="text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400">{{ pendingCases() }}</span>
+        <span class="text-xs text-muted-foreground">Kasus</span>
+      </div>
+    </div>
+
+    <div class="rounded-3xl border border-border/80 bg-card p-5 shadow-xs">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Sedang Dikerjakan</span>
+        <div class="flex size-9 items-center justify-center rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
+          <ng-icon name="phosphorWrench" class="size-5" />
+        </div>
+      </div>
+      <div class="mt-3 flex items-baseline gap-2">
+        <span class="text-2xl font-bold tracking-tight text-foreground">{{ inProgressCases() }}</span>
+        <span class="text-xs text-muted-foreground">Kasus</span>
+      </div>
+    </div>
+
+    <div class="rounded-3xl border border-border/80 bg-card p-5 shadow-xs">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Total Kasus Cacat</span>
+        <div class="flex size-9 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <ng-icon name="phosphorFileText" class="size-5" />
+        </div>
+      </div>
+      <div class="mt-3 flex items-baseline gap-2">
+        <span class="text-2xl font-bold tracking-tight text-foreground">{{ totalCases() }}</span>
+        <span class="text-xs text-muted-foreground">Insiden</span>
+      </div>
+    </div>
+
+    <div class="rounded-3xl border border-border/80 bg-card p-5 shadow-xs">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Total Qty Cacat</span>
+        <div class="flex size-9 items-center justify-center rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400">
+          <ng-icon name="phosphorTag" class="size-5" />
+        </div>
+      </div>
+      <div class="mt-3 flex items-baseline gap-2">
+        <span class="text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400">{{ totalDefectivePcs() | number }}</span>
+        <span class="text-xs text-muted-foreground">PCS</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter & Search Bar -->
+  <div class="flex flex-col gap-3 rounded-3xl border border-border/80 bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="relative w-full sm:w-80">
+      <ng-icon
+        name="phosphorMagnifyingGlass"
+        class="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
+      />
+      <input
+        type="text"
+        placeholder="Cari ikatan, alasan, PP..."
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+        class="w-full rounded-full border border-border/80 bg-background py-2 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/20"
+      />
+    </div>
+
+    <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+      <button
+        type="button"
+        (click)="statusFilter.set('all')"
+        class="rounded-full px-4 py-1.5 text-xs font-medium transition"
+        [class]="statusFilter() === 'all' ? 'bg-primary text-primary-foreground' : 'border border-border/80 bg-background text-muted-foreground hover:text-foreground'"
+      >
+        Semua
+      </button>
+      <button
+        type="button"
+        (click)="statusFilter.set('pending_assignment')"
+        class="rounded-full px-4 py-1.5 text-xs font-medium transition"
+        [class]="statusFilter() === 'pending_assignment' ? 'bg-amber-600 text-white' : 'border border-border/80 bg-background text-muted-foreground hover:text-foreground'"
+      >
+        Menunggu Penugasan
+      </button>
+      <button
+        type="button"
+        (click)="statusFilter.set('in_progress')"
+        class="rounded-full px-4 py-1.5 text-xs font-medium transition"
+        [class]="statusFilter() === 'in_progress' ? 'bg-blue-600 text-white' : 'border border-border/80 bg-background text-muted-foreground hover:text-foreground'"
+      >
+        Dalam Pengerjaan
+      </button>
+      <button
+        type="button"
+        (click)="statusFilter.set('completed')"
+        class="rounded-full px-4 py-1.5 text-xs font-medium transition"
+        [class]="statusFilter() === 'completed' ? 'bg-emerald-600 text-white' : 'border border-border/80 bg-background text-muted-foreground hover:text-foreground'"
+      >
+        Selesai
+      </button>
+    </div>
+  </div>
+
+  <!-- Repair Cases Table Card -->
+  <div class="overflow-hidden rounded-3xl border border-border/80 bg-card shadow-xs">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="border-b border-border/80 bg-muted/30 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <tr>
+            <th class="px-5 py-4">Ikatan &amp; Produk</th>
+            <th class="px-5 py-4">PP Acuan</th>
+            <th class="px-5 py-4">Tahap Ditemukan</th>
+            <th class="px-5 py-4">Jenis Perbaikan</th>
+            <th class="px-5 py-4 text-center">Jumlah Cacat</th>
+            <th class="px-5 py-4">Alasan Cacat</th>
+            <th class="px-5 py-4 text-center">Status</th>
+            <th class="px-5 py-4 text-right">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border/60">
+          @if (isLoading()) {
+            <tr>
+              <td colspan="8" class="px-5 py-12 text-center text-muted-foreground">
+                <div class="flex items-center justify-center gap-3">
+                  <ng-icon name="phosphorArrowsClockwise" class="size-5 animate-spin text-primary" />
+                  <span>Memuat data kasus perbaikan...</span>
+                </div>
+              </td>
+            </tr>
+          } @else if (filteredCases().length === 0) {
+            <tr>
+              <td colspan="8" class="px-5 py-12 text-center text-muted-foreground">
+                <div class="flex flex-col items-center justify-center gap-2">
+                  <ng-icon name="phosphorCheckCircle" class="size-8 text-emerald-500/50" />
+                  <p class="font-medium text-foreground">Tidak ada kasus perbaikan produksi</p>
+                  <p class="text-xs">Seluruh hasil pengerjaan operator berjalan normal tanpa temuan cacat.</p>
+                </div>
+              </td>
+            </tr>
+          } @else {
+            @for (c of filteredCases(); track c.id) {
+              <tr class="transition hover:bg-muted/40">
+                <td class="px-5 py-4">
+                  <span class="font-bold text-foreground">{{ c.bundle_code || 'Ikatan' }}</span>
+                  <div class="text-xs text-muted-foreground">
+                    {{ c.product_name }} ({{ c.product_sku || 'SKU' }})
+                  </div>
+                </td>
+                <td class="px-5 py-4 text-muted-foreground text-xs">
+                  {{ c.production_order_number || 'N/A' }}
+                </td>
+                <td class="px-5 py-4">
+                  <span class="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
+                    {{ c.found_at_stage | uppercase }}
+                  </span>
+                </td>
+                <td class="px-5 py-4">
+                  <span class="rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-semibold text-purple-800 dark:bg-purple-950 dark:text-purple-300">
+                    {{ c.repair_work_kind | uppercase }}
+                  </span>
+                </td>
+                <td class="px-5 py-4 text-center font-bold text-rose-600 dark:text-rose-400">
+                  {{ c.quantity | number }} PCS
+                </td>
+                <td class="px-5 py-4 text-xs text-foreground max-w-xs truncate">
+                  {{ c.issue_reason }}
+                </td>
+                <td class="px-5 py-4 text-center">
+                  @switch (c.business_status) {
+                    @case ('pending_assignment') {
+                      <span class="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
+                        Menunggu Penugasan
+                      </span>
+                    }
+                    @case ('in_progress') {
+                      <span class="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
+                        Dikerjakan
+                      </span>
+                    }
+                    @case ('completed') {
+                      <span class="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+                        Selesai
+                      </span>
+                    }
+                    @default {
+                      <span class="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+                        {{ c.business_status }}
+                      </span>
+                    }
+                  }
+                </td>
+                <td class="px-5 py-4 text-right">
+                  @if (c.business_status === 'pending_assignment') {
+                    <button
+                      type="button"
+                      (click)="openAssignModal(c)"
+                      class="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-xs transition hover:bg-primary/90"
+                    >
+                      <ng-icon name="phosphorWrench" class="size-3.5" />
+                      <span>Tugaskan SPK</span>
+                    </button>
+                  } @else {
+                    <span class="text-xs text-muted-foreground font-mono">
+                      {{ c.repair_spk_number || 'SPK Diterbitkan' }}
+                    </span>
+                  }
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal Penugasan SPK Perbaikan -->
+  @if (isAssignModalOpen() && selectedCase(); as c) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm">
+      <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-border/80 bg-card p-6 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-border/80 pb-4">
+          <div>
+            <h2 class="text-lg font-bold text-foreground">Tugaskan SPK Perbaikan</h2>
+            <p class="text-xs text-muted-foreground mt-0.5">
+              Ikatan: {{ c.bundle_code }} ({{ c.quantity }} PCS {{ c.product_name }})
+            </p>
+          </div>
+          <button
+            type="button"
+            (click)="closeAssignModal()"
+            class="rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          >
+            <ng-icon name="phosphorX" class="size-5" />
+          </button>
+        </div>
+
+        <form (ngSubmit)="submitAssign()" class="mt-5 flex flex-col gap-4">
+          <div>
+            <label for="repairOperatorSelect" class="block text-xs font-semibold text-foreground mb-1.5">Operator Perbaikan *</label>
+            <select
+              id="repairOperatorSelect"
+              required
+              [ngModel]="selectedOperatorId()"
+              (ngModelChange)="selectedOperatorId.set($event)"
+              name="selectedOperatorId"
+              class="w-full rounded-full border border-border/80 bg-background px-4 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden"
+            >
+              <option value="" disabled>-- Pilih Operator --</option>
+              @for (op of operators(); track op.id) {
+                <option [value]="op.id">
+                  {{ op.employee_name }} ({{ op.operator_role }})
+                </option>
+              }
+            </select>
+          </div>
+
+          <div>
+            <span class="block text-xs font-semibold text-foreground mb-1.5">Mode Kompensasi Upah *</span>
+            <div class="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                (click)="wageMode.set('unpaid')"
+                class="rounded-2xl border p-3 text-center text-xs font-medium transition"
+                [class]="wageMode() === 'unpaid' ? 'border-primary bg-primary/10 text-primary font-bold' : 'border-border/80 bg-background text-muted-foreground hover:text-foreground'"
+              >
+                Tidak Dibayar (0)
+              </button>
+              <button
+                type="button"
+                (click)="wageMode.set('reference')"
+                class="rounded-2xl border p-3 text-center text-xs font-medium transition"
+                [class]="wageMode() === 'reference' ? 'border-primary bg-primary/10 text-primary font-bold' : 'border-border/80 bg-background text-muted-foreground hover:text-foreground'"
+              >
+                Tarif Acuan
+              </button>
+              <button
+                type="button"
+                (click)="wageMode.set('custom')"
+                class="rounded-2xl border p-3 text-center text-xs font-medium transition"
+                [class]="wageMode() === 'custom' ? 'border-primary bg-primary/10 text-primary font-bold' : 'border-border/80 bg-background text-muted-foreground hover:text-foreground'"
+              >
+                Tarif Khusus
+              </button>
+            </div>
+          </div>
+
+          @if (wageMode() === 'custom') {
+            <div>
+              <label for="repairCustomRate" class="block text-xs font-semibold text-foreground mb-1.5">Besaran Tarif Khusus (Rp/PCS) *</label>
+              <input
+                id="repairCustomRate"
+                type="number"
+                min="0"
+                step="100"
+                placeholder="Contoh: 1500"
+                [ngModel]="customRate()"
+                (ngModelChange)="customRate.set($event)"
+                name="customRate"
+                class="w-full rounded-full border border-border/80 bg-background px-4 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden"
+              />
+            </div>
+          }
+
+          <div>
+            <label for="repairNotes" class="block text-xs font-semibold text-foreground mb-1.5">Instruksi Perbaikan</label>
+            <input
+              id="repairNotes"
+              type="text"
+              placeholder="Catatan khusus untuk operator pengerja perbaikan"
+              [ngModel]="assignNotes()"
+              (ngModelChange)="assignNotes.set($event)"
+              name="assignNotes"
+              class="w-full rounded-full border border-border/80 bg-background px-4 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden"
+            />
+          </div>
+
+          <div class="mt-4 flex items-center justify-end gap-3 border-t border-border/80 pt-4">
+            <button
+              type="button"
+              (click)="closeAssignModal()"
+              class="rounded-full border border-border/80 bg-background px-5 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              [disabled]="isSubmitting()"
+              class="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:opacity-50"
+            >
+              @if (isSubmitting()) {
+                <ng-icon name="phosphorArrowsClockwise" class="size-4 animate-spin" />
+                <span>Menugaskan...</span>
+              } @else {
+                <ng-icon name="phosphorCheckCircle" class="size-4" />
+                <span>Terbitkan SPK Perbaikan</span>
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

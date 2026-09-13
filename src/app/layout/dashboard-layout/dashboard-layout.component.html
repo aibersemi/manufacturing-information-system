@@ -233,20 +233,52 @@
           @if (!isSidebarCollapsed() && isGroupOpen('operations')) {
             <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
               <a
-                routerLink="/work-orders"
+                routerLink="/workspace/production-orders"
                 routerLinkActive="text-foreground font-semibold"
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Perintah Kerja (WO)
+                Perintah Produksi (PP)
               </a>
               <a
-                routerLink="/operations"
+                routerLink="/workspace/spk"
                 routerLinkActive="text-foreground font-semibold"
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Lini Fabrikasi &amp; Mesin
+                Surat Perintah Kerja (SPK)
+              </a>
+              <a
+                routerLink="/workspace/operator-cutting"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Catat Potong (Operator)
+              </a>
+              <a
+                routerLink="/workspace/operator-printing"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Catat Sablon (Operator)
+              </a>
+              <a
+                routerLink="/workspace/production-repairs"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Perbaikan Produksi
+              </a>
+              <a
+                routerLink="/workspace/production-progress"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Progress Produksi
               </a>
             </div>
           }

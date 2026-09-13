@@ -1,0 +1,493 @@
+<div class="flex flex-col gap-6 p-4 md:p-6 lg:p-8">
+  <!-- Blueprint Header -->
+  <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-foreground">Perintah Produksi (PP)</h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Perencanaan target manufaktur multi-SKU dengan snapshot routing sablon atomik dan penguncian permanen.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        (click)="loadData()"
+        class="inline-flex items-center gap-2 rounded-full border border-border/80 bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
+        title="Muat Ulang Data"
+      >
+        <ng-icon name="phosphorArrowsClockwise" class="size-4" [class.animate-spin]="isLoading()" />
+        <span>Segarkan</span>
+      </button>
+      <button
+        type="button"
+        (click)="openCreateModal()"
+        class="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90"
+      >
+        <ng-icon name="phosphorPlus" class="size-4" />
+        <span>Buat Perintah Produksi</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  @if (successMessage()) {
+    <div class="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
+      <ng-icon name="phosphorCheckCircle" class="size-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+      <span class="font-medium">{{ successMessage() }}</span>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300">
+      <ng-icon name="phosphorWarningCircle" class="size-5 shrink-0 text-rose-600 dark:text-rose-400" />
+      <span class="font-medium">{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- KPI Cards -->
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <!-- Card 1 -->
+    <div class="rounded-3xl border border-border/80 bg-card p-5 shadow-xs transition hover:shadow-md">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Total PP</span>
+        <div class="flex size-9 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <ng-icon name="phosphorFileText" class="size-5" />
+        </div>
+      </div>
+      <div class="mt-3 flex items-baseline gap-2">
+        <span class="text-2xl font-bold tracking-tight text-foreground">{{ totalOrders() }}</span>
+        <span class="text-xs text-muted-foreground">Dokumen</span>
+      </div>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="rounded-3xl border border-border/80 bg-card p-5 shadow-xs transition hover:shadow-md">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-medium uppercase tracking-wider text-muted-foreground">PP Terkunci / Aktif</span>
+        <div class="flex size-9 items-center justify-center rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
+          <ng-icon name="phosphorLock" class="size-5" />
+        </div>
+      </div>
+      <div class="mt-3 flex items-baseline gap-2">
+        <span class="text-2xl font-bold tracking-tight text-foreground">{{ activeOrders() }}</span>
+        <span class="text-xs text-muted-foreground">Dalam Produksi</span>
+      </div>
+    </div>
+
+    <!-- Card 3 -->
+    <div class="rounded-3xl border border-border/80 bg-card p-5 shadow-xs transition hover:shadow-md">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-medium uppercase tracking-wider text-muted-foreground">PP Draf</span>
+        <div class="flex size-9 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
+          <ng-icon name="phosphorLockOpen" class="size-5" />
+        </div>
+      </div>
+      <div class="mt-3 flex items-baseline gap-2">
+        <span class="text-2xl font-bold tracking-tight text-foreground">{{ draftOrders() }}</span>
+        <span class="text-xs text-muted-foreground">Dapat Diedit</span>
+      </div>
+    </div>
+
+    <!-- Card 4 -->
+    <div class="rounded-3xl border border-border/80 bg-card p-5 shadow-xs transition hover:shadow-md">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Target Total Produksi</span>
+        <div class="flex size-9 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <ng-icon name="phosphorPackage" class="size-5" />
+        </div>
+      </div>
+      <div class="mt-3 flex items-baseline gap-2">
+        <span class="text-2xl font-bold tracking-tight text-foreground">{{ totalTargetPcs() | number }}</span>
+        <span class="text-xs text-muted-foreground">PCS</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters & Search Bar -->
+  <div class="flex flex-col gap-3 rounded-3xl border border-border/80 bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="relative w-full sm:w-80">
+      <ng-icon
+        name="phosphorMagnifyingGlass"
+        class="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
+      />
+      <input
+        type="text"
+        placeholder="Cari nomor PP, produk, catatan..."
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+        class="w-full rounded-full border border-border/80 bg-background py-2 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/20"
+      />
+    </div>
+
+    <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+      <button
+        type="button"
+        (click)="statusFilter.set('all')"
+        class="rounded-full px-4 py-1.5 text-xs font-medium transition"
+        [class]="statusFilter() === 'all' ? 'bg-primary text-primary-foreground' : 'border border-border/80 bg-background text-muted-foreground hover:text-foreground'"
+      >
+        Semua Status
+      </button>
+      <button
+        type="button"
+        (click)="statusFilter.set('draft')"
+        class="rounded-full px-4 py-1.5 text-xs font-medium transition"
+        [class]="statusFilter() === 'draft' ? 'bg-amber-600 text-white' : 'border border-border/80 bg-background text-muted-foreground hover:text-foreground'"
+      >
+        Draft
+      </button>
+      <button
+        type="button"
+        (click)="statusFilter.set('locked')"
+        class="rounded-full px-4 py-1.5 text-xs font-medium transition"
+        [class]="statusFilter() === 'locked' ? 'bg-blue-600 text-white' : 'border border-border/80 bg-background text-muted-foreground hover:text-foreground'"
+      >
+        Terkunci (Aktif)
+      </button>
+    </div>
+  </div>
+
+  <!-- Table Card -->
+  <div class="overflow-hidden rounded-3xl border border-border/80 bg-card shadow-xs">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="border-b border-border/80 bg-muted/30 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <tr>
+            <th class="px-5 py-4">Nomor Dokumen</th>
+            <th class="px-5 py-4">Tanggal Target</th>
+            <th class="px-5 py-4">Target SKU &amp; Jalur</th>
+            <th class="px-5 py-4 text-right">Target PCS</th>
+            <th class="px-5 py-4 text-center">Status Kunci</th>
+            <th class="px-5 py-4 text-right">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border/60">
+          @if (isLoading()) {
+            <tr>
+              <td colspan="6" class="px-5 py-12 text-center text-muted-foreground">
+                <div class="flex items-center justify-center gap-3">
+                  <ng-icon name="phosphorArrowsClockwise" class="size-5 animate-spin text-primary" />
+                  <span>Memuat data Perintah Produksi...</span>
+                </div>
+              </td>
+            </tr>
+          } @else if (filteredOrders().length === 0) {
+            <tr>
+              <td colspan="6" class="px-5 py-12 text-center text-muted-foreground">
+                <div class="flex flex-col items-center justify-center gap-2">
+                  <ng-icon name="phosphorFileText" class="size-8 text-muted-foreground/50" />
+                  <p class="font-medium text-foreground">Tidak ada Perintah Produksi ditemukan</p>
+                  <p class="text-xs">Klik tombol "Buat Perintah Produksi" untuk memulai pesanan manufaktur baru.</p>
+                </div>
+              </td>
+            </tr>
+          } @else {
+            @for (order of filteredOrders(); track order.id) {
+              <tr class="transition hover:bg-muted/40">
+                <td class="px-5 py-4 font-semibold text-foreground">
+                  {{ order.document_number }}
+                </td>
+                <td class="px-5 py-4 text-muted-foreground">
+                  {{ order.transaction_date | date:'dd MMM yyyy' }}
+                </td>
+                <td class="px-5 py-4">
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    @for (line of (order.lines || []); track line.id) {
+                      <span class="inline-flex items-center gap-1 rounded-full border border-border/80 bg-background px-2.5 py-0.5 text-xs text-foreground">
+                        <span>{{ line.product?.sku || line.product?.name || 'SKU' }} ({{ line.quantity }} pcs)</span>
+                        @if (line.requiresPrinting) {
+                          <span class="size-1.5 rounded-full bg-purple-500" title="Perlu Sablon"></span>
+                        } @else {
+                          <span class="size-1.5 rounded-full bg-sky-500" title="Langsung Jahit"></span>
+                        }
+                      </span>
+                    }
+                  </div>
+                </td>
+                <td class="px-5 py-4 text-right font-bold text-foreground">
+                  {{ getOrderTargetPcs(order) | number }}
+                </td>
+                <td class="px-5 py-4 text-center">
+                  @if (isOrderLocked(order)) {
+                    <span class="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
+                      <ng-icon name="phosphorLock" class="size-3.5" />
+                      Terkunci
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
+                      <ng-icon name="phosphorLockOpen" class="size-3.5" />
+                      Draft
+                    </span>
+                  }
+                </td>
+                <td class="px-5 py-4 text-right">
+                  <button
+                    type="button"
+                    (click)="viewOrderDetail(order)"
+                    class="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-background px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-muted"
+                  >
+                    <ng-icon name="phosphorEye" class="size-3.5" />
+                    <span>Rincian</span>
+                  </button>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal Buat Perintah Produksi -->
+  @if (isCreateModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm">
+      <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-border/80 bg-card p-6 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-border/80 pb-4">
+          <div>
+            <h2 class="text-lg font-bold text-foreground">Buat Perintah Produksi Baru</h2>
+            <p class="text-xs text-muted-foreground mt-0.5">Penetapan target kuantitas produk dan snapshot jalur sablon.</p>
+          </div>
+          <button
+            type="button"
+            (click)="closeCreateModal()"
+            class="rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          >
+            <ng-icon name="phosphorX" class="size-5" />
+          </button>
+        </div>
+
+        <!-- Banner Info Routing -->
+        <div class="mt-4 flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50/70 p-3.5 text-xs text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-200">
+          <ng-icon name="phosphorWarningCircle" class="size-4 shrink-0 text-blue-600 dark:text-blue-400 mt-0.5" />
+          <div>
+            <span class="font-semibold">Snapshot Jalur Routing Sablon:</span> Jalur routing sablon diambil secara atomik saat PP dibuat. Seluruh SKU wajib memiliki konfigurasi routing di Master SKU. Dokumen akan dikunci permanen saat SPK Potong pertama ditetapkan.
+          </div>
+        </div>
+
+        <form (ngSubmit)="submitCreateOrder()" class="mt-5 flex flex-col gap-4">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label for="poTargetDate" class="block text-xs font-semibold text-foreground mb-1.5">Tanggal Target Selesai *</label>
+              <input
+                id="poTargetDate"
+                type="date"
+                required
+                [ngModel]="targetDate()"
+                (ngModelChange)="targetDate.set($event)"
+                name="targetDate"
+                class="w-full rounded-full border border-border/80 bg-background px-4 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+            <div>
+              <label for="poNotes" class="block text-xs font-semibold text-foreground mb-1.5">Catatan Produksi</label>
+              <input
+                id="poNotes"
+                type="text"
+                placeholder="Contoh: Batch produksi kaos polo edisi lebaran"
+                [ngModel]="notes()"
+                (ngModelChange)="notes.set($event)"
+                name="notes"
+                class="w-full rounded-full border border-border/80 bg-background px-4 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+          </div>
+
+          <!-- Lines Input Table -->
+          <div class="mt-2">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Target Produk &amp; Kuantitas</span>
+              <button
+                type="button"
+                (click)="addLine()"
+                class="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-background px-3 py-1 text-xs font-medium text-foreground transition hover:bg-muted"
+              >
+                <ng-icon name="phosphorPlus" class="size-3.5" />
+                <span>Tambah SKU</span>
+              </button>
+            </div>
+
+            <div class="flex flex-col gap-2.5">
+              @for (line of formLines(); track $index; let i = $index) {
+                <div class="flex flex-col gap-2 rounded-2xl border border-border/80 bg-muted/20 p-3 sm:flex-row sm:items-center">
+                  <div class="flex-1">
+                    <select
+                      [ngModel]="line.productId"
+                      (ngModelChange)="updateLine(i, 'productId', $event)"
+                      [name]="'product_' + i"
+                      class="w-full rounded-full border border-border/80 bg-background px-4 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden"
+                    >
+                      <option value="" disabled>-- Pilih Produk SKU --</option>
+                      @for (p of products(); track p.id) {
+                        <option [value]="p.id">
+                          {{ p.name }} ({{ p.sku || 'No SKU' }}) - {{ p.requiresPrinting ? 'Perlu Sablon' : 'Tanpa Sablon' }}
+                        </option>
+                      }
+                    </select>
+                  </div>
+
+                  <div class="w-full sm:w-36">
+                    <div class="relative">
+                      <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        placeholder="Qty"
+                        [ngModel]="line.quantity"
+                        (ngModelChange)="updateLine(i, 'quantity', $event)"
+                        [name]="'quantity_' + i"
+                        class="w-full rounded-full border border-border/80 bg-background px-4 py-2 pr-12 text-sm text-foreground focus:border-primary focus:outline-hidden"
+                      />
+                      <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">PCS</span>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-between sm:justify-end gap-2">
+                    <span
+                      class="rounded-full px-2.5 py-1 text-xs font-medium"
+                      [class]="getProductRouting(line.productId) ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300' : 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300'"
+                    >
+                      {{ getProductRouting(line.productId) ? 'Sablon: Ya' : 'Sablon: Tidak' }}
+                    </span>
+
+                    <button
+                      type="button"
+                      (click)="removeLine(i)"
+                      [disabled]="formLines().length <= 1"
+                      class="rounded-full p-2 text-rose-600 transition hover:bg-rose-50 disabled:opacity-30 dark:text-rose-400 dark:hover:bg-rose-950"
+                      title="Hapus Baris"
+                    >
+                      <ng-icon name="phosphorTrash" class="size-4" />
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="mt-4 flex items-center justify-end gap-3 border-t border-border/80 pt-4">
+            <button
+              type="button"
+              (click)="closeCreateModal()"
+              class="rounded-full border border-border/80 bg-background px-5 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              [disabled]="isSubmitting()"
+              class="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:opacity-50"
+            >
+              @if (isSubmitting()) {
+                <ng-icon name="phosphorArrowsClockwise" class="size-4 animate-spin" />
+                <span>Menyimpan...</span>
+              } @else {
+                <ng-icon name="phosphorCheckCircle" class="size-4" />
+                <span>Simpan Perintah Produksi</span>
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Detail Perintah Produksi -->
+  @if (isDetailModalOpen() && selectedOrder(); as order) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm">
+      <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-border/80 bg-card p-6 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-border/80 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-lg font-bold text-foreground">{{ order.document_number }}</h2>
+              @if (isOrderLocked(order)) {
+                <span class="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
+                  <ng-icon name="phosphorLock" class="size-3" />
+                  Terkunci
+                </span>
+              } @else {
+                <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
+                  <ng-icon name="phosphorLockOpen" class="size-3" />
+                  Draft
+                </span>
+              }
+            </div>
+            <p class="text-xs text-muted-foreground mt-0.5">
+              Target Tanggal: {{ order.transaction_date | date:'dd MMMM yyyy' }}
+            </p>
+          </div>
+          <button
+            type="button"
+            (click)="closeDetailModal()"
+            class="rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          >
+            <ng-icon name="phosphorX" class="size-5" />
+          </button>
+        </div>
+
+        <div class="mt-4 flex flex-col gap-4">
+          <!-- Detail Target SKU -->
+          <div>
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Target SKU Produk</h3>
+            <div class="divide-y divide-border/60 rounded-2xl border border-border/80 bg-muted/20">
+              @for (line of order.lines; track line.id) {
+                <div class="flex items-center justify-between p-3 text-sm">
+                  <div>
+                    <span class="font-medium text-foreground">{{ line.product?.name || 'Produk' }}</span>
+                    <span class="text-xs text-muted-foreground ms-2">({{ line.product?.sku || 'No SKU' }})</span>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <span
+                      class="rounded-full px-2.5 py-0.5 text-xs font-medium"
+                      [class]="line.requiresPrinting ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300' : 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300'"
+                    >
+                      {{ line.requiresPrinting ? 'Perlu Sablon' : 'Tanpa Sablon' }}
+                    </span>
+                    <span class="font-bold text-foreground">{{ line.quantity | number }} PCS</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- SPK Terkait -->
+          <div>
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Daftar SPK yang Ditetapkan</h3>
+            @if (!order.spks || order.spks.length === 0) {
+              <div class="rounded-2xl border border-dashed border-border/80 p-4 text-center text-xs text-muted-foreground">
+                Belum ada SPK yang dibuat untuk Perintah Produksi ini.
+              </div>
+            } @else {
+              <div class="divide-y divide-border/60 rounded-2xl border border-border/80 bg-muted/20">
+                @for (spk of order.spks; track spk.id) {
+                  <div class="flex items-center justify-between p-3 text-sm">
+                    <div>
+                      <span class="font-semibold text-foreground">{{ spk.document_number }}</span>
+                      <span class="text-xs text-muted-foreground ms-2">Tahap: {{ spk.stage | uppercase }}</span>
+                      <div class="text-xs text-muted-foreground mt-0.5">
+                        Operator: <span class="text-foreground font-medium">{{ spk.operator_name }}</span>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                        {{ spk.business_status | uppercase }}
+                      </span>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="mt-6 flex justify-end border-t border-border/80 pt-4">
+          <button
+            type="button"
+            (click)="closeDetailModal()"
+            class="rounded-full bg-muted px-5 py-2 text-sm font-medium text-foreground transition hover:bg-muted/80"
+          >
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

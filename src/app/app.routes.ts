@@ -144,6 +144,49 @@ export const routes: Routes = [
             (m) => m.InventoryComponent
           ),
       },
+      // Operasional Produksi & SPK (Fase 5)
+      {
+        path: 'workspace/production-orders',
+        loadComponent: () =>
+          import('./features/production/orders/production-orders.component').then(
+            (m) => m.ProductionOrdersComponent
+          ),
+      },
+      {
+        path: 'workspace/spk',
+        loadComponent: () =>
+          import('./features/production/spk/spk.component').then(
+            (m) => m.SpkComponent
+          ),
+      },
+      {
+        path: 'workspace/operator-cutting',
+        loadComponent: () =>
+          import('./features/production/operator-cutting/operator-cutting.component').then(
+            (m) => m.OperatorCuttingComponent
+          ),
+      },
+      {
+        path: 'workspace/operator-printing',
+        loadComponent: () =>
+          import('./features/production/operator-printing/operator-printing.component').then(
+            (m) => m.OperatorPrintingComponent
+          ),
+      },
+      {
+        path: 'workspace/production-repairs',
+        loadComponent: () =>
+          import('./features/production/repairs/production-repairs.component').then(
+            (m) => m.ProductionRepairsComponent
+          ),
+      },
+      {
+        path: 'workspace/production-progress',
+        loadComponent: () =>
+          import('./features/production/progress/production-progress.component').then(
+            (m) => m.ProductionProgressComponent
+          ),
+      },
       {
         path: 'purchasing',
         redirectTo: 'workspace/purchase-materials',
@@ -152,6 +195,46 @@ export const routes: Routes = [
       {
         path: 'inventory',
         redirectTo: 'workspace/inventory',
+        pathMatch: 'full',
+      },
+      {
+        path: 'production',
+        redirectTo: 'workspace/production-orders',
+        pathMatch: 'full',
+      },
+      {
+        path: 'production/orders',
+        redirectTo: 'workspace/production-orders',
+        pathMatch: 'full',
+      },
+      {
+        path: 'production/spk',
+        redirectTo: 'workspace/spk',
+        pathMatch: 'full',
+      },
+      {
+        path: 'production/operator/cutting',
+        redirectTo: 'workspace/operator-cutting',
+        pathMatch: 'full',
+      },
+      {
+        path: 'production/operator/printing',
+        redirectTo: 'workspace/operator-printing',
+        pathMatch: 'full',
+      },
+      {
+        path: 'production/repairs',
+        redirectTo: 'workspace/production-repairs',
+        pathMatch: 'full',
+      },
+      {
+        path: 'production/progress',
+        redirectTo: 'workspace/production-progress',
+        pathMatch: 'full',
+      },
+      {
+        path: 'work-orders',
+        redirectTo: 'workspace/production-orders',
         pathMatch: 'full',
       },
       {

@@ -3136,9 +3136,65 @@ export type Database = {
     Functions: {
       app_current_company_id: { Args: never; Returns: string }
       app_current_user_id: { Args: never; Returns: string }
+      assign_repair_spk: {
+        Args: {
+          p_custom_rate: number
+          p_notes: string
+          p_operator_id: string
+          p_repair_case_id: string
+          p_user_id: string
+          p_wage_mode: string
+        }
+        Returns: Json
+      }
       bootstrap_company_data: {
         Args: { p_company_id: string; p_creator_user_id: string }
         Returns: undefined
+      }
+      confirm_operator_cutting: {
+        Args: {
+          p_actual_date: string
+          p_actual_lines: Json
+          p_bundles: Json
+          p_roll_id: string
+          p_spk_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      confirm_operator_printing: {
+        Args: {
+          p_bundle_id: string
+          p_notes: string
+          p_reject_qty: number
+          p_repair_qty: number
+          p_spk_id: string
+          p_success_qty: number
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      create_production_order: {
+        Args: {
+          p_company_id: string
+          p_lines: Json
+          p_notes: string
+          p_target_date: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      create_spk: {
+        Args: {
+          p_bundle_ids: Json
+          p_notes: string
+          p_operator_id: string
+          p_pp_id: string
+          p_stage: string
+          p_target_pcs: number
+          p_user_id: string
+        }
+        Returns: Json
       }
       get_company_users_with_profiles: {
         Args: { p_company_id: string }
@@ -3170,6 +3226,10 @@ export type Database = {
           unit_code: string
         }[]
       }
+      get_production_progress_summary: {
+        Args: { p_company_id: string }
+        Returns: Json
+      }
       get_user_company_ids: { Args: { p_user_id: string }; Returns: string[] }
       is_company_owner: {
         Args: { p_company_id: string; p_user_id: string }
@@ -3198,6 +3258,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      sync_production_operator_profiles: {
+        Args: { p_company_id: string }
+        Returns: number
       }
       void_purchase_document: {
         Args: { p_document_id: string; p_reason: string; p_user_id: string }

@@ -1,0 +1,421 @@
+<div class="flex flex-col gap-6 p-4 md:p-6 lg:p-8">
+  <!-- Blueprint Header -->
+  <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-foreground">Surat Perintah Kerja (SPK)</h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Manajemen penugasan SPK 4 tahapan alur manufaktur (Potong, Sablon, Jahit, Packing) dengan pelacakan operator.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        (click)="loadData()"
+        class="inline-flex items-center gap-2 rounded-full border border-border/80 bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
+        title="Muat Ulang Data"
+      >
+        <ng-icon name="phosphorArrowsClockwise" class="size-4" [class.animate-spin]="isLoading()" />
+        <span>Segarkan</span>
+      </button>
+      <button
+        type="button"
+        (click)="openCreateModal()"
+        class="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90"
+      >
+        <ng-icon name="phosphorPlus" class="size-4" />
+        <span>Terbitkan SPK {{ getStageLabel(activeStage()) }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  @if (successMessage()) {
+    <div class="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
+      <ng-icon name="phosphorCheckCircle" class="size-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+      <span class="font-medium">{{ successMessage() }}</span>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300">
+      <ng-icon name="phosphorWarningCircle" class="size-5 shrink-0 text-rose-600 dark:text-rose-400" />
+      <span class="font-medium">{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- Stage Tab Switcher Pill -->
+  <div class="flex items-center gap-2 overflow-x-auto rounded-3xl border border-border/80 bg-card p-2">
+    <button
+      type="button"
+      (click)="setStage('cutting')"
+      class="flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition"
+      [class]="activeStage() === 'cutting' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'"
+    >
+      <ng-icon name="phosphorScissors" class="size-4" />
+      <span>1. SPK Potong</span>
+    </button>
+    <button
+      type="button"
+      (click)="setStage('printing')"
+      class="flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition"
+      [class]="activeStage() === 'printing' ? 'bg-purple-600 text-white shadow-xs' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'"
+    >
+      <ng-icon name="phosphorShirtFolded" class="size-4" />
+      <span>2. SPK Sablon</span>
+    </button>
+    <button
+      type="button"
+      (click)="setStage('sewing')"
+      class="flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition"
+      [class]="activeStage() === 'sewing' ? 'bg-blue-600 text-white shadow-xs' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'"
+    >
+      <ng-icon name="phosphorTag" class="size-4" />
+      <span>3. SPK Jahit</span>
+    </button>
+    <button
+      type="button"
+      (click)="setStage('packing')"
+      class="flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition"
+      [class]="activeStage() === 'packing' ? 'bg-emerald-600 text-white shadow-xs' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'"
+    >
+      <ng-icon name="phosphorPackage" class="size-4" />
+      <span>4. SPK Packing</span>
+    </button>
+  </div>
+
+  <!-- Filter & Search Bar -->
+  <div class="flex flex-col gap-3 rounded-3xl border border-border/80 bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="relative w-full sm:w-80">
+      <ng-icon
+        name="phosphorMagnifyingGlass"
+        class="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
+      />
+      <input
+        type="text"
+        placeholder="Cari SPK, operator, PP acuan..."
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+        class="w-full rounded-full border border-border/80 bg-background py-2 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/20"
+      />
+    </div>
+
+    <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+      <button
+        type="button"
+        (click)="statusFilter.set('all')"
+        class="rounded-full px-4 py-1.5 text-xs font-medium transition"
+        [class]="statusFilter() === 'all' ? 'bg-primary text-primary-foreground' : 'border border-border/80 bg-background text-muted-foreground hover:text-foreground'"
+      >
+        Semua
+      </button>
+      <button
+        type="button"
+        (click)="statusFilter.set('assigned')"
+        class="rounded-full px-4 py-1.5 text-xs font-medium transition"
+        [class]="statusFilter() === 'assigned' ? 'bg-blue-600 text-white' : 'border border-border/80 bg-background text-muted-foreground hover:text-foreground'"
+      >
+        Menunggu
+      </button>
+      <button
+        type="button"
+        (click)="statusFilter.set('in_progress')"
+        class="rounded-full px-4 py-1.5 text-xs font-medium transition"
+        [class]="statusFilter() === 'in_progress' ? 'bg-amber-600 text-white' : 'border border-border/80 bg-background text-muted-foreground hover:text-foreground'"
+      >
+        Dalam Pengerjaan
+      </button>
+      <button
+        type="button"
+        (click)="statusFilter.set('completed')"
+        class="rounded-full px-4 py-1.5 text-xs font-medium transition"
+        [class]="statusFilter() === 'completed' ? 'bg-emerald-600 text-white' : 'border border-border/80 bg-background text-muted-foreground hover:text-foreground'"
+      >
+        Selesai
+      </button>
+    </div>
+  </div>
+
+  <!-- SPK Table Card -->
+  <div class="overflow-hidden rounded-3xl border border-border/80 bg-card shadow-xs">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="border-b border-border/80 bg-muted/30 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <tr>
+            <th class="px-5 py-4">Nomor SPK</th>
+            <th class="px-5 py-4">PP Acuan</th>
+            <th class="px-5 py-4">Operator Bertugas</th>
+            <th class="px-5 py-4 text-center">Ikatan / Qty</th>
+            <th class="px-5 py-4 text-center">Status</th>
+            <th class="px-5 py-4">Tanggal Ditetapkan</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border/60">
+          @if (isLoading()) {
+            <tr>
+              <td colspan="6" class="px-5 py-12 text-center text-muted-foreground">
+                <div class="flex items-center justify-center gap-3">
+                  <ng-icon name="phosphorArrowsClockwise" class="size-5 animate-spin text-primary" />
+                  <span>Memuat data SPK {{ getStageLabel(activeStage()) }}...</span>
+                </div>
+              </td>
+            </tr>
+          } @else if (filteredSpk().length === 0) {
+            <tr>
+              <td colspan="6" class="px-5 py-12 text-center text-muted-foreground">
+                <div class="flex flex-col items-center justify-center gap-2">
+                  <ng-icon name="phosphorFileText" class="size-8 text-muted-foreground/50" />
+                  <p class="font-medium text-foreground">Tidak ada SPK {{ getStageLabel(activeStage()) }} ditemukan</p>
+                  <p class="text-xs">Klik tombol "Terbitkan SPK" di atas untuk menugaskan operator.</p>
+                </div>
+              </td>
+            </tr>
+          } @else {
+            @for (spk of filteredSpk(); track spk.id) {
+              <tr class="transition hover:bg-muted/40">
+                <td class="px-5 py-4 font-semibold text-foreground">
+                  {{ spk.document_number }}
+                </td>
+                <td class="px-5 py-4 text-muted-foreground">
+                  {{ spk.production_order_number || 'Acuan PP' }}
+                </td>
+                <td class="px-5 py-4">
+                  <div class="flex items-center gap-2">
+                    <div class="flex size-7 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <ng-icon name="phosphorUser" class="size-3.5" />
+                    </div>
+                    <span class="font-medium text-foreground">{{ spk.operator_name }}</span>
+                  </div>
+                </td>
+                <td class="px-5 py-4 text-center">
+                  @if (spk.stage === 'cutting') {
+                    <span class="font-bold text-foreground">{{ spk.target_pcs | number }} PCS</span>
+                  } @else {
+                    <span class="inline-flex items-center gap-1 rounded-full border border-border/80 bg-background px-2.5 py-0.5 text-xs font-semibold text-foreground">
+                      <ng-icon name="phosphorTag" class="size-3 text-primary" />
+                      {{ spk.bundle_count || 0 }} Ikatan
+                    </span>
+                  }
+                </td>
+                <td class="px-5 py-4 text-center">
+                  @switch (spk.business_status) {
+                    @case ('assigned') {
+                      <span class="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
+                        Menunggu
+                      </span>
+                    }
+                    @case ('in_progress') {
+                      <span class="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
+                        Dikerjakan
+                      </span>
+                    }
+                    @case ('completed') {
+                      <span class="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+                        Selesai
+                      </span>
+                    }
+                    @default {
+                      <span class="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
+                        {{ spk.business_status }}
+                      </span>
+                    }
+                  }
+                </td>
+                <td class="px-5 py-4 text-xs text-muted-foreground">
+                  {{ spk.created_at | date:'dd MMM yyyy' }}
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal Terbitkan SPK -->
+  @if (isCreateModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm">
+      <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-border/80 bg-card p-6 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-border/80 pb-4">
+          <div>
+            <h2 class="text-lg font-bold text-foreground">Terbitkan SPK {{ getStageLabel(activeStage()) }}</h2>
+            <p class="text-xs text-muted-foreground mt-0.5">Penugasan resmi kepada operator dengan pelacakan kerja mandiri.</p>
+          </div>
+          <button
+            type="button"
+            (click)="closeCreateModal()"
+            class="rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          >
+            <ng-icon name="phosphorX" class="size-5" />
+          </button>
+        </div>
+
+        @if (activeStage() === 'cutting') {
+          <div class="mt-4 flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50/70 p-3.5 text-xs text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-200">
+            <ng-icon name="phosphorWarningCircle" class="size-4 shrink-0 text-blue-600 dark:text-blue-400 mt-0.5" />
+            <div>
+              <span class="font-semibold">Penguncian PP:</span> Menerbitkan SPK Potong pertama akan mengunci Perintah Produksi acuan secara permanen sehingga target produk tidak dapat lagi diubah atau dihapus.
+            </div>
+          </div>
+        }
+
+        <form (ngSubmit)="submitCreateSpk()" class="mt-5 flex flex-col gap-4">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label for="spkPpSelect" class="block text-xs font-semibold text-foreground mb-1.5">Perintah Produksi (PP) Acuan *</label>
+              <select
+                id="spkPpSelect"
+                required
+                [ngModel]="selectedPpId()"
+                (ngModelChange)="selectedPpId.set($event)"
+                name="selectedPpId"
+                class="w-full rounded-full border border-border/80 bg-background px-4 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="" disabled>-- Pilih Dokumen PP --</option>
+                @for (pp of productionOrders(); track pp.id) {
+                  <option [value]="pp.id">
+                    {{ pp.document_number }} (Target: {{ pp.transaction_date | date:'dd MMM yyyy' }})
+                  </option>
+                }
+              </select>
+            </div>
+
+            <div>
+              <label for="spkOperatorSelect" class="block text-xs font-semibold text-foreground mb-1.5">Operator yang Ditugaskan *</label>
+              <select
+                id="spkOperatorSelect"
+                required
+                [ngModel]="selectedOperatorId()"
+                (ngModelChange)="selectedOperatorId.set($event)"
+                name="selectedOperatorId"
+                class="w-full rounded-full border border-border/80 bg-background px-4 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="" disabled>-- Pilih Operator {{ getStageLabel(activeStage()) }} --</option>
+                @for (op of operators(); track op.id) {
+                  <option [value]="op.id">
+                    {{ op.employee_name }} ({{ op.operator_role }})
+                  </option>
+                }
+              </select>
+            </div>
+          </div>
+
+          @if (activeStage() === 'cutting') {
+            <div>
+              <label for="spkTargetPcs" class="block text-xs font-semibold text-foreground mb-1.5">Target Kuantitas PCS (Opsional - Kosongkan untuk mengikuti target PP)</label>
+              <input
+                id="spkTargetPcs"
+                type="number"
+                min="1"
+                step="1"
+                placeholder="Target PCS"
+                [ngModel]="targetPcs()"
+                (ngModelChange)="targetPcs.set($event)"
+                name="targetPcs"
+                class="w-full rounded-full border border-border/80 bg-background px-4 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden"
+              />
+            </div>
+          }
+
+          <div>
+            <label for="spkNotes" class="block text-xs font-semibold text-foreground mb-1.5">Instruksi / Catatan SPK</label>
+            <input
+              id="spkNotes"
+              type="text"
+              placeholder="Contoh: Perhatikan kerapian tepian potong atau presisi sablon"
+              [ngModel]="notes()"
+              (ngModelChange)="notes.set($event)"
+              name="notes"
+              class="w-full rounded-full border border-border/80 bg-background px-4 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden"
+            />
+          </div>
+
+          <!-- Multi-bundle Selection for printing, sewing, packing -->
+          @if (activeStage() !== 'cutting') {
+            <div class="mt-2">
+              <div class="flex items-center justify-between mb-2">
+                <div>
+                  <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Pilih Ikatan Komponen (Bundle)
+                  </span>
+                  <span class="text-xs text-primary font-bold ms-2">
+                    ({{ selectedBundleIds().length }} dipilih • {{ selectedBundlesTotalPcs() }} PCS)
+                  </span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    (click)="selectAllBundles()"
+                    class="rounded-full border border-border/80 bg-background px-3 py-1 text-xs font-medium text-foreground transition hover:bg-muted"
+                  >
+                    Pilih Semua
+                  </button>
+                  <button
+                    type="button"
+                    (click)="deselectAllBundles()"
+                    class="rounded-full border border-border/80 bg-background px-3 py-1 text-xs font-medium text-foreground transition hover:bg-muted"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+
+              @if (eligibleBundles().length === 0) {
+                <div class="rounded-2xl border border-dashed border-border/80 p-6 text-center text-xs text-muted-foreground">
+                  Tidak ada ikatan komponen yang tersedia untuk tahapan {{ getStageLabel(activeStage()) }}.
+                  Pastikan tahapan sebelumnya sudah dikonfirmasi oleh operator.
+                </div>
+              } @else {
+                <div class="max-h-56 overflow-y-auto divide-y divide-border/60 rounded-2xl border border-border/80 bg-muted/20">
+                  @for (b of eligibleBundles(); track b.id) {
+                    <label class="flex cursor-pointer items-center justify-between p-3 transition hover:bg-muted/40">
+                      <div class="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          [checked]="selectedBundleIds().includes(b.id)"
+                          (change)="toggleBundleSelection(b.id)"
+                          class="size-4 rounded-sm border-border text-primary focus:ring-primary/20"
+                        />
+                        <div>
+                          <div class="font-semibold text-foreground text-sm">{{ b.bundle_code }}</div>
+                          <div class="text-xs text-muted-foreground">
+                            {{ b.product_name }} • Lot: {{ b.lot_code || 'N/A' }} • PP: {{ b.production_order_number || 'N/A' }}
+                          </div>
+                        </div>
+                      </div>
+                      <span class="rounded-full bg-background border border-border/80 px-2.5 py-0.5 text-xs font-bold text-foreground">
+                        {{ b.active_quantity }} PCS
+                      </span>
+                    </label>
+                  }
+                </div>
+              }
+            </div>
+          }
+
+          <div class="mt-4 flex items-center justify-end gap-3 border-t border-border/80 pt-4">
+            <button
+              type="button"
+              (click)="closeCreateModal()"
+              class="rounded-full border border-border/80 bg-background px-5 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              [disabled]="isSubmitting()"
+              class="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:opacity-50"
+            >
+              @if (isSubmitting()) {
+                <ng-icon name="phosphorArrowsClockwise" class="size-4 animate-spin" />
+                <span>Menerbitkan...</span>
+              } @else {
+                <ng-icon name="phosphorCheckCircle" class="size-4" />
+                <span>Terbitkan SPK</span>
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

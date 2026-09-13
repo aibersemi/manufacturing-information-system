@@ -32,6 +32,7 @@ src/
 │   │   │   ├── auth.service.ts         # Reactive session & user state via Signals + waitForAuthReady()
 │   │   │   ├── company.service.ts      # Multi-company context, RLS tenant scope, & local storage persistence
 │   │   │   ├── master-data.service.ts  # Layanan CRUD UOM, Pelanggan, Pemasok, Material, Produk, BOM, Pegawai, & Tarif Upah
+│   │   │   ├── production.service.ts   # Layanan Operasional Pabrik: Perintah Produksi, SPK 4 Tahap, Catat Potong/Sablon, Bundle, & Repair
 │   │   │   ├── purchasing-inventory.service.ts # Layanan Pengadaan (Bahan, Perlengkapan, Non-Produksi, Pembayaran) & Inventaris
 │   │   │   ├── settings.service.ts     # Layanan CRUD Perusahaan, Penugasan Pengguna, Matriks Izin, Profil, & Audit
 │   │   │   ├── storage.service.ts      # Layanan upload, signed URL, & manajemen file Supabase Storage
@@ -51,6 +52,13 @@ src/
 │   │   │   ├── suppliers/              # Komponen pemasok bahan baku (/workspace/suppliers)
 │   │   │   ├── uom/                    # Komponen satuan pengukuran standar (/workspace/materials/uom)
 │   │   │   └── wage-rates/             # Komponen matriks tarif upah borongan (/workspace/wage-rates)
+│   │   ├── production/                 # Modul Operasional Pabrik & Produksi
+│   │   │   ├── orders/                 # Manajemen Perintah Produksi (PP) (/workspace/production-orders)
+│   │   │   ├── spk/                    # Surat Perintah Kerja 4 Tahap (/workspace/spk)
+│   │   │   ├── operator-cutting/       # Catat Hasil Potong Roll Kain Operator (/workspace/operator-cutting)
+│   │   │   ├── operator-printing/      # Catat Pengerjaan Sablon Operator (/workspace/operator-printing)
+│   │   │   ├── repairs/                # Kasus Perbaikan & Penugasan Ulang (/workspace/production-repairs)
+│   │   │   └── progress/               # Pipeline Progres Produksi & Visualisasi (/workspace/production-progress)
 │   │   ├── purchasing/                 # Modul Pengadaan & Pembelian
 │   │   │   ├── materials/              # Pengadaan Bahan Baku (/workspace/purchase-materials)
 │   │   │   ├── supplies/               # Pengadaan Perlengkapan Pabrik (/workspace/purchase-supplies)
@@ -251,5 +259,58 @@ Modul ini mengelola siklus lengkap pengadaan barang operasional dan pencatatan b
    - **Ringkasan Valuasi Stok (`get_inventory_summary`)**: Menampilkan posisi stok terkini, kuantitas masuk, kuantitas keluar, harga rata-rata bergerak (*Moving Average Cost*), dan estimasi total valuasi aset gudang per item.
    - **Buku Besar Kartu Mutasi (`inventory_movement`)**: Jejak transaksi mutasi persediaan perpetual berurutan waktu lengkap dengan referensi dokumen acuan.
    - **Pelacakan Unit Fisik Roll Kain (`production_material_unit`)**: Pemantauan fisik unit kemasan roll kain, kuantitas awal, sisa kuantitas dasar, satuan stok, dan status fisik (`available`, `allocated`, `consumed`, `voided`).
+
+---
+
+## Modul Operasional Pabrik & Produksi (Production & SPK Workflows)
+
+Modul ini mengelola alur manufaktur end-to-end dari penetapan target produksi hingga pembentukan barang jadi, mencakup 4 tahapan operasional (*Cutting*, *Printing*, *Sewing*, *Packing*), pelacakan ikatan/bundle, kasus perbaikan (*repair cases*), dan perhitungan upah borongan:
+
+1. **Perintah Produksi / Production Order (`production_order`)** (`/workspace/production-orders`):
+   - Mengelola dokumen induk pesanan manufaktur dengan penomoran urut otomatis `PP-YYMMDD-###` via RPC `create_production_order`.
+   - Snapshot jalur routing sablon fail-closed (`production_product_routing`) untuk setiap SKU terdaftar.
+   - Target kuantitas diatur dalam satuan bilangan bulat positif (`PCS`).
+   - Invariant penguncian permanen: saat SPK Potong pertama kali dibuat untuk PP ini, field `data.code_locked` otomatis terkunci menjadi `true` guna mencegah perubahan spesifikasi di tengah proses pabrikasi.
+
+2. **Surat Perintah Kerja 4 Tahap (`spk_*`)** (`/workspace/spk`):
+   - Penerbitan SPK untuk 4 tahapan stasiun kerja pabrik melalui RPC atomik `create_spk`:
+     - **SPK Potong**: `SPK-POT-YYMMDD-###` (khusus operator dengan profil `operator_potong`).
+     - **SPK Sablon**: `SPK-SAB-YYMMDD-###` (khusus operator dengan profil `operator_sablon`).
+     - **SPK Jahit**: `SPK-JAH-YYMMDD-###` (khusus operator dengan profil `operator_jahit`).
+     - **SPK Packing**: `SPK-PAK-YYMMDD-###` (khusus operator dengan profil `operator_packing`).
+   - Menyediakan pemilihan ikatan komponen (*bundles*) yang memenuhi syarat (*eligible bundles*) untuk diproses pada stasiun kerja terkait.
+   - Mengunci dan mencatat reservasi bundle ke dalam tabel `production_bundle_reservation` agar tidak terjadi penugasan ganda.
+
+3. **Catat Potong Roll Operator (`cutting_output`)** (`/workspace/operator-cutting`):
+   - Konfirmasi pengerjaan pemotongan bahan kain fisik berbasis roll utuh (`production_material_unit`) via RPC `confirm_operator_cutting`.
+   - Validasi kesesuaian formula Bill of Materials (BOM) aktif terhadap material roll kain yang dipotong.
+   - Mengonsumsi roll kain secara utuh (`status = 'consumed'`), membentuk Cutting Lot (`production_cutting_lot`), dan menerbitkan dokumen aktual `ACT-POT-YYMMDD-###`.
+   - Menghasilkan ikatan komponen fisik (`production_bundle`) berformat `LOT-YYMMDD-###-SKU-##` dengan ukuran, kuantitas aktif, dan kondisi `available` pada tahap `cutting`.
+   - Membukukan mutasi inventori WIP komponen potong (`cut_components`) dan menghitung kewajiban upah borongan pemotongan (`wage_liability`).
+
+4. **Catat Pengerjaan Sablon Operator (`printing_output`)** (`/workspace/operator-printing`):
+   - Konfirmasi hasil pengerjaan sablon per ikatan komponen via RPC `confirm_operator_printing`.
+   - Mengalokasikan hasil ke dalam 3 kategori kuantitas:
+     - **Kuantitas Sukses**: Komponen lolos sablon yang dipindahkan ke mutasi inventori `printed_components` dan siap masuk stasiun Jahit.
+     - **Kuantitas Butuh Perbaikan**: Komponen cacat tinta/noda yang otomatis memicu pembentukan Kasus Perbaikan (`production_repair_case`).
+     - **Kuantitas Reject**: Komponen rusak permanen yang dicatat ke `final_rejected_quantity`.
+   - Membukukan kewajiban upah borongan sablon (`wage_liability`) berdasarkan kuantitas yang diproses dan melepaskan reservasi bundle.
+   - Mengubah status SPK Sablon menjadi `completed` jika seluruh bundle terkait telah selesai dikonfirmasi.
+
+5. **Kasus Perbaikan & Penugasan SPK Repair (`repair_case`)** (`/workspace/production-repairs`):
+   - Manajemen pemantauan komponen cacat produksi dengan alur status: `open` -> `assigned` -> `in_progress` -> `completed` / `scrapped`.
+   - Penugasan penanganan kasus perbaikan kepada operator via RPC `assign_repair_spk`:
+     - Menerbitkan SPK Perbaikan khusus `SPK-REP-YYMMDD-###`.
+     - Mendukung 3 mode upah borongan:
+       - `none` / Penalty: Tarif upah Rp 0 (pengerjaan ulang akibat kelalaian pengerjaan).
+       - `reference`: Mengadopsi tarif standar layanan asli dari tabel `wage_rate`.
+       - `custom` / `special_rate`: Menetapkan tarif upah khusus yang disepakati secara manual.
+
+6. **Pipeline Progres Produksi & Visualisasi Metrik (`production_progress`)** (`/workspace/production-progress`):
+   - Pemantauan kemajuan terintegrasi seluruh Perintah Produksi melalui fungsi analitik `get_production_progress_summary`.
+   - Visualisasi pipeline kuantitas per tahapan: **Target PP** -> **Potong (Cut)** -> **Sablon (Print)** -> **Jahit (Sew)** -> **Kemas (Pack)**.
+   - Menghitung persentase penyelesaian pesanan (`completionPercentage`), jumlah ikatan aktif yang sedang beredar di lantai pabrik (*active bundles*), dan kasus perbaikan yang belum selesai (*active repairs*).
+   - Pemantauan status dokumen, target tanggal penyelesaian, dan indikator penguncian spesifikasi teknis (*code locked*).
+
 
 
