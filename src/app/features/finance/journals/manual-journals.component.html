@@ -1,0 +1,609 @@
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+        <ng-icon name="phosphorBookOpen" class="text-primary text-3xl" />
+        Jurnal Memorial / Manual
+      </h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Pencatatan transaksi penyesuaian, koreksi pembukuan, akrual akhir periode, dan jurnal pembalik langsung ke buku besar.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button
+        hlmBtn
+        variant="outline"
+        class="rounded-full gap-2 text-sm h-10 px-4"
+        (click)="refreshData()"
+        [disabled]="isLoading()"
+      >
+        <ng-icon name="phosphorArrowsClockwise" [class.animate-spin]="isLoading()" />
+        Muat Ulang
+      </button>
+      <button
+        hlmBtn
+        class="rounded-full gap-2 text-sm h-10 px-5 bg-primary text-primary-foreground hover:bg-primary/90"
+        (click)="openCreateModal()"
+      >
+        <ng-icon name="phosphorPlus" />
+        Buat Jurnal Baru
+      </button>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  @if (errorMessage()) {
+    <div class="flex items-center gap-3 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+      <ng-icon name="phosphorWarningCircle" class="text-xl shrink-0" />
+      <div class="flex-1 font-medium">{{ errorMessage() }}</div>
+      <button (click)="errorMessage.set(null)" class="text-destructive hover:opacity-80">
+        <ng-icon name="phosphorX" class="text-lg" />
+      </button>
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="flex items-center gap-3 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm">
+      <ng-icon name="phosphorCheckCircle" class="text-xl shrink-0" />
+      <div class="flex-1 font-medium">{{ successMessage() }}</div>
+      <button (click)="successMessage.set(null)" class="hover:opacity-80">
+        <ng-icon name="phosphorX" class="text-lg" />
+      </button>
+    </div>
+  }
+
+  <!-- KPI Metrics Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Jurnal Aktif Diposting</p>
+        <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+          <ng-icon name="phosphorCheckCircle" class="text-xl" />
+        </div>
+      </div>
+      <div class="mt-4">
+        <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ totalPostedJournalsCount() }} Dokumen</h3>
+        <p class="text-xs text-muted-foreground mt-1">Jurnal memorial sah di buku besar</p>
+      </div>
+    </div>
+
+    <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Jurnal Pembalik / Dibalik</p>
+        <div class="w-10 h-10 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+          <ng-icon name="phosphorArrowsLeftRight" class="text-xl" />
+        </div>
+      </div>
+      <div class="mt-4">
+        <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ totalReversalsCount() }} Transaksi</h3>
+        <p class="text-xs text-muted-foreground mt-1">Entri pembatalan & koreksi berpasangan</p>
+      </div>
+    </div>
+
+    <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nilai Transaksi Bulan Ini</p>
+        <div class="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+          <ng-icon name="phosphorMoney" class="text-xl" />
+        </div>
+      </div>
+      <div class="mt-4">
+        <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ formatRupiah(totalMemorialValueThisMonth()) }}</h3>
+        <p class="text-xs text-muted-foreground mt-1">Total mutasi memorial periode aktif</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Card -->
+  <div class="bg-card border border-border rounded-3xl shadow-xs overflow-hidden">
+    <!-- Filters Header -->
+    <div class="p-6 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="relative w-full md:w-80">
+        <ng-icon name="phosphorMagnifyingGlass" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm" />
+        <input
+          type="text"
+          placeholder="Cari no. entri, deskripsi, akun GL..."
+          class="w-full pl-9 pr-4 py-2 bg-background border border-input rounded-full text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+        />
+      </div>
+
+      <!-- Status Filter Pill -->
+      <div class="flex items-center gap-1.5 p-1 bg-muted/60 rounded-full text-xs">
+        <button
+          type="button"
+          class="px-3 py-1 rounded-full font-medium transition-all"
+          [class.bg-card]="statusFilter() === 'all'"
+          [class.text-foreground]="statusFilter() === 'all'"
+          [class.shadow-xs]="statusFilter() === 'all'"
+          [class.text-muted-foreground]="statusFilter() !== 'all'"
+          (click)="statusFilter.set('all')"
+        >
+          Semua
+        </button>
+        <button
+          type="button"
+          class="px-3 py-1 rounded-full font-medium transition-all"
+          [class.bg-card]="statusFilter() === 'posted'"
+          [class.text-foreground]="statusFilter() === 'posted'"
+          [class.shadow-xs]="statusFilter() === 'posted'"
+          [class.text-muted-foreground]="statusFilter() !== 'posted'"
+          (click)="statusFilter.set('posted')"
+        >
+          Diposting
+        </button>
+        <button
+          type="button"
+          class="px-3 py-1 rounded-full font-medium transition-all"
+          [class.bg-card]="statusFilter() === 'reversed'"
+          [class.text-foreground]="statusFilter() === 'reversed'"
+          [class.shadow-xs]="statusFilter() === 'reversed'"
+          [class.text-muted-foreground]="statusFilter() !== 'reversed'"
+          (click)="statusFilter.set('reversed')"
+        >
+          Telah Dibalik
+        </button>
+        <button
+          type="button"
+          class="px-3 py-1 rounded-full font-medium transition-all"
+          [class.bg-card]="statusFilter() === 'reversal'"
+          [class.text-foreground]="statusFilter() === 'reversal'"
+          [class.shadow-xs]="statusFilter() === 'reversal'"
+          [class.text-muted-foreground]="statusFilter() !== 'reversal'"
+          (click)="statusFilter.set('reversal')"
+        >
+          Jurnal Pembalik
+        </button>
+      </div>
+    </div>
+
+    <!-- Table Content -->
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left border-collapse">
+        <thead class="bg-muted/40 text-xs uppercase font-semibold text-muted-foreground border-b border-border">
+          <tr>
+            <th class="px-6 py-4">Nomor Jurnal</th>
+            <th class="px-6 py-4">Tanggal</th>
+            <th class="px-6 py-4">Keterangan / Memo</th>
+            <th class="px-6 py-4">Akun Terlibat</th>
+            <th class="px-6 py-4 text-right">Total Debit / Kredit</th>
+            <th class="px-6 py-4 text-center">Status</th>
+            <th class="px-6 py-4 text-center">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border font-normal">
+          @for (j of filteredJournals(); track j.id) {
+            <tr class="hover:bg-muted/20 transition-colors">
+              <td class="px-6 py-4 font-mono font-semibold text-primary text-xs whitespace-nowrap">
+                {{ j.entryNumber }}
+              </td>
+              <td class="px-6 py-4 text-xs font-mono text-muted-foreground whitespace-nowrap">
+                {{ j.transactionDate | date:'dd/MM/yyyy' }}
+              </td>
+              <td class="px-6 py-4 max-w-xs">
+                <p class="font-medium text-foreground truncate">{{ j.description || j.memo || '-' }}</p>
+                @if (j.reversalOfId) {
+                  <span class="inline-flex items-center gap-1 text-xs text-purple-600 dark:text-purple-400 mt-0.5">
+                    <ng-icon name="phosphorArrowsLeftRight" />
+                    Pembalik Jurnal Sebelumnya
+                  </span>
+                }
+              </td>
+              <td class="px-6 py-4 text-xs text-muted-foreground whitespace-nowrap">
+                <p class="font-mono text-foreground font-medium">{{ j.lines[0]?.accountCode }} - {{ j.lines[0]?.accountName }}</p>
+                @if (j.lines.length > 1) {
+                  <p class="mt-0.5">+{{ j.lines.length - 1 }} akun lainnya</p>
+                }
+              </td>
+              <td class="px-6 py-4 text-right font-bold text-foreground whitespace-nowrap">
+                {{ formatRupiah(getJournalTotalAmount(j)) }}
+              </td>
+              <td class="px-6 py-4 text-center whitespace-nowrap">
+                @if (j.status === 'reversed') {
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                    Dibalik (Reversed)
+                  </span>
+                } @else if (j.reversalOfId) {
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                    Entri Pembalik
+                  </span>
+                } @else {
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    Diposting
+                  </span>
+                }
+              </td>
+              <td class="px-6 py-4 text-center whitespace-nowrap">
+                <div class="flex items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    class="p-1.5 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors"
+                    title="Lihat Detail Jurnal"
+                    (click)="openDetailModal(j)"
+                  >
+                    <ng-icon name="phosphorEye" class="text-base" />
+                  </button>
+                  @if (j.status === 'posted' && !j.reversalOfId) {
+                    <button
+                      type="button"
+                      class="p-1.5 text-rose-600 hover:text-rose-700 dark:text-rose-400 rounded-full hover:bg-rose-500/10 transition-colors"
+                      title="Balikkan Jurnal Ini (Reverse)"
+                      (click)="openReverseModal(j)"
+                    >
+                      <ng-icon name="phosphorArrowsLeftRight" class="text-base" />
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7" class="px-6 py-12 text-center text-muted-foreground text-sm">
+                Tidak ada jurnal memorial yang sesuai dengan filter.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal Buat Jurnal Baru -->
+  @if (isCreateModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs">
+      <div class="bg-card border border-border rounded-3xl max-w-3xl w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col">
+        <!-- Header -->
+        <div class="px-6 py-5 border-b border-border flex items-center justify-between shrink-0">
+          <div>
+            <h3 class="text-base font-bold text-foreground flex items-center gap-2">
+              <ng-icon name="phosphorBookOpen" class="text-primary" />
+              Buat Jurnal Memorial / Manual Baru
+            </h3>
+            <p class="text-xs text-muted-foreground mt-0.5">
+              Input entri jurnal seimbang langsung ke general ledger (debit = kredit).
+            </p>
+          </div>
+          <button
+            class="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted transition-colors"
+            (click)="closeCreateModal()"
+          >
+            <ng-icon name="phosphorX" class="text-lg" />
+          </button>
+        </div>
+
+        <!-- Body (Scrollable) -->
+        <div class="p-6 space-y-5 overflow-y-auto flex-1">
+          <!-- Parameter Header -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label for="manual-journal-date" class="block text-xs font-semibold text-foreground mb-1.5">
+                Tanggal Transaksi <span class="text-destructive">*</span>
+              </label>
+              <input
+                id="manual-journal-date"
+                type="date"
+                class="w-full px-4 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                [ngModel]="transactionDate()"
+                (ngModelChange)="transactionDate.set($event)"
+              />
+            </div>
+            <div class="sm:col-span-2">
+              <label for="manual-journal-desc" class="block text-xs font-semibold text-foreground mb-1.5">
+                Deskripsi / Keterangan Jurnal <span class="text-destructive">*</span>
+              </label>
+              <input
+                id="manual-journal-desc"
+                type="text"
+                placeholder="Contoh: Penyesuaian persediaan rusak, akrual bunga bank..."
+                class="w-full px-4 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                [ngModel]="journalDescription()"
+                (ngModelChange)="journalDescription.set($event)"
+              />
+            </div>
+          </div>
+
+          <!-- Lines Editor -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold text-foreground">
+                Baris Akun Jurnal (Minimal 2 Baris) <span class="text-destructive">*</span>
+              </span>
+              <button
+                type="button"
+                class="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1"
+                (click)="addLine()"
+              >
+                <ng-icon name="phosphorPlus" />
+                Tambah Baris Akun
+              </button>
+            </div>
+
+            <div class="space-y-3">
+              @for (line of journalLines(); track $index; let idx = $index) {
+                <div class="p-3.5 bg-muted/30 border border-border rounded-2xl space-y-2.5">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-muted-foreground">Pos Jurnal #{{ idx + 1 }}</span>
+                    @if (journalLines().length > 2) {
+                      <button
+                        type="button"
+                        class="text-destructive hover:opacity-80 p-1 text-xs"
+                        (click)="removeLine(idx)"
+                      >
+                        <ng-icon name="phosphorTrash" class="text-sm" />
+                      </button>
+                    }
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                    <div class="sm:col-span-5">
+                      <select
+                        class="w-full px-3 py-2 bg-background border border-input rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        [ngModel]="line.accountId"
+                        (ngModelChange)="updateLine(idx, { accountId: $event })"
+                      >
+                        <option value="" disabled>Pilih Akun GL</option>
+                        @for (acc of allowedAccounts(); track acc.id) {
+                          <option [value]="acc.id">{{ acc.code }} - {{ acc.name }}</option>
+                        }
+                      </select>
+                    </div>
+
+                    <div class="sm:col-span-3">
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Debit (Rp)"
+                        class="w-full px-3 py-2 bg-background border border-input rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring font-mono text-right"
+                        [ngModel]="line.debit"
+                        (ngModelChange)="updateLine(idx, { debit: $event ? +$event : null })"
+                      />
+                    </div>
+
+                    <div class="sm:col-span-3">
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Kredit (Rp)"
+                        class="w-full px-3 py-2 bg-background border border-input rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring font-mono text-right"
+                        [ngModel]="line.credit"
+                        (ngModelChange)="updateLine(idx, { credit: $event ? +$event : null })"
+                      />
+                    </div>
+
+                    <div class="sm:col-span-12">
+                      <input
+                        type="text"
+                        placeholder="Uraian baris jurnal (opsional)..."
+                        class="w-full px-3 py-1.5 bg-background border border-input rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        [ngModel]="line.description"
+                        (ngModelChange)="updateLine(idx, { description: $event })"
+                      />
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Real-time Balance Box -->
+          <div
+            class="p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors"
+            [class.bg-emerald-500/10]="isFormBalanced()"
+            [class.border-emerald-500/30]="isFormBalanced()"
+            [class.bg-rose-500/10]="!isFormBalanced()"
+            [class.border-rose-500/30]="!isFormBalanced()"
+          >
+            <div class="flex items-center gap-3">
+              <ng-icon
+                [name]="isFormBalanced() ? 'phosphorCheckCircle' : 'phosphorWarningCircle'"
+                class="text-2xl shrink-0"
+                [class.text-emerald-600]="isFormBalanced()"
+                [class.dark:text-emerald-400]="isFormBalanced()"
+                [class.text-rose-600]="!isFormBalanced()"
+                [class.dark:text-rose-400]="!isFormBalanced()"
+              />
+              <div>
+                <p class="text-xs font-bold uppercase tracking-wider"
+                  [class.text-emerald-600]="isFormBalanced()"
+                  [class.dark:text-emerald-400]="isFormBalanced()"
+                  [class.text-rose-600]="!isFormBalanced()"
+                  [class.dark:text-rose-400]="!isFormBalanced()"
+                >
+                  {{ isFormBalanced() ? 'JURNAL SEIMBANG (BALANCE)' : 'JURNAL TIDAK SEIMBANG' }}
+                </p>
+                <p class="text-xs text-muted-foreground mt-0.5">
+                  Debit: <strong class="text-foreground">{{ formatRupiah(totalFormDebit()) }}</strong> | Kredit: <strong class="text-foreground">{{ formatRupiah(totalFormCredit()) }}</strong>
+                  @if (!isFormBalanced()) {
+                    <span class="text-rose-600 dark:text-rose-400 ml-1 font-bold">(Selisih: {{ formatRupiah(formDifference()) }})</span>
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 py-4 bg-muted/40 border-t border-border flex items-center justify-end gap-3 shrink-0">
+          <button
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm h-10 px-5"
+            (click)="closeCreateModal()"
+            [disabled]="isSubmitting()"
+          >
+            Batal
+          </button>
+          <button
+            hlmBtn
+            class="rounded-full text-sm h-10 px-6 bg-primary text-primary-foreground hover:bg-primary/90"
+            (click)="submitJournal()"
+            [disabled]="!isFormBalanced() || isSubmitting()"
+          >
+            @if (isSubmitting()) {
+              <ng-icon name="phosphorArrowsClockwise" class="animate-spin mr-2" />
+              Menyimpan...
+            } @else {
+              Posting Jurnal Memorial
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Detail Jurnal -->
+  @if (selectedJournalForDetail(); as j) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs">
+      <div class="bg-card border border-border rounded-3xl max-w-xl w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div class="px-6 py-5 border-b border-border flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-foreground flex items-center gap-2">
+              <ng-icon name="phosphorBookOpen" class="text-primary" />
+              Detail {{ j.entryNumber }}
+            </h3>
+            <p class="text-xs text-muted-foreground mt-0.5">
+              Tanggal: {{ j.transactionDate | date:'dd MMMM yyyy' }}
+            </p>
+          </div>
+          <button
+            class="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted transition-colors"
+            (click)="closeDetailModal()"
+          >
+            <ng-icon name="phosphorX" class="text-lg" />
+          </button>
+        </div>
+
+        <div class="p-6 space-y-4">
+          @if (j.status === 'reversed') {
+            <div class="p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-600 dark:text-rose-400 text-xs font-medium">
+              Jurnal ini telah dibalik (reversed) oleh entri jurnal koreksi.
+            </div>
+          }
+          @if (j.reversalOfId) {
+            <div class="p-3.5 bg-purple-500/10 border border-purple-500/20 rounded-2xl text-purple-600 dark:text-purple-400 text-xs font-medium">
+              Dokumen ini merupakan jurnal pembalik untuk transaksi sebelumnya.
+            </div>
+          }
+
+          <div class="text-xs">
+            <span class="text-muted-foreground">Uraian / Memo:</span>
+            <p class="font-medium text-foreground text-sm mt-0.5">{{ j.description || j.memo || '-' }}</p>
+          </div>
+
+          <div class="border border-border rounded-2xl overflow-hidden">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-muted/40 font-semibold text-muted-foreground border-b border-border">
+                <tr>
+                  <th class="px-4 py-2.5">Akun GL</th>
+                  <th class="px-4 py-2.5">Deskripsi</th>
+                  <th class="px-4 py-2.5 text-right">Debit</th>
+                  <th class="px-4 py-2.5 text-right">Kredit</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border">
+                @for (l of j.lines; track l.id || $index) {
+                  <tr>
+                    <td class="px-4 py-2.5 font-mono text-primary">{{ l.accountCode }} - {{ l.accountName }}</td>
+                    <td class="px-4 py-2.5 text-foreground">{{ l.description || '-' }}</td>
+                    <td class="px-4 py-2.5 text-right font-mono font-semibold text-foreground">
+                      {{ l.debit > 0 ? formatRupiah(l.debit) : '-' }}
+                    </td>
+                    <td class="px-4 py-2.5 text-right font-mono font-semibold text-foreground">
+                      {{ l.credit > 0 ? formatRupiah(l.credit) : '-' }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <div class="pt-2 flex items-center justify-between text-xs font-bold">
+            <span class="text-muted-foreground">Total Jurnal:</span>
+            <span class="text-sm font-bold text-foreground">{{ formatRupiah(getJournalTotalAmount(j)) }}</span>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 bg-muted/40 border-t border-border flex items-center justify-end">
+          <button
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm h-10 px-5"
+            (click)="closeDetailModal()"
+          >
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Reverse Jurnal -->
+  @if (selectedJournalForReverse(); as j) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs">
+      <div class="bg-card border border-border rounded-3xl max-w-md w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div class="px-6 py-5 border-b border-border flex items-center justify-between">
+          <h3 class="text-base font-bold text-rose-600 dark:text-rose-400 flex items-center gap-2">
+            <ng-icon name="phosphorArrowsLeftRight" />
+            Pembalik Jurnal Memorial (Reversal)
+          </h3>
+          <button
+            class="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted transition-colors"
+            (click)="closeReverseModal()"
+          >
+            <ng-icon name="phosphorX" class="text-lg" />
+          </button>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <p class="text-sm text-foreground">
+            Anda akan membalik jurnal <strong class="font-mono text-primary">{{ j.entryNumber }}</strong> senilai <strong>{{ formatRupiah(getJournalTotalAmount(j)) }}</strong>.
+          </p>
+          <p class="text-xs text-muted-foreground">
+            Sistem akan secara atomik membuat entri jurnal pembalik dengan memutar posisi debit dan kredit dari transaksi ini.
+          </p>
+
+          <div>
+            <label for="journal-reverse-reason" class="block text-xs font-semibold text-foreground mb-1.5">
+              Alasan Pembalikan <span class="text-destructive">*</span>
+            </label>
+            <textarea
+              id="journal-reverse-reason"
+              rows="3"
+              placeholder="Contoh: Koreksi salah kode akun, penyesuaian dibatalkan..."
+              class="w-full px-4 py-2 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              [ngModel]="reverseReason()"
+              (ngModelChange)="reverseReason.set($event)"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 bg-muted/40 border-t border-border flex items-center justify-end gap-3">
+          <button
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm h-10 px-5"
+            (click)="closeReverseModal()"
+            [disabled]="isSubmitting()"
+          >
+            Batal
+          </button>
+          <button
+            hlmBtn
+            class="rounded-full text-sm h-10 px-6 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            (click)="submitReverse()"
+            [disabled]="isSubmitting()"
+          >
+            @if (isSubmitting()) {
+              <ng-icon name="phosphorArrowsClockwise" class="animate-spin mr-2" />
+              Memproses...
+            } @else {
+              Balikkan Jurnal Ini
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

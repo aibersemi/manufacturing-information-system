@@ -1,0 +1,674 @@
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+        <ng-icon name="phosphorReceipt" class="text-primary text-3xl" />
+        Biaya Operasional (Operating Expenses)
+      </h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Pencatatan pengeluaran operasional multi-akun dengan metode pembayaran kas langsung atau hutang akrual supplier.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button
+        hlmBtn
+        variant="outline"
+        class="rounded-full gap-2 text-sm h-10 px-4"
+        (click)="refreshData()"
+        [disabled]="isLoading()"
+      >
+        <ng-icon name="phosphorArrowsClockwise" [class.animate-spin]="isLoading()" />
+        Muat Ulang
+      </button>
+      <button
+        hlmBtn
+        class="rounded-full gap-2 text-sm h-10 px-5 bg-primary text-primary-foreground hover:bg-primary/90"
+        (click)="openCreateModal()"
+      >
+        <ng-icon name="phosphorPlus" />
+        Catat Beban Operasional
+      </button>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  @if (errorMessage()) {
+    <div class="flex items-center gap-3 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+      <ng-icon name="phosphorWarningCircle" class="text-xl shrink-0" />
+      <div class="flex-1 font-medium">{{ errorMessage() }}</div>
+      <button (click)="errorMessage.set(null)" class="text-destructive hover:opacity-80">
+        <ng-icon name="phosphorX" class="text-lg" />
+      </button>
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="flex items-center gap-3 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm">
+      <ng-icon name="phosphorCheckCircle" class="text-xl shrink-0" />
+      <div class="flex-1 font-medium">{{ successMessage() }}</div>
+      <button (click)="successMessage.set(null)" class="hover:opacity-80">
+        <ng-icon name="phosphorX" class="text-lg" />
+      </button>
+    </div>
+  }
+
+  <!-- KPI Metrics Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Beban Bulan Ini</p>
+        <div class="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+          <ng-icon name="phosphorReceipt" class="text-xl" />
+        </div>
+      </div>
+      <div class="mt-4">
+        <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ formatRupiah(totalExpenseThisMonth()) }}</h3>
+        <p class="text-xs text-muted-foreground mt-1">Total beban aktif periode berjalan</p>
+      </div>
+    </div>
+
+    <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Beban Tunai (Kas)</p>
+        <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+          <ng-icon name="phosphorMoney" class="text-xl" />
+        </div>
+      </div>
+      <div class="mt-4">
+        <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ formatRupiah(totalCashExpenses()) }}</h3>
+        <p class="text-xs text-muted-foreground mt-1">Dibayar langsung dari kas/bank</p>
+      </div>
+    </div>
+
+    <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Beban Hutang (Payable)</p>
+        <div class="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+          <ng-icon name="phosphorCreditCard" class="text-xl" />
+        </div>
+      </div>
+      <div class="mt-4">
+        <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ formatRupiah(totalPayableExpenses()) }}</h3>
+        <p class="text-xs text-muted-foreground mt-1">Kewajiban hutang biaya ke supplier</p>
+      </div>
+    </div>
+
+    <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dokumen Dibatalkan</p>
+        <div class="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+          <ng-icon name="phosphorXCircle" class="text-xl" />
+        </div>
+      </div>
+      <div class="mt-4">
+        <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ totalVoidExpensesCount() }} Dokumen</h3>
+        <p class="text-xs text-muted-foreground mt-1">Status void dengan jurnal pembalik</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Expenses Table Card -->
+  <div class="bg-card border border-border rounded-3xl shadow-xs overflow-hidden">
+    <!-- Filters Header -->
+    <div class="p-6 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="relative w-full md:w-80">
+        <ng-icon name="phosphorMagnifyingGlass" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm" />
+        <input
+          type="text"
+          placeholder="Cari no. dokumen, supplier, uraian..."
+          class="w-full pl-9 pr-4 py-2 bg-background border border-input rounded-full text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+        />
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Filter Status -->
+        <div class="flex items-center gap-1.5 p-1 bg-muted/60 rounded-full text-xs">
+          <button
+            type="button"
+            class="px-3 py-1 rounded-full font-medium transition-all"
+            [class.bg-card]="statusFilter() === 'all'"
+            [class.text-foreground]="statusFilter() === 'all'"
+            [class.shadow-xs]="statusFilter() === 'all'"
+            [class.text-muted-foreground]="statusFilter() !== 'all'"
+            (click)="statusFilter.set('all')"
+          >
+            Semua
+          </button>
+          <button
+            type="button"
+            class="px-3 py-1 rounded-full font-medium transition-all"
+            [class.bg-card]="statusFilter() === 'posted'"
+            [class.text-foreground]="statusFilter() === 'posted'"
+            [class.shadow-xs]="statusFilter() === 'posted'"
+            [class.text-muted-foreground]="statusFilter() !== 'posted'"
+            (click)="statusFilter.set('posted')"
+          >
+            Diposting
+          </button>
+          <button
+            type="button"
+            class="px-3 py-1 rounded-full font-medium transition-all"
+            [class.bg-card]="statusFilter() === 'void'"
+            [class.text-foreground]="statusFilter() === 'void'"
+            [class.shadow-xs]="statusFilter() === 'void'"
+            [class.text-muted-foreground]="statusFilter() !== 'void'"
+            (click)="statusFilter.set('void')"
+          >
+            Dibatalkan (Void)
+          </button>
+        </div>
+
+        <!-- Filter Metode Pendanaan -->
+        <select
+          class="px-3 py-1.5 bg-background border border-input rounded-full text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          [ngModel]="fundingMethodFilter()"
+          (ngModelChange)="fundingMethodFilter.set($event)"
+        >
+          <option value="all">Semua Metode</option>
+          <option value="cash">Kas Langsung (Tunai)</option>
+          <option value="payable">Hutang (Akrual)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Table Content -->
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left border-collapse">
+        <thead class="bg-muted/40 text-xs uppercase font-semibold text-muted-foreground border-b border-border">
+          <tr>
+            <th class="px-6 py-4">Nomor Dokumen</th>
+            <th class="px-6 py-4">Tanggal</th>
+            <th class="px-6 py-4">Metode Bayar</th>
+            <th class="px-6 py-4">Sumber / Pihak Terkait</th>
+            <th class="px-6 py-4">Rincian Akun & Item</th>
+            <th class="px-6 py-4 text-right">Total Beban</th>
+            <th class="px-6 py-4 text-center">Status</th>
+            <th class="px-6 py-4 text-center">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border font-normal">
+          @for (exp of filteredExpenses(); track exp.id) {
+            <tr class="hover:bg-muted/20 transition-colors">
+              <td class="px-6 py-4 font-mono font-semibold text-primary text-xs whitespace-nowrap">
+                {{ exp.documentNumber }}
+              </td>
+              <td class="px-6 py-4 text-xs font-mono text-muted-foreground whitespace-nowrap">
+                {{ exp.transactionDate | date:'dd/MM/yyyy' }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                @if (exp.fundingMethod === 'cash') {
+                  <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    <ng-icon name="phosphorMoney" class="text-xs" />
+                    Kas Langsung
+                  </span>
+                } @else {
+                  <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                    <ng-icon name="phosphorCreditCard" class="text-xs" />
+                    Hutang Supplier
+                  </span>
+                }
+              </td>
+              <td class="px-6 py-4 text-foreground whitespace-nowrap">
+                @if (exp.fundingMethod === 'cash') {
+                  <span class="font-medium">{{ exp.cashAccountName || 'Rekening Kas' }}</span>
+                } @else {
+                  <span class="font-medium">{{ exp.supplierName || 'Supplier Umum' }}</span>
+                }
+              </td>
+              <td class="px-6 py-4 max-w-xs">
+                <p class="font-medium text-foreground truncate">
+                  {{ exp.lines[0]?.description || '-' }}
+                </p>
+                @if (exp.lines.length > 1) {
+                  <p class="text-xs text-muted-foreground mt-0.5">
+                    +{{ exp.lines.length - 1 }} akun/uraian lainnya
+                  </p>
+                }
+              </td>
+              <td class="px-6 py-4 text-right font-bold text-foreground whitespace-nowrap">
+                {{ formatRupiah(exp.totalAmount) }}
+              </td>
+              <td class="px-6 py-4 text-center whitespace-nowrap">
+                @if (exp.status === 'posted') {
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    Diposting
+                  </span>
+                } @else {
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                    Void (Batal)
+                  </span>
+                }
+              </td>
+              <td class="px-6 py-4 text-center whitespace-nowrap">
+                <div class="flex items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    class="p-1.5 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors"
+                    title="Lihat Detail"
+                    (click)="openDetailModal(exp)"
+                  >
+                    <ng-icon name="phosphorEye" class="text-base" />
+                  </button>
+                  @if (exp.status === 'posted') {
+                    <button
+                      type="button"
+                      class="p-1.5 text-rose-600 hover:text-rose-700 dark:text-rose-400 rounded-full hover:bg-rose-500/10 transition-colors"
+                      title="Batalkan Dokumen (Void)"
+                      (click)="openVoidModal(exp)"
+                    >
+                      <ng-icon name="phosphorXCircle" class="text-base" />
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="8" class="px-6 py-12 text-center text-muted-foreground text-sm">
+                Belum ada dokumen biaya operasional yang sesuai dengan kriteria filter.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal Catat Biaya Operasional -->
+  @if (isCreateModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs">
+      <div class="bg-card border border-border rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col">
+        <!-- Modal Header -->
+        <div class="px-6 py-5 border-b border-border flex items-center justify-between shrink-0">
+          <div>
+            <h3 class="text-base font-bold text-foreground flex items-center gap-2">
+              <ng-icon name="phosphorReceipt" class="text-primary" />
+              Catat Biaya Operasional Baru
+            </h3>
+            <p class="text-xs text-muted-foreground mt-0.5">
+              Dokumen BO akan mendebit akun beban dan mengkredit akun kas atau hutang secara atomik.
+            </p>
+          </div>
+          <button
+            class="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted transition-colors"
+            (click)="closeCreateModal()"
+          >
+            <ng-icon name="phosphorX" class="text-lg" />
+          </button>
+        </div>
+
+        <!-- Modal Body (Scrollable) -->
+        <div class="p-6 space-y-5 overflow-y-auto flex-1">
+          <!-- Tanggal & Metode Bayar -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="expense-date-input" class="block text-xs font-semibold text-foreground mb-1.5">
+                Tanggal Transaksi <span class="text-destructive">*</span>
+              </label>
+              <input
+                id="expense-date-input"
+                type="date"
+                class="w-full px-4 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                [ngModel]="expenseDate()"
+                (ngModelChange)="expenseDate.set($event)"
+              />
+            </div>
+            <div>
+              <span class="block text-xs font-semibold text-foreground mb-1.5">
+                Metode Pendanaan <span class="text-destructive">*</span>
+              </span>
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  class="flex-1 py-2 px-3 rounded-2xl text-xs font-semibold border transition-all flex items-center justify-center gap-1.5"
+                  [class.bg-emerald-500/10]="fundingMethod() === 'cash'"
+                  [class.border-emerald-500/30]="fundingMethod() === 'cash'"
+                  [class.text-emerald-600]="fundingMethod() === 'cash'"
+                  [class.dark:text-emerald-400]="fundingMethod() === 'cash'"
+                  [class.border-border]="fundingMethod() !== 'cash'"
+                  [class.text-muted-foreground]="fundingMethod() !== 'cash'"
+                  (click)="fundingMethod.set('cash')"
+                >
+                  <ng-icon name="phosphorMoney" />
+                  Kas Tunai
+                </button>
+                <button
+                  type="button"
+                  class="flex-1 py-2 px-3 rounded-2xl text-xs font-semibold border transition-all flex items-center justify-center gap-1.5"
+                  [class.bg-blue-500/10]="fundingMethod() === 'payable'"
+                  [class.border-blue-500/30]="fundingMethod() === 'payable'"
+                  [class.text-blue-600]="fundingMethod() === 'payable'"
+                  [class.dark:text-blue-400]="fundingMethod() === 'payable'"
+                  [class.border-border]="fundingMethod() !== 'payable'"
+                  [class.text-muted-foreground]="fundingMethod() !== 'payable'"
+                  (click)="fundingMethod.set('payable')"
+                >
+                  <ng-icon name="phosphorCreditCard" />
+                  Hutang Akrual
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sumber Kas atau Supplier -->
+          @if (fundingMethod() === 'cash') {
+            <div>
+              <label for="expense-cash-select" class="block text-xs font-semibold text-foreground mb-1.5">
+                Rekening Kas / Bank Pembayar <span class="text-destructive">*</span>
+              </label>
+              <select
+                id="expense-cash-select"
+                class="w-full px-4 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                [ngModel]="selectedCashAccountId()"
+                (ngModelChange)="selectedCashAccountId.set($event)"
+              >
+                <option value="" disabled>Pilih Rekening Kas</option>
+                @for (acc of cashAccounts(); track acc.id) {
+                  <option [value]="acc.id">{{ acc.name }} (Saldo: {{ formatRupiah(acc.balance) }})</option>
+                }
+              </select>
+            </div>
+          } @else {
+            <div>
+              <label for="expense-supplier-select" class="block text-xs font-semibold text-foreground mb-1.5">
+                Supplier / Pihak Ketiga (Opsional)
+              </label>
+              <select
+                id="expense-supplier-select"
+                class="w-full px-4 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                [ngModel]="selectedSupplierId()"
+                (ngModelChange)="selectedSupplierId.set($event)"
+              >
+                <option value="">-- Tanpa Counterparty (Hutang Biaya Umum) --</option>
+                @for (sup of suppliers(); track sup.id) {
+                  <option [value]="sup.id">{{ sup.name }}</option>
+                }
+              </select>
+            </div>
+          }
+
+          <!-- Rincian Multi-Line Biaya -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold text-foreground">
+                Rincian Alokasi Biaya (Akun GL & Uraian) <span class="text-destructive">*</span>
+              </span>
+              <button
+                type="button"
+                class="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1"
+                (click)="addLine()"
+              >
+                <ng-icon name="phosphorPlus" />
+                Tambah Baris
+              </button>
+            </div>
+
+            <div class="space-y-3">
+              @for (line of expenseLines(); track $index; let idx = $index) {
+                <div class="p-3.5 bg-muted/30 border border-border rounded-2xl space-y-2.5">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-muted-foreground">Pos #{{ idx + 1 }}</span>
+                    @if (expenseLines().length > 1) {
+                      <button
+                        type="button"
+                        class="text-destructive hover:opacity-80 p-1 text-xs"
+                        (click)="removeLine(idx)"
+                      >
+                        <ng-icon name="phosphorTrash" class="text-sm" />
+                      </button>
+                    }
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                    <div class="sm:col-span-6">
+                      <select
+                        class="w-full px-3 py-2 bg-background border border-input rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        [ngModel]="line.accountId"
+                        (ngModelChange)="updateLine(idx, { accountId: $event })"
+                      >
+                        <option value="" disabled>Pilih Akun Beban GL</option>
+                        @for (acc of expenseAccounts(); track acc.id) {
+                          <option [value]="acc.id">{{ acc.code }} - {{ acc.name }}</option>
+                        }
+                      </select>
+                    </div>
+
+                    <div class="sm:col-span-6">
+                      <input
+                        type="number"
+                        min="1"
+                        placeholder="Nominal (Rp)"
+                        class="w-full px-3 py-2 bg-background border border-input rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring font-mono text-right"
+                        [ngModel]="line.amount"
+                        (ngModelChange)="updateLine(idx, { amount: $event ? +$event : null })"
+                      />
+                    </div>
+
+                    <div class="sm:col-span-12">
+                      <input
+                        type="text"
+                        placeholder="Uraian biaya (misal: Pembelian perlengkapan kantor, konsumsi rapat)..."
+                        class="w-full px-3 py-2 bg-background border border-input rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        [ngModel]="line.description"
+                        (ngModelChange)="updateLine(idx, { description: $event })"
+                      />
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Total Ringkasan Biaya -->
+          <div class="p-4 bg-card border border-border rounded-2xl flex items-center justify-between">
+            <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Biaya Operasional</span>
+            <span class="text-lg font-bold text-foreground">{{ formatRupiah(totalFormAmount()) }}</span>
+          </div>
+
+          <!-- Catatan Umum -->
+          <div>
+            <label for="expense-notes-input" class="block text-xs font-semibold text-foreground mb-1.5">
+              Catatan Dokumen / Referensi Tambahan
+            </label>
+            <textarea
+              id="expense-notes-input"
+              rows="2"
+              placeholder="Keterangan tambahan untuk audit trail..."
+              class="w-full px-4 py-2 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              [ngModel]="expenseNotes()"
+              (ngModelChange)="expenseNotes.set($event)"
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 bg-muted/40 border-t border-border flex items-center justify-end gap-3 shrink-0">
+          <button
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm h-10 px-5"
+            (click)="closeCreateModal()"
+            [disabled]="isSubmitting()"
+          >
+            Batal
+          </button>
+          <button
+            hlmBtn
+            class="rounded-full text-sm h-10 px-6 bg-primary text-primary-foreground hover:bg-primary/90"
+            (click)="submitExpense()"
+            [disabled]="isSubmitting()"
+          >
+            @if (isSubmitting()) {
+              <ng-icon name="phosphorArrowsClockwise" class="animate-spin mr-2" />
+              Menyimpan...
+            } @else {
+              Posting Dokumen Beban
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Detail Dokumen -->
+  @if (selectedExpenseForDetail(); as exp) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs">
+      <div class="bg-card border border-border rounded-3xl max-w-xl w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div class="px-6 py-5 border-b border-border flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-foreground flex items-center gap-2">
+              <ng-icon name="phosphorFileText" class="text-primary" />
+              Detail Dokumen {{ exp.documentNumber }}
+            </h3>
+            <p class="text-xs text-muted-foreground mt-0.5">
+              Tanggal Transaksi: {{ exp.transactionDate | date:'dd MMMM yyyy' }}
+            </p>
+          </div>
+          <button
+            class="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted transition-colors"
+            (click)="closeDetailModal()"
+          >
+            <ng-icon name="phosphorX" class="text-lg" />
+          </button>
+        </div>
+
+        <div class="p-6 space-y-4">
+          @if (exp.status === 'void') {
+            <div class="p-3.5 bg-destructive/10 border border-destructive/20 rounded-2xl text-destructive text-xs">
+              <span class="font-bold">DOKUMEN INI TELAH DIBATALKAN (VOID)</span>
+              <p class="mt-1">Alasan pembatalan: {{ exp.voidReason || 'Tidak ada keterangan.' }}</p>
+            </div>
+          }
+
+          <div class="grid grid-cols-2 gap-4 text-xs">
+            <div>
+              <span class="text-muted-foreground">Metode Bayar:</span>
+              <p class="font-semibold text-foreground capitalize">{{ exp.fundingMethod === 'cash' ? 'Kas Langsung (Tunai)' : 'Hutang Biaya' }}</p>
+            </div>
+            <div>
+              <span class="text-muted-foreground">Sumber / Rekanan:</span>
+              <p class="font-semibold text-foreground">{{ exp.fundingMethod === 'cash' ? (exp.cashAccountName || '-') : (exp.supplierName || 'Umum') }}</p>
+            </div>
+          </div>
+
+          <div>
+            <span class="text-xs font-semibold text-muted-foreground block mb-2">Rincian Akun Beban</span>
+            <div class="border border-border rounded-2xl overflow-hidden">
+              <table class="w-full text-xs text-left">
+                <thead class="bg-muted/40 font-semibold text-muted-foreground border-b border-border">
+                  <tr>
+                    <th class="px-4 py-2.5">Akun GL</th>
+                    <th class="px-4 py-2.5">Deskripsi</th>
+                    <th class="px-4 py-2.5 text-right">Nominal</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                  @for (l of exp.lines; track l.id || $index) {
+                    <tr>
+                      <td class="px-4 py-2.5 font-mono text-muted-foreground">{{ l.accountCode }} - {{ l.accountName }}</td>
+                      <td class="px-4 py-2.5 text-foreground">{{ l.description }}</td>
+                      <td class="px-4 py-2.5 text-right font-semibold text-foreground">{{ formatRupiah(l.amount) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-border flex items-center justify-between">
+            <span class="text-xs font-semibold text-muted-foreground">Total Dokumen:</span>
+            <span class="text-base font-bold text-foreground">{{ formatRupiah(exp.totalAmount) }}</span>
+          </div>
+
+          @if (exp.notes) {
+            <div class="text-xs text-muted-foreground pt-2">
+              <span class="font-semibold text-foreground">Catatan:</span> {{ exp.notes }}
+            </div>
+          }
+        </div>
+
+        <div class="px-6 py-4 bg-muted/40 border-t border-border flex items-center justify-end">
+          <button
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm h-10 px-5"
+            (click)="closeDetailModal()"
+          >
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Void Dokumen -->
+  @if (selectedExpenseForVoid(); as exp) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs">
+      <div class="bg-card border border-border rounded-3xl max-w-md w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div class="px-6 py-5 border-b border-border flex items-center justify-between">
+          <h3 class="text-base font-bold text-destructive flex items-center gap-2">
+            <ng-icon name="phosphorXCircle" />
+            Konfirmasi Pembatalan (Void)
+          </h3>
+          <button
+            class="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted transition-colors"
+            (click)="closeVoidModal()"
+          >
+            <ng-icon name="phosphorX" class="text-lg" />
+          </button>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <p class="text-sm text-foreground">
+            Apakah Anda yakin ingin membatalkan dokumen <strong class="font-mono text-primary">{{ exp.documentNumber }}</strong> sebesar <strong>{{ formatRupiah(exp.totalAmount) }}</strong>?
+          </p>
+          <p class="text-xs text-muted-foreground">
+            Tindakan ini akan membalik seluruh mutasi jurnal dan kas secara otomatis melalui jurnal pembalik.
+          </p>
+
+          <div>
+            <label for="expense-void-reason" class="block text-xs font-semibold text-foreground mb-1.5">
+              Alasan Pembatalan <span class="text-destructive">*</span>
+            </label>
+            <textarea
+              id="expense-void-reason"
+              rows="3"
+              placeholder="Contoh: Salah input akun beban atau dokumen duplikat..."
+              class="w-full px-4 py-2 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              [ngModel]="voidReason()"
+              (ngModelChange)="voidReason.set($event)"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 bg-muted/40 border-t border-border flex items-center justify-end gap-3">
+          <button
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm h-10 px-5"
+            (click)="closeVoidModal()"
+            [disabled]="isSubmitting()"
+          >
+            Batal
+          </button>
+          <button
+            hlmBtn
+            class="rounded-full text-sm h-10 px-6 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            (click)="submitVoid()"
+            [disabled]="isSubmitting()"
+          >
+            @if (isSubmitting()) {
+              <ng-icon name="phosphorArrowsClockwise" class="animate-spin mr-2" />
+              Membatalkan...
+            } @else {
+              Ya, Batalkan Dokumen
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,553 @@
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+        <ng-icon name="phosphorHourglass" class="text-primary text-3xl" />
+        Biaya Dibayar Dimuka & Amortisasi
+      </h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Pengelolaan aset sewa, asuransi pabrik, dan pengakuan beban berkala secara proporsional sesuai periode akuntansi.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button
+        hlmBtn
+        variant="outline"
+        class="rounded-full gap-2 text-sm h-10 px-4"
+        (click)="refreshData()"
+        [disabled]="isLoading()"
+      >
+        <ng-icon name="phosphorArrowsClockwise" [class.animate-spin]="isLoading()" />
+        Muat Ulang
+      </button>
+      <button
+        hlmBtn
+        class="rounded-full gap-2 text-sm h-10 px-5 bg-primary text-primary-foreground hover:bg-primary/90"
+        (click)="openCreateModal()"
+      >
+        <ng-icon name="phosphorPlus" />
+        Daftarkan Kontrak Dimuka
+      </button>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  @if (errorMessage()) {
+    <div class="flex items-center gap-3 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+      <ng-icon name="phosphorWarningCircle" class="text-xl shrink-0" />
+      <div class="flex-1 font-medium">{{ errorMessage() }}</div>
+      <button (click)="errorMessage.set(null)" class="text-destructive hover:opacity-80">
+        <ng-icon name="phosphorX" class="text-lg" />
+      </button>
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="flex items-center gap-3 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm">
+      <ng-icon name="phosphorCheckCircle" class="text-xl shrink-0" />
+      <div class="flex-1 font-medium">{{ successMessage() }}</div>
+      <button (click)="successMessage.set(null)" class="hover:opacity-80">
+        <ng-icon name="phosphorX" class="text-lg" />
+      </button>
+    </div>
+  }
+
+  <!-- KPI Metrics Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Kontrak Berjalan</p>
+        <div class="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+          <ng-icon name="phosphorHourglass" class="text-xl" />
+        </div>
+      </div>
+      <div class="mt-4">
+        <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ activeContractsCount() }} Kontrak</h3>
+        <p class="text-xs text-muted-foreground mt-1">Aset lancar dibayar dimuka aktif</p>
+      </div>
+    </div>
+
+    <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Nilai Awal</p>
+        <div class="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+          <ng-icon name="phosphorMoney" class="text-xl" />
+        </div>
+      </div>
+      <div class="mt-4">
+        <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ formatRupiah(totalOriginalAmount()) }}</h3>
+        <p class="text-xs text-muted-foreground mt-1">Nilai perolehan kontrak aktif</p>
+      </div>
+    </div>
+
+    <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sudah Diamortisasi</p>
+        <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+          <ng-icon name="phosphorCheckCircle" class="text-xl" />
+        </div>
+      </div>
+      <div class="mt-4">
+        <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ formatRupiah(totalAmortizedAmount()) }}</h3>
+        <p class="text-xs text-muted-foreground mt-1">Telah diakui sebagai beban GL</p>
+      </div>
+    </div>
+
+    <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sisa Saldo Aset</p>
+        <div class="w-10 h-10 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+          <ng-icon name="phosphorClock" class="text-xl" />
+        </div>
+      </div>
+      <div class="mt-4">
+        <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ formatRupiah(totalRemainingAmount()) }}</h3>
+        <p class="text-xs text-muted-foreground mt-1">Saldo neraca belum diamortisasi</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Card -->
+  <div class="bg-card border border-border rounded-3xl shadow-xs overflow-hidden">
+    <!-- Filter Header -->
+    <div class="p-6 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="relative w-full sm:w-80">
+        <ng-icon name="phosphorMagnifyingGlass" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm" />
+        <input
+          type="text"
+          placeholder="Cari kontrak, akun prepaid, akun beban..."
+          class="w-full pl-9 pr-4 py-2 bg-background border border-input rounded-full text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+        />
+      </div>
+
+      <!-- Status Filter Pill -->
+      <div class="flex items-center gap-1.5 p-1 bg-muted/60 rounded-full text-xs self-start sm:self-auto">
+        <button
+          type="button"
+          class="px-3 py-1 rounded-full font-medium transition-all"
+          [class.bg-card]="statusFilter() === 'active'"
+          [class.text-foreground]="statusFilter() === 'active'"
+          [class.shadow-xs]="statusFilter() === 'active'"
+          [class.text-muted-foreground]="statusFilter() !== 'active'"
+          (click)="statusFilter.set('active')"
+        >
+          Kontrak Aktif
+        </button>
+        <button
+          type="button"
+          class="px-3 py-1 rounded-full font-medium transition-all"
+          [class.bg-card]="statusFilter() === 'completed'"
+          [class.text-foreground]="statusFilter() === 'completed'"
+          [class.shadow-xs]="statusFilter() === 'completed'"
+          [class.text-muted-foreground]="statusFilter() !== 'completed'"
+          (click)="statusFilter.set('completed')"
+        >
+          Selesai Lunas
+        </button>
+        <button
+          type="button"
+          class="px-3 py-1 rounded-full font-medium transition-all"
+          [class.bg-card]="statusFilter() === 'all'"
+          [class.text-foreground]="statusFilter() === 'all'"
+          [class.shadow-xs]="statusFilter() === 'all'"
+          [class.text-muted-foreground]="statusFilter() !== 'all'"
+          (click)="statusFilter.set('all')"
+        >
+          Semua Kontrak
+        </button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left border-collapse">
+        <thead class="bg-muted/40 text-xs uppercase font-semibold text-muted-foreground border-b border-border">
+          <tr>
+            <th class="px-6 py-4">Deskripsi Kontrak</th>
+            <th class="px-6 py-4">Akun Aset & Beban</th>
+            <th class="px-6 py-4">Periode Amortisasi</th>
+            <th class="px-6 py-4 text-right">Nilai Kontrak</th>
+            <th class="px-6 py-4">Progress Amortisasi</th>
+            <th class="px-6 py-4 text-right">Sisa Aset</th>
+            <th class="px-6 py-4 text-center">Status</th>
+            <th class="px-6 py-4 text-center">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border font-normal">
+          @for (item of filteredExpenses(); track item.id) {
+            <tr class="hover:bg-muted/20 transition-colors">
+              <td class="px-6 py-4 font-semibold text-foreground whitespace-nowrap">
+                {{ item.description }}
+              </td>
+              <td class="px-6 py-4 text-xs">
+                <p class="font-medium text-foreground">Prepaid: {{ item.prepaidAccountCode }} - {{ item.prepaidAccountName }}</p>
+                <p class="text-muted-foreground mt-0.5">Beban: {{ item.expenseAccountCode }} - {{ item.expenseAccountName }}</p>
+              </td>
+              <td class="px-6 py-4 text-xs font-mono text-muted-foreground whitespace-nowrap">
+                {{ item.startDate | date:'dd/MM/yyyy' }} s.d. {{ item.endDate | date:'dd/MM/yyyy' }}
+                <span class="block text-foreground font-sans font-medium mt-0.5">({{ item.numberOfMonths }} Bulan)</span>
+              </td>
+              <td class="px-6 py-4 text-right font-semibold text-foreground whitespace-nowrap">
+                {{ formatRupiah(item.originalAmount) }}
+              </td>
+              <td class="px-6 py-4 min-w-44">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between text-xs">
+                    <span class="font-medium text-foreground">{{ item.progressPercentage }}%</span>
+                    <span class="text-muted-foreground font-mono">{{ formatRupiah(item.amortizedAmount) }}</span>
+                  </div>
+                  <div class="w-full h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      class="h-full bg-primary rounded-full transition-all duration-300"
+                      [style.width.%]="item.progressPercentage"
+                    ></div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 text-right font-bold text-foreground whitespace-nowrap">
+                {{ formatRupiah(item.remainingAmount) }}
+              </td>
+              <td class="px-6 py-4 text-center whitespace-nowrap">
+                @if (item.status === 'active') {
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    Aktif
+                  </span>
+                } @else {
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-muted-foreground">
+                    Selesai
+                  </span>
+                }
+              </td>
+              <td class="px-6 py-4 text-center whitespace-nowrap">
+                <div class="flex items-center justify-center gap-2">
+                  @if (item.status === 'active') {
+                    <button
+                      type="button"
+                      class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                      (click)="openAmortizeModal(item)"
+                    >
+                      <ng-icon name="phosphorClock" class="text-xs" />
+                      Amortisasi
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    class="p-1.5 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors"
+                    title="Lihat Riwayat Entri Amortisasi"
+                    (click)="openHistoryModal(item)"
+                  >
+                    <ng-icon name="phosphorEye" class="text-base" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="8" class="px-6 py-12 text-center text-muted-foreground text-sm">
+                Belum ada data biaya dibayar dimuka yang sesuai dengan filter.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal Pendaftaran Kontrak Baru -->
+  @if (isCreateModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs">
+      <div class="bg-card border border-border rounded-3xl max-w-xl w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <!-- Modal Header -->
+        <div class="px-6 py-5 border-b border-border flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-foreground flex items-center gap-2">
+              <ng-icon name="phosphorHourglass" class="text-primary" />
+              Daftarkan Kontrak Biaya Dibayar Dimuka
+            </h3>
+            <p class="text-xs text-muted-foreground mt-0.5">
+              Jadwalkan amortisasi proporsional bulanan dari akun aset ke akun beban operasional.
+            </p>
+          </div>
+          <button
+            class="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted transition-colors"
+            (click)="closeCreateModal()"
+          >
+            <ng-icon name="phosphorX" class="text-lg" />
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-6 space-y-4">
+          <div>
+            <label for="prepaid-desc" class="block text-xs font-semibold text-foreground mb-1.5">
+              Deskripsi Kontrak / Uraian <span class="text-destructive">*</span>
+            </label>
+            <input
+              id="prepaid-desc"
+              type="text"
+              placeholder="Contoh: Sewa Gudang Bahan Baku 2026, Premi Asuransi Kebakaran..."
+              class="w-full px-4 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              [ngModel]="description()"
+              (ngModelChange)="description.set($event)"
+            />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="prepaid-asset-acc" class="block text-xs font-semibold text-foreground mb-1.5">
+                Akun Aset Prepaid <span class="text-destructive">*</span>
+              </label>
+              <select
+                id="prepaid-asset-acc"
+                class="w-full px-3.5 py-2.5 bg-background border border-input rounded-2xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                [ngModel]="prepaidAccountId()"
+                (ngModelChange)="prepaidAccountId.set($event)"
+              >
+                <option value="" disabled>Pilih Akun Aset</option>
+                @for (acc of assetAccounts(); track acc.id) {
+                  <option [value]="acc.id">{{ acc.code }} - {{ acc.name }}</option>
+                }
+              </select>
+            </div>
+            <div>
+              <label for="prepaid-exp-acc" class="block text-xs font-semibold text-foreground mb-1.5">
+                Akun Beban Pengakuan <span class="text-destructive">*</span>
+              </label>
+              <select
+                id="prepaid-exp-acc"
+                class="w-full px-3.5 py-2.5 bg-background border border-input rounded-2xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                [ngModel]="expenseAccountId()"
+                (ngModelChange)="expenseAccountId.set($event)"
+              >
+                <option value="" disabled>Pilih Akun Beban</option>
+                @for (acc of expenseAccounts(); track acc.id) {
+                  <option [value]="acc.id">{{ acc.code }} - {{ acc.name }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label for="prepaid-start-date" class="block text-xs font-semibold text-foreground mb-1.5">
+                Tanggal Mulai <span class="text-destructive">*</span>
+              </label>
+              <input
+                id="prepaid-start-date"
+                type="date"
+                class="w-full px-3.5 py-2.5 bg-background border border-input rounded-2xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                [ngModel]="startDate()"
+                (ngModelChange)="startDate.set($event)"
+              />
+            </div>
+            <div>
+              <label for="prepaid-months" class="block text-xs font-semibold text-foreground mb-1.5">
+                Durasi (Bulan) <span class="text-destructive">*</span>
+              </label>
+              <input
+                id="prepaid-months"
+                type="number"
+                min="1"
+                class="w-full px-3.5 py-2.5 bg-background border border-input rounded-2xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                [ngModel]="numberOfMonths()"
+                (ngModelChange)="numberOfMonths.set($event ? +$event : 1)"
+              />
+            </div>
+            <div>
+              <label for="prepaid-amount" class="block text-xs font-semibold text-foreground mb-1.5">
+                Total Nilai (Rp) <span class="text-destructive">*</span>
+              </label>
+              <input
+                id="prepaid-amount"
+                type="number"
+                min="1"
+                placeholder="0"
+                class="w-full px-3.5 py-2.5 bg-background border border-input rounded-2xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring font-mono"
+                [ngModel]="originalAmount()"
+                (ngModelChange)="originalAmount.set($event ? +$event : null)"
+              />
+            </div>
+          </div>
+
+          <!-- Preview Beban Bulanan -->
+          @if (originalAmount() && numberOfMonths()) {
+            <div class="p-4 bg-muted/40 border border-border rounded-2xl flex items-center justify-between text-xs">
+              <span class="text-muted-foreground">Estimasi Pengakuan Beban per Bulan:</span>
+              <span class="font-bold text-foreground text-sm font-mono">{{ formatRupiah(calculateMonthlyEstimate()) }} / bulan</span>
+            </div>
+          }
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 bg-muted/40 border-t border-border flex items-center justify-end gap-3">
+          <button
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm h-10 px-5"
+            (click)="closeCreateModal()"
+            [disabled]="isSubmitting()"
+          >
+            Batal
+          </button>
+          <button
+            hlmBtn
+            class="rounded-full text-sm h-10 px-6 bg-primary text-primary-foreground hover:bg-primary/90"
+            (click)="submitCreate()"
+            [disabled]="isSubmitting()"
+          >
+            @if (isSubmitting()) {
+              <ng-icon name="phosphorArrowsClockwise" class="animate-spin mr-2" />
+              Menyimpan...
+            } @else {
+              Daftarkan Kontrak
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Posting Amortisasi -->
+  @if (isAmortizeModalOpen(); as prepaid) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs">
+      <div class="bg-card border border-border rounded-3xl max-w-md w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div class="px-6 py-5 border-b border-border flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-foreground flex items-center gap-2">
+              <ng-icon name="phosphorClock" class="text-primary" />
+              Posting Amortisasi Bulanan
+            </h3>
+            <p class="text-xs text-muted-foreground mt-0.5">
+              {{ selectedPrepaidForAmortize()?.description }}
+            </p>
+          </div>
+          <button
+            class="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted transition-colors"
+            (click)="closeAmortizeModal()"
+          >
+            <ng-icon name="phosphorX" class="text-lg" />
+          </button>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <div class="p-3.5 bg-muted/40 border border-border rounded-2xl text-xs space-y-1.5">
+            <div class="flex justify-between">
+              <span class="text-muted-foreground">Sisa Saldo Aset:</span>
+              <span class="font-bold text-foreground">{{ formatRupiah(selectedPrepaidForAmortize()?.remainingAmount || 0) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-muted-foreground">Beban per Bulan:</span>
+              <span class="font-bold text-foreground">{{ formatRupiah(getAmortizeMonthlyAmount()) }}</span>
+            </div>
+          </div>
+
+          <div>
+            <label for="amortize-period-month" class="block text-xs font-semibold text-foreground mb-1.5">
+              Pilih Bulan Periode Amortisasi (YYYY-MM) <span class="text-destructive">*</span>
+            </label>
+            <input
+              id="amortize-period-month"
+              type="month"
+              class="w-full px-4 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              [ngModel]="amortizePeriodMonth()"
+              (ngModelChange)="amortizePeriodMonth.set($event)"
+            />
+          </div>
+        </div>
+
+        <div class="px-6 py-4 bg-muted/40 border-t border-border flex items-center justify-end gap-3">
+          <button
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm h-10 px-5"
+            (click)="closeAmortizeModal()"
+            [disabled]="isSubmitting()"
+          >
+            Batal
+          </button>
+          <button
+            hlmBtn
+            class="rounded-full text-sm h-10 px-6 bg-primary text-primary-foreground hover:bg-primary/90"
+            (click)="submitAmortize()"
+            [disabled]="isSubmitting()"
+          >
+            @if (isSubmitting()) {
+              <ng-icon name="phosphorArrowsClockwise" class="animate-spin mr-2" />
+              Posting...
+            } @else {
+              Konfirmasi Amortisasi
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Riwayat Entri Amortisasi -->
+  @if (selectedPrepaidForHistory(); as item) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs">
+      <div class="bg-card border border-border rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div class="px-6 py-5 border-b border-border flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-foreground flex items-center gap-2">
+              <ng-icon name="phosphorFileText" class="text-primary" />
+              Riwayat Amortisasi
+            </h3>
+            <p class="text-xs text-muted-foreground mt-0.5">
+              {{ item.description }}
+            </p>
+          </div>
+          <button
+            class="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted transition-colors"
+            (click)="closeHistoryModal()"
+          >
+            <ng-icon name="phosphorX" class="text-lg" />
+          </button>
+        </div>
+
+        <div class="p-6">
+          <div class="border border-border rounded-2xl overflow-hidden">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-muted/40 font-semibold text-muted-foreground border-b border-border">
+                <tr>
+                  <th class="px-4 py-2.5">Bulan Periode</th>
+                  <th class="px-4 py-2.5">Tanggal Posting</th>
+                  <th class="px-4 py-2.5 text-right">Nominal Beban</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border">
+                @for (e of item.entries || []; track e.periodMonth) {
+                  <tr>
+                    <td class="px-4 py-2.5 font-semibold text-foreground">{{ e.periodMonth }}</td>
+                    <td class="px-4 py-2.5 text-muted-foreground font-mono">{{ e.postedAt | date:'dd/MM/yyyy' }}</td>
+                    <td class="px-4 py-2.5 text-right font-bold text-foreground">{{ formatRupiah(e.amount) }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="3" class="px-4 py-6 text-center text-muted-foreground">
+                      Belum ada amortisasi yang diposting untuk kontrak ini.
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 bg-muted/40 border-t border-border flex items-center justify-end">
+          <button
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm h-10 px-5"
+            (click)="closeHistoryModal()"
+          >
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

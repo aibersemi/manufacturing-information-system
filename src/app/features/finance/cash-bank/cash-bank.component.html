@@ -1,0 +1,499 @@
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+        <ng-icon name="phosphorBank" class="text-primary text-3xl" />
+        Manajemen Kas & Bank
+      </h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Kelola saldo rekening kas fisik, rekening bank, mutasi transaksi, dan transfer likuiditas antar rekening.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button
+        hlmBtn
+        variant="outline"
+        class="rounded-full gap-2 text-sm h-10 px-4"
+        (click)="refreshData()"
+        [disabled]="isLoading()"
+      >
+        <ng-icon name="phosphorArrowsClockwise" [class.animate-spin]="isLoading()" />
+        Muat Ulang
+      </button>
+      <button
+        hlmBtn
+        class="rounded-full gap-2 text-sm h-10 px-5 bg-primary text-primary-foreground hover:bg-primary/90"
+        (click)="openTransferModal()"
+      >
+        <ng-icon name="phosphorArrowsLeftRight" />
+        Transfer Saldo
+      </button>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  @if (errorMessage()) {
+    <div class="flex items-center gap-3 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+      <ng-icon name="phosphorWarningCircle" class="text-xl shrink-0" />
+      <div class="flex-1 font-medium">{{ errorMessage() }}</div>
+      <button (click)="errorMessage.set(null)" class="text-destructive hover:opacity-80">
+        <ng-icon name="phosphorX" class="text-lg" />
+      </button>
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="flex items-center gap-3 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm">
+      <ng-icon name="phosphorCheckCircle" class="text-xl shrink-0" />
+      <div class="flex-1 font-medium">{{ successMessage() }}</div>
+      <button (click)="successMessage.set(null)" class="hover:opacity-80">
+        <ng-icon name="phosphorX" class="text-lg" />
+      </button>
+    </div>
+  }
+
+  <!-- KPI Metrics Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Likuiditas Kas & Bank</p>
+        <div class="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+          <ng-icon name="phosphorMoney" class="text-xl" />
+        </div>
+      </div>
+      <div class="mt-4">
+        <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ formatRupiah(totalCashBalance()) }}</h3>
+        <p class="text-xs text-muted-foreground mt-1">Konsolidasi seluruh rekening aktif</p>
+      </div>
+    </div>
+
+    <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Rekening Kas Aktif</p>
+        <div class="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+          <ng-icon name="phosphorCreditCard" class="text-xl" />
+        </div>
+      </div>
+      <div class="mt-4">
+        <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ activeAccountsCount() }} Rekening</h3>
+        <p class="text-xs text-muted-foreground mt-1">Tersedia untuk operasional & pembayaran</p>
+      </div>
+    </div>
+
+    <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Transfer Antar Kas</p>
+        <div class="w-10 h-10 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+          <ng-icon name="phosphorArrowsLeftRight" class="text-xl" />
+        </div>
+      </div>
+      <div class="mt-4">
+        <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ totalTransfersCount() }} Transaksi</h3>
+        <p class="text-xs text-muted-foreground mt-1">Mutasi relokasi kas tercatat di buku besar</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grid Rekening Kas & Bank -->
+  <div>
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-base font-semibold text-foreground flex items-center gap-2">
+        <ng-icon name="phosphorBank" class="text-primary" />
+        Daftar Rekening Kas & Bank
+      </h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      @for (acc of cashAccounts(); track acc.id) {
+        <div class="bg-card border border-border rounded-3xl p-5 flex flex-col justify-between hover:border-primary/40 transition-colors shadow-xs">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary">
+                <ng-icon name="phosphorBank" class="text-xs" />
+                Rekening Kas / Bank
+              </span>
+              <span
+                class="px-2.5 py-0.5 rounded-full text-xs font-medium"
+                [class.bg-emerald-500/10]="acc.isActive"
+                [class.text-emerald-600]="acc.isActive"
+                [class.bg-muted]="!acc.isActive"
+                [class.text-muted-foreground]="!acc.isActive"
+              >
+                {{ acc.isActive ? 'Aktif' : 'Nonaktif' }}
+              </span>
+            </div>
+            <h3 class="text-base font-bold text-foreground">{{ acc.name }}</h3>
+            @if (acc.code) {
+              <p class="text-xs text-muted-foreground mt-0.5 font-mono">Kode: {{ acc.code }}</p>
+            }
+            @if (acc.ledgerAccountName) {
+              <p class="text-xs text-muted-foreground font-mono">GL: {{ acc.ledgerAccountCode }} - {{ acc.ledgerAccountName }}</p>
+            }
+          </div>
+          <div class="mt-4 pt-3 border-t border-border flex items-baseline justify-between">
+            <span class="text-xs text-muted-foreground">Saldo Saat Ini</span>
+            <span class="text-base font-bold text-foreground">{{ formatRupiah(acc.balance) }}</span>
+          </div>
+        </div>
+      } @empty {
+        <div class="col-span-full bg-card border border-dashed border-border rounded-3xl p-8 text-center">
+          <p class="text-sm text-muted-foreground">Belum ada akun kas/bank yang terdaftar.</p>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Tab View Mutasi vs Transfer -->
+  <div class="bg-card border border-border rounded-3xl shadow-xs overflow-hidden">
+    <!-- Controls Header -->
+    <div class="p-6 border-b border-border space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <!-- View Toggle Buttons -->
+        <div class="inline-flex p-1 bg-muted/60 rounded-full">
+          <button
+            type="button"
+            class="px-4 py-2 text-xs font-semibold rounded-full transition-all"
+            [class.bg-card]="activeView() === 'movements'"
+            [class.text-foreground]="activeView() === 'movements'"
+            [class.shadow-xs]="activeView() === 'movements'"
+            [class.text-muted-foreground]="activeView() !== 'movements'"
+            (click)="activeView.set('movements')"
+          >
+            Mutasi Kas Masuk & Keluar
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2 text-xs font-semibold rounded-full transition-all"
+            [class.bg-card]="activeView() === 'transfers'"
+            [class.text-foreground]="activeView() === 'transfers'"
+            [class.shadow-xs]="activeView() === 'transfers'"
+            [class.text-muted-foreground]="activeView() !== 'transfers'"
+            (click)="activeView.set('transfers')"
+          >
+            Riwayat Transfer Antar Kas
+          </button>
+        </div>
+
+        <!-- Search Input -->
+        <div class="relative w-full sm:w-72">
+          <ng-icon name="phosphorMagnifyingGlass" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm" />
+          <input
+            type="text"
+            placeholder="Cari transaksi / catatan..."
+            class="w-full pl-9 pr-4 py-2 bg-background border border-input rounded-full text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)"
+          />
+        </div>
+      </div>
+
+      <!-- Filter Row (for movements) -->
+      @if (activeView() === 'movements') {
+        <div class="flex flex-wrap items-center gap-3 pt-2">
+          <div class="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+            <ng-icon name="phosphorFunnel" class="text-sm" />
+            Filter Rekening:
+          </div>
+          <select
+            class="px-3 py-1.5 bg-background border border-input rounded-full text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            [ngModel]="selectedAccountFilter()"
+            (ngModelChange)="selectedAccountFilter.set($event)"
+          >
+            <option value="all">Semua Rekening</option>
+            @for (acc of cashAccounts(); track acc.id) {
+              <option [value]="acc.id">{{ acc.name }}</option>
+            }
+          </select>
+
+          <div class="flex items-center gap-1.5 ml-auto">
+            <button
+              type="button"
+              class="px-3 py-1 rounded-full text-xs font-medium transition-colors"
+              [class.bg-primary]="movementTypeFilter() === 'all'"
+              [class.text-primary-foreground]="movementTypeFilter() === 'all'"
+              [class.bg-muted]="movementTypeFilter() !== 'all'"
+              [class.text-muted-foreground]="movementTypeFilter() !== 'all'"
+              (click)="movementTypeFilter.set('all')"
+            >
+              Semua Mutasi
+            </button>
+            <button
+              type="button"
+              class="px-3 py-1 rounded-full text-xs font-medium transition-colors flex items-center gap-1"
+              [class.bg-emerald-600]="movementTypeFilter() === 'in'"
+              [class.text-white]="movementTypeFilter() === 'in'"
+              [class.bg-muted]="movementTypeFilter() !== 'in'"
+              [class.text-muted-foreground]="movementTypeFilter() !== 'in'"
+              (click)="movementTypeFilter.set('in')"
+            >
+              <ng-icon name="phosphorTrendUp" />
+              Kas Masuk
+            </button>
+            <button
+              type="button"
+              class="px-3 py-1 rounded-full text-xs font-medium transition-colors flex items-center gap-1"
+              [class.bg-rose-600]="movementTypeFilter() === 'out'"
+              [class.text-white]="movementTypeFilter() === 'out'"
+              [class.bg-muted]="movementTypeFilter() !== 'out'"
+              [class.text-muted-foreground]="movementTypeFilter() !== 'out'"
+              (click)="movementTypeFilter.set('out')"
+            >
+              <ng-icon name="phosphorTrendDown" />
+              Kas Keluar
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Table: Mutasi Kas -->
+    @if (activeView() === 'movements') {
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left border-collapse">
+          <thead class="bg-muted/40 text-xs uppercase font-semibold text-muted-foreground border-b border-border">
+            <tr>
+              <th class="px-6 py-4">Tanggal & Waktu</th>
+              <th class="px-6 py-4">Rekening</th>
+              <th class="px-6 py-4">Tipe Mutasi</th>
+              <th class="px-6 py-4">Uraian / Catatan</th>
+              <th class="px-6 py-4 text-right">Nominal</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border font-normal">
+            @for (m of filteredMovements(); track m.id) {
+              <tr class="hover:bg-muted/20 transition-colors">
+                <td class="px-6 py-4 text-xs font-mono text-muted-foreground whitespace-nowrap">
+                  {{ m.transactionDate | date:'dd/MM/yyyy' }}
+                </td>
+                <td class="px-6 py-4 font-semibold text-foreground whitespace-nowrap">
+                  {{ m.cashAccountName }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  @if (isIncomeMovement(m.movementType)) {
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                      <ng-icon name="phosphorTrendUp" />
+                      Kas Masuk
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                      <ng-icon name="phosphorTrendDown" />
+                      Kas Keluar
+                    </span>
+                  }
+                </td>
+                <td class="px-6 py-4 text-muted-foreground text-xs">
+                  {{ m.notes || '-' }}
+                </td>
+                <td class="px-6 py-4 text-right font-semibold whitespace-nowrap"
+                  [class.text-emerald-600]="isIncomeMovement(m.movementType)"
+                  [class.dark:text-emerald-400]="isIncomeMovement(m.movementType)"
+                  [class.text-rose-600]="!isIncomeMovement(m.movementType)"
+                  [class.dark:text-rose-400]="!isIncomeMovement(m.movementType)"
+                >
+                  {{ isIncomeMovement(m.movementType) ? '+' : '-' }} {{ formatRupiah(m.amount) }}
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="px-6 py-12 text-center text-muted-foreground text-sm">
+                  Tidak ada catatan mutasi kas yang cocok dengan filter.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- Table: Transfer Antar Rekening -->
+    @if (activeView() === 'transfers') {
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left border-collapse">
+          <thead class="bg-muted/40 text-xs uppercase font-semibold text-muted-foreground border-b border-border">
+            <tr>
+              <th class="px-6 py-4">Nomor Dokumen</th>
+              <th class="px-6 py-4">Tanggal Transfer</th>
+              <th class="px-6 py-4">Rekening Sumber</th>
+              <th class="px-6 py-4">Rekening Tujuan</th>
+              <th class="px-6 py-4">Keterangan</th>
+              <th class="px-6 py-4 text-right">Nominal</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border font-normal">
+            @for (t of cashTransfers(); track t.id) {
+              <tr class="hover:bg-muted/20 transition-colors">
+                <td class="px-6 py-4 font-mono font-medium text-primary text-xs whitespace-nowrap">
+                  {{ t.documentNumber }}
+                </td>
+                <td class="px-6 py-4 text-xs font-mono text-muted-foreground whitespace-nowrap">
+                  {{ t.transactionDate | date:'dd/MM/yyyy' }}
+                </td>
+                <td class="px-6 py-4 font-medium text-foreground whitespace-nowrap">
+                  {{ t.sourceCashAccountName }}
+                </td>
+                <td class="px-6 py-4 font-medium text-foreground whitespace-nowrap">
+                  {{ t.destinationCashAccountName }}
+                </td>
+                <td class="px-6 py-4 text-xs text-muted-foreground">
+                  {{ t.notes || '-' }}
+                </td>
+                <td class="px-6 py-4 text-right font-bold text-foreground whitespace-nowrap">
+                  {{ formatRupiah(t.amount) }}
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="px-6 py-12 text-center text-muted-foreground text-sm">
+                  Belum ada dokumen transfer antar rekening kas/bank.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  <!-- Modal Transfer Antar Rekening -->
+  @if (isTransferModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs">
+      <div class="bg-card border border-border rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <!-- Modal Header -->
+        <div class="px-6 py-5 border-b border-border flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-foreground flex items-center gap-2">
+              <ng-icon name="phosphorArrowsLeftRight" class="text-primary" />
+              Transfer Antar Rekening Kas & Bank
+            </h3>
+            <p class="text-xs text-muted-foreground mt-0.5">
+              Pindahkan dana dari satu akun likuiditas ke akun kas lainnya secara atomik.
+            </p>
+          </div>
+          <button
+            class="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted transition-colors"
+            (click)="closeTransferModal()"
+          >
+            <ng-icon name="phosphorX" class="text-lg" />
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-6 space-y-4">
+          <!-- Rekening Sumber -->
+          <div>
+            <label for="transfer-source-select" class="block text-xs font-semibold text-foreground mb-1.5">
+              Rekening Sumber (Pengirim) <span class="text-destructive">*</span>
+            </label>
+            <select
+              id="transfer-source-select"
+              class="w-full px-4 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              [ngModel]="transferSourceId()"
+              (ngModelChange)="transferSourceId.set($event)"
+            >
+              <option value="" disabled>Pilih Rekening Sumber</option>
+              @for (acc of cashAccounts(); track acc.id) {
+                <option [value]="acc.id">{{ acc.name }} (Saldo: {{ formatRupiah(acc.balance) }})</option>
+              }
+            </select>
+            @if (transferSourceId()) {
+              <p class="text-xs text-muted-foreground mt-1">
+                Saldo tersedia: <span class="font-semibold text-foreground">{{ formatRupiah(getSourceAccountBalance()) }}</span>
+              </p>
+            }
+          </div>
+
+          <!-- Rekening Tujuan -->
+          <div>
+            <label for="transfer-destination-select" class="block text-xs font-semibold text-foreground mb-1.5">
+              Rekening Tujuan (Penerima) <span class="text-destructive">*</span>
+            </label>
+            <select
+              id="transfer-destination-select"
+              class="w-full px-4 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              [ngModel]="transferDestinationId()"
+              (ngModelChange)="transferDestinationId.set($event)"
+            >
+              <option value="" disabled>Pilih Rekening Tujuan</option>
+              @for (acc of cashAccounts(); track acc.id) {
+                @if (acc.id !== transferSourceId()) {
+                  <option [value]="acc.id">{{ acc.name }} (Saldo: {{ formatRupiah(acc.balance) }})</option>
+                }
+              }
+            </select>
+          </div>
+
+          <!-- Nominal & Tanggal -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="transfer-amount-input" class="block text-xs font-semibold text-foreground mb-1.5">
+                Nominal Transfer (Rp) <span class="text-destructive">*</span>
+              </label>
+              <input
+                id="transfer-amount-input"
+                type="number"
+                min="1"
+                placeholder="0"
+                class="w-full px-4 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                [ngModel]="transferAmount()"
+                (ngModelChange)="transferAmount.set($event ? +$event : null)"
+              />
+            </div>
+            <div>
+              <label for="transfer-date-input" class="block text-xs font-semibold text-foreground mb-1.5">
+                Tanggal Transfer <span class="text-destructive">*</span>
+              </label>
+              <input
+                id="transfer-date-input"
+                type="date"
+                class="w-full px-4 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                [ngModel]="transferDate()"
+                (ngModelChange)="transferDate.set($event)"
+              />
+            </div>
+          </div>
+
+          <!-- Catatan / Uraian -->
+          <div>
+            <label for="transfer-notes-input" class="block text-xs font-semibold text-foreground mb-1.5">
+              Catatan / Referensi
+            </label>
+            <textarea
+              id="transfer-notes-input"
+              rows="3"
+              placeholder="Misal: Penarikan tunai operasional atau setoran bank..."
+              class="w-full px-4 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              [ngModel]="transferNotes()"
+              (ngModelChange)="transferNotes.set($event)"
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 bg-muted/40 border-t border-border flex items-center justify-end gap-3">
+          <button
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm h-10 px-5"
+            (click)="closeTransferModal()"
+            [disabled]="isSubmitting()"
+          >
+            Batal
+          </button>
+          <button
+            hlmBtn
+            class="rounded-full text-sm h-10 px-6 bg-primary text-primary-foreground hover:bg-primary/90"
+            (click)="submitTransfer()"
+            [disabled]="isSubmitting()"
+          >
+            @if (isSubmitting()) {
+              <ng-icon name="phosphorArrowsClockwise" class="animate-spin mr-2" />
+              Memproses...
+            } @else {
+              Konfirmasi Transfer
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

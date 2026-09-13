@@ -1,0 +1,462 @@
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+        <ng-icon name="phosphorShieldCheck" class="text-primary text-3xl" />
+        Penutupan Periode Akuntansi (Period Close)
+      </h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Penguncian pembukuan bulanan, verifikasi integritas 4 kontrol buku besar, dan kontrol pembukaan kembali khusus Owner.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button
+        hlmBtn
+        variant="outline"
+        class="rounded-full gap-2 text-sm h-10 px-4"
+        (click)="refreshData()"
+        [disabled]="isLoading()"
+      >
+        <ng-icon name="phosphorArrowsClockwise" [class.animate-spin]="isLoading()" />
+        Muat Ulang
+      </button>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  @if (errorMessage()) {
+    <div class="flex items-center gap-3 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+      <ng-icon name="phosphorWarningCircle" class="text-xl shrink-0" />
+      <div class="flex-1 font-medium">{{ errorMessage() }}</div>
+      <button (click)="errorMessage.set(null)" class="text-destructive hover:opacity-80">
+        <ng-icon name="phosphorX" class="text-lg" />
+      </button>
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="flex items-center gap-3 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm">
+      <ng-icon name="phosphorCheckCircle" class="text-xl shrink-0" />
+      <div class="flex-1 font-medium">{{ successMessage() }}</div>
+      <button (click)="successMessage.set(null)" class="hover:opacity-80">
+        <ng-icon name="phosphorX" class="text-lg" />
+      </button>
+    </div>
+  }
+
+  <!-- KPI Metrics Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+    <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Periode Berjalan</p>
+        <div class="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+          <ng-icon name="phosphorCalendarBlank" class="text-xl" />
+        </div>
+      </div>
+      <div class="mt-4">
+        <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ selectedPeriodMonth() }}</h3>
+        <p class="text-xs text-muted-foreground mt-1">
+          Status:
+          <span class="font-semibold uppercase" [class.text-emerald-600]="currentPeriodStatus() === 'open'" [class.text-amber-600]="currentPeriodStatus() === 'closed'">
+            {{ currentPeriodStatus() === 'open' ? 'Terbuka (Open)' : 'Terkunci (Closed)' }}
+          </span>
+        </p>
+      </div>
+    </div>
+
+    <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Periode Terbuka</p>
+        <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+          <ng-icon name="phosphorLockOpen" class="text-xl" />
+        </div>
+      </div>
+      <div class="mt-4">
+        <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ openPeriodsCount() }} Bulan</h3>
+        <p class="text-xs text-muted-foreground mt-1">Dapat menerima mutasi transaksi</p>
+      </div>
+    </div>
+
+    <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Periode Terkunci</p>
+        <div class="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+          <ng-icon name="phosphorLock" class="text-xl" />
+        </div>
+      </div>
+      <div class="mt-4">
+        <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ closedPeriodsCount() }} Bulan</h3>
+        <p class="text-xs text-muted-foreground mt-1">Pembukuan ditutup permanen</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pre-close Verification Checklist Box -->
+  <div class="bg-card border border-border rounded-3xl p-6 shadow-xs space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h2 class="text-base font-semibold text-foreground flex items-center gap-2">
+          <ng-icon name="phosphorShieldCheck" class="text-primary text-xl" />
+          Verifikasi Integritas Pra-Penutupan (4 Control Checks)
+        </h2>
+        <p class="text-xs text-muted-foreground mt-0.5">
+          Sistem memverifikasi kelayakan neraca dan saldo transaksi sebelum penguncian buku dapat disetujui.
+        </p>
+      </div>
+
+      <!-- Month Selector & Re-audit button -->
+      <div class="flex items-center gap-3">
+        <input
+          type="month"
+          class="px-4 py-2 bg-background border border-input rounded-full text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          [ngModel]="selectedPeriodMonth()"
+          (ngModelChange)="onMonthChange($event)"
+        />
+        <button
+          hlmBtn
+          variant="outline"
+          class="rounded-full gap-1.5 text-xs h-9 px-4"
+          (click)="runIntegrityCheck()"
+          [disabled]="isChecking()"
+        >
+          <ng-icon name="phosphorArrowsClockwise" [class.animate-spin]="isChecking()" />
+          Audit Ulang
+        </button>
+      </div>
+    </div>
+
+    <!-- 4 Checks Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- 1. Keseimbangan Jurnal -->
+      <div class="p-4 rounded-2xl border transition-colors flex items-start gap-3"
+        [class.bg-emerald-500/5]="integrityCheckResult()?.balancedJournals"
+        [class.border-emerald-500/20]="integrityCheckResult()?.balancedJournals"
+        [class.bg-rose-500/5]="integrityCheckResult() && !integrityCheckResult()?.balancedJournals"
+        [class.border-rose-500/20]="integrityCheckResult() && !integrityCheckResult()?.balancedJournals"
+        [class.bg-muted/30]="!integrityCheckResult()"
+        [class.border-border]="!integrityCheckResult()"
+      >
+        <div class="mt-0.5">
+          @if (integrityCheckResult()?.balancedJournals) {
+            <ng-icon name="phosphorCheckCircle" class="text-emerald-600 dark:text-emerald-400 text-xl" />
+          } @else {
+            <ng-icon name="phosphorXCircle" class="text-rose-600 dark:text-rose-400 text-xl" />
+          }
+        </div>
+        <div class="flex-1">
+          <p class="text-xs font-bold text-foreground">1. Keseimbangan Jurnal Umum</p>
+          <p class="text-xs text-muted-foreground mt-0.5">
+            Debit: {{ formatRupiah(integrityCheckResult()?.totalDebit || 0) }} | Kredit: {{ formatRupiah(integrityCheckResult()?.totalCredit || 0) }}
+          </p>
+          @if (integrityCheckResult()?.balancedJournals) {
+            <span class="inline-block mt-1 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">Lolos: Seluruh jurnal seimbang</span>
+          } @else {
+            <span class="inline-block mt-1 text-xs text-rose-600 dark:text-rose-400 font-semibold">Gagal: Terdapat selisih debit dan kredit</span>
+          }
+        </div>
+      </div>
+
+      <!-- 2. Transaksi Draf Gantung -->
+      <div class="p-4 rounded-2xl border transition-colors flex items-start gap-3"
+        [class.bg-emerald-500/5]="integrityCheckResult() && integrityCheckResult()?.pendingDrafts === 0"
+        [class.border-emerald-500/20]="integrityCheckResult() && integrityCheckResult()?.pendingDrafts === 0"
+        [class.bg-rose-500/5]="(integrityCheckResult()?.pendingDrafts || 0) > 0"
+        [class.border-rose-500/20]="(integrityCheckResult()?.pendingDrafts || 0) > 0"
+        [class.bg-muted/30]="!integrityCheckResult()"
+        [class.border-border]="!integrityCheckResult()"
+      >
+        <div class="mt-0.5">
+          @if (integrityCheckResult() && integrityCheckResult()?.pendingDrafts === 0) {
+            <ng-icon name="phosphorCheckCircle" class="text-emerald-600 dark:text-emerald-400 text-xl" />
+          } @else {
+            <ng-icon name="phosphorXCircle" class="text-rose-600 dark:text-rose-400 text-xl" />
+          }
+        </div>
+        <div class="flex-1">
+          <p class="text-xs font-bold text-foreground">2. Transaksi Draf Gantung</p>
+          <p class="text-xs text-muted-foreground mt-0.5">
+            Draf tertunda: <strong class="text-foreground">{{ integrityCheckResult()?.pendingDrafts || 0 }} dokumen</strong>
+          </p>
+          @if (integrityCheckResult() && integrityCheckResult()?.pendingDrafts === 0) {
+            <span class="inline-block mt-1 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">Lolos: Tidak ada dokumen menggantung</span>
+          } @else {
+            <span class="inline-block mt-1 text-xs text-rose-600 dark:text-rose-400 font-semibold">Gagal: Selesaikan atau batalkan dokumen draf terlebih dahulu</span>
+          }
+        </div>
+      </div>
+
+      <!-- 3. Rekonsiliasi Kas -->
+      <div class="p-4 rounded-2xl border bg-emerald-500/5 border-emerald-500/20 flex items-start gap-3">
+        <div class="mt-0.5 text-emerald-600 dark:text-emerald-400">
+          <ng-icon name="phosphorCheckCircle" class="text-xl" />
+        </div>
+        <div class="flex-1">
+          <p class="text-xs font-bold text-foreground">3. Rekonsiliasi Kas & Bank</p>
+          <p class="text-xs text-muted-foreground mt-0.5">
+            Seluruh saldo kas pembantu sinkron dengan akun likuiditas buku besar.
+          </p>
+          <span class="inline-block mt-1 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">Lolos: Likuiditas terverifikasi</span>
+        </div>
+      </div>
+
+      <!-- 4. Konsistensi Subledger -->
+      <div class="p-4 rounded-2xl border bg-emerald-500/5 border-emerald-500/20 flex items-start gap-3">
+        <div class="mt-0.5 text-emerald-600 dark:text-emerald-400">
+          <ng-icon name="phosphorCheckCircle" class="text-xl" />
+        </div>
+        <div class="flex-1">
+          <p class="text-xs font-bold text-foreground">4. Konsistensi Buku Besar & Subledger</p>
+          <p class="text-xs text-muted-foreground mt-0.5">
+            Saldo piutang penjualan, hutang pembelian, dan upah sinkron.
+          </p>
+          <span class="inline-block mt-1 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">Lolos: Subledger konsisten</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pre-close Action Footer -->
+    <div class="pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="text-xs text-muted-foreground">
+        @if (currentPeriodStatus() === 'closed') {
+          <span class="text-amber-600 dark:text-amber-400 font-semibold">Periode {{ selectedPeriodMonth() }} sudah dalam status tertutup.</span>
+        } @else if (integrityCheckResult()?.canClose) {
+          <span class="text-emerald-600 dark:text-emerald-400 font-semibold">Seluruh kriteria terpenuhi. Periode dapat dikunci sekarang.</span>
+        } @else {
+          <span class="text-rose-600 dark:text-rose-400 font-semibold">Perbaiki isu di atas sebelum mengunci periode.</span>
+        }
+      </div>
+
+      @if (currentPeriodStatus() === 'open') {
+        <button
+          hlmBtn
+          class="rounded-full gap-2 text-xs h-10 px-6 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+          [disabled]="!integrityCheckResult()?.canClose || isSubmitting()"
+          (click)="openCloseModal()"
+        >
+          <ng-icon name="phosphorLock" />
+          Kunci & Tutup Periode {{ selectedPeriodMonth() }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Periods List Card -->
+  <div class="bg-card border border-border rounded-3xl shadow-xs overflow-hidden">
+    <div class="p-6 border-b border-border">
+      <h2 class="text-base font-semibold text-foreground flex items-center gap-2">
+        <ng-icon name="phosphorCalendarBlank" class="text-primary" />
+        Daftar Periode Akuntansi Perusahaan
+      </h2>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left border-collapse">
+        <thead class="bg-muted/40 text-xs uppercase font-semibold text-muted-foreground border-b border-border">
+          <tr>
+            <th class="px-6 py-4">Bulan Periode</th>
+            <th class="px-6 py-4">Rentang Tanggal</th>
+            <th class="px-6 py-4 text-center">Status</th>
+            <th class="px-6 py-4">Waktu Ditutup</th>
+            <th class="px-6 py-4">Catatan / Alasan Reopen</th>
+            <th class="px-6 py-4 text-center">Aksi (Owner)</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border font-normal">
+          @for (period of accountingPeriods(); track period.id) {
+            <tr class="hover:bg-muted/20 transition-colors">
+              <td class="px-6 py-4 font-mono font-bold text-foreground text-xs whitespace-nowrap">
+                {{ period.periodMonth }}
+              </td>
+              <td class="px-6 py-4 text-xs font-mono text-muted-foreground whitespace-nowrap">
+                {{ period.startDate | date:'dd/MM/yyyy' }} s.d. {{ period.endDate | date:'dd/MM/yyyy' }}
+              </td>
+              <td class="px-6 py-4 text-center whitespace-nowrap">
+                @if (period.status === 'closed') {
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                    <ng-icon name="phosphorLock" />
+                    Terkunci (Closed)
+                  </span>
+                } @else {
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    <ng-icon name="phosphorLockOpen" />
+                    Terbuka (Open)
+                  </span>
+                }
+              </td>
+              <td class="px-6 py-4 text-xs font-mono text-muted-foreground whitespace-nowrap">
+                {{ period.closedAt ? (period.closedAt | date:'dd/MM/yyyy HH:mm') : '-' }}
+              </td>
+              <td class="px-6 py-4 text-xs text-muted-foreground max-w-xs">
+                @if (period.reopenReason) {
+                  <span class="text-rose-600 dark:text-rose-400 font-medium">Reopen: {{ period.reopenReason }}</span>
+                } @else {
+                  -
+                }
+              </td>
+              <td class="px-6 py-4 text-center whitespace-nowrap">
+                @if (period.status === 'closed') {
+                  <button
+                    hlmBtn
+                    variant="outline"
+                    class="rounded-full text-xs h-8 px-3 gap-1 text-primary"
+                    [disabled]="!isOwner()"
+                    (click)="openReopenModal(period)"
+                    title="Buka kembali periode buku (Khusus Owner)"
+                  >
+                    <ng-icon name="phosphorLockOpen" />
+                    Buka Kembali
+                  </button>
+                } @else {
+                  <span class="text-xs text-muted-foreground">-</span>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="px-6 py-12 text-center text-muted-foreground text-sm">
+                Belum ada periode akuntansi terdaftar.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal Konfirmasi Tutup Periode -->
+  @if (isCloseModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs">
+      <div class="bg-card border border-border rounded-3xl max-w-md w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div class="px-6 py-5 border-b border-border flex items-center justify-between">
+          <h3 class="text-base font-bold text-foreground flex items-center gap-2">
+            <ng-icon name="phosphorLock" class="text-primary" />
+            Konfirmasi Penutupan Periode
+          </h3>
+          <button
+            class="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted transition-colors"
+            (click)="closeCloseModal()"
+          >
+            <ng-icon name="phosphorX" class="text-lg" />
+          </button>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <p class="text-sm text-foreground">
+            Apakah Anda yakin ingin menutup dan mengunci periode buku <strong>{{ selectedPeriodMonth() }}</strong>?
+          </p>
+          <div class="p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-xs text-amber-600 dark:text-amber-400 space-y-1">
+            <p class="font-bold">Konsekuensi Penguncian:</p>
+            <ul class="list-disc list-inside space-y-0.5">
+              <li>Seluruh transaksi dengan tanggal pada bulan ini tidak dapat diubah atau dibatalkan.</li>
+              <li>Tidak dapat menambahkan dokumen baru dengan tanggal di periode ini.</li>
+            </ul>
+          </div>
+
+          <div>
+            <label for="period-close-notes" class="block text-xs font-semibold text-foreground mb-1.5">
+              Catatan Penutupan
+            </label>
+            <textarea
+              id="period-close-notes"
+              rows="2"
+              class="w-full px-4 py-2 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              [ngModel]="closeNotes()"
+              (ngModelChange)="closeNotes.set($event)"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 bg-muted/40 border-t border-border flex items-center justify-end gap-3">
+          <button
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm h-10 px-5"
+            (click)="closeCloseModal()"
+            [disabled]="isSubmitting()"
+          >
+            Batal
+          </button>
+          <button
+            hlmBtn
+            class="rounded-full text-sm h-10 px-6 bg-primary text-primary-foreground hover:bg-primary/90"
+            (click)="submitClose()"
+            [disabled]="isSubmitting()"
+          >
+            @if (isSubmitting()) {
+              <ng-icon name="phosphorArrowsClockwise" class="animate-spin mr-2" />
+              Mengunci...
+            } @else {
+              Ya, Tutup Periode
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Buka Kembali Periode (Reopen) -->
+  @if (isReopenModalOpen(); as period) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs">
+      <div class="bg-card border border-border rounded-3xl max-w-md w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div class="px-6 py-5 border-b border-border flex items-center justify-between">
+          <h3 class="text-base font-bold text-foreground flex items-center gap-2">
+            <ng-icon name="phosphorLockOpen" class="text-amber-600 dark:text-amber-400" />
+            Buka Kembali Periode {{ selectedPeriodForReopen()?.periodMonth }}
+          </h3>
+          <button
+            class="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted transition-colors"
+            (click)="closeReopenModal()"
+          >
+            <ng-icon name="phosphorX" class="text-lg" />
+          </button>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <p class="text-sm text-foreground">
+            Tindakan ini memerlukan otorisasi Owner dan wajib menyertakan alasan untuk keperluan audit trail.
+          </p>
+
+          <div>
+            <label for="period-reopen-reason" class="block text-xs font-semibold text-foreground mb-1.5">
+              Alasan Pembukaan Kembali Periode <span class="text-destructive">*</span>
+            </label>
+            <textarea
+              id="period-reopen-reason"
+              rows="3"
+              placeholder="Contoh: Koreksi audit pajak eksternal, penyesuaian saldo akhir..."
+              class="w-full px-4 py-2 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              [ngModel]="reopenReason()"
+              (ngModelChange)="reopenReason.set($event)"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 bg-muted/40 border-t border-border flex items-center justify-end gap-3">
+          <button
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm h-10 px-5"
+            (click)="closeReopenModal()"
+            [disabled]="isSubmitting()"
+          >
+            Batal
+          </button>
+          <button
+            hlmBtn
+            class="rounded-full text-sm h-10 px-6 bg-amber-600 text-white hover:bg-amber-700"
+            (click)="submitReopen()"
+            [disabled]="isSubmitting()"
+          >
+            @if (isSubmitting()) {
+              <ng-icon name="phosphorArrowsClockwise" class="animate-spin mr-2" />
+              Membuka...
+            } @else {
+              Buka Periode
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

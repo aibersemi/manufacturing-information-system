@@ -3,6 +3,7 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   phosphorArrowsClockwise,
+  phosphorBank,
   phosphorBell,
   phosphorBuildings,
   phosphorCaretDown,
@@ -51,6 +52,7 @@ import { CompanyService, Company } from '../../core/services/company.service';
   ],
   providers: [
     provideIcons({
+      phosphorBank,
       phosphorGauge,
       phosphorUsersThree,
       phosphorPackage,
@@ -96,6 +98,7 @@ export class DashboardLayoutComponent {
     sales: true,
     operations: true,
     inventory: true,
+    finance: true,
     qc: false,
     settings: false,
   });

@@ -268,6 +268,95 @@
           }
         </div>
 
+        <!-- Group: Keuangan & Akuntansi (Fase 7) -->
+        <div class="flex flex-col">
+          <button
+            type="button"
+            (click)="toggleGroup('finance')"
+            class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-muted-foreground transition hover:bg-accent/50 hover:text-foreground"
+            [title]="isSidebarCollapsed() ? 'Keuangan & Akuntansi' : ''"
+          >
+            <ng-icon name="phosphorBank" class="size-4 shrink-0 text-foreground/80" />
+            @if (!isSidebarCollapsed()) {
+              <span class="truncate font-medium text-foreground">Keuangan &amp; Akuntansi</span>
+              <ng-icon
+                name="phosphorCaretRight"
+                class="ms-auto size-3.5 transition-transform duration-200"
+                [class.rotate-90]="isGroupOpen('finance')"
+              />
+            }
+          </button>
+
+          @if (!isSidebarCollapsed() && isGroupOpen('finance')) {
+            <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
+              <a
+                routerLink="/workspace/finance/coa"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Bagan Akun (COA)
+              </a>
+              <a
+                routerLink="/workspace/finance/cash-bank"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Kas &amp; Bank
+              </a>
+              <a
+                routerLink="/workspace/finance/expenses"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Biaya Operasional
+              </a>
+              <a
+                routerLink="/workspace/finance/wages"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Upah &amp; Gaji Borongan
+              </a>
+              <a
+                routerLink="/workspace/finance/prepaid"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Biaya Dibayar Dimuka
+              </a>
+              <a
+                routerLink="/workspace/finance/opening-balance"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Saldo Awal Neraca
+              </a>
+              <a
+                routerLink="/workspace/finance/journals"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Jurnal Memorial
+              </a>
+              <a
+                routerLink="/workspace/finance/period-close"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Tutup Periode Buku
+              </a>
+            </div>
+          }
+        </div>
+
         <!-- Group 2: Operasional Pabrik -->
         <div class="flex flex-col">
           <button

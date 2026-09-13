@@ -216,6 +216,108 @@ export const routes: Routes = [
             (m) => m.SalesFulfillmentComponent
           ),
       },
+      // Keuangan & Akuntansi (Fase 7: Finance, Accounting & General Ledger)
+      {
+        path: 'workspace/finance/coa',
+        loadComponent: () =>
+          import('./features/finance/coa/coa.component').then(
+            (m) => m.CoaComponent
+          ),
+      },
+      {
+        path: 'workspace/finance/cash-bank',
+        loadComponent: () =>
+          import('./features/finance/cash-bank/cash-bank.component').then(
+            (m) => m.CashBankComponent
+          ),
+      },
+      {
+        path: 'workspace/finance/expenses',
+        loadComponent: () =>
+          import('./features/finance/expenses/operating-expenses.component').then(
+            (m) => m.OperatingExpensesComponent
+          ),
+      },
+      {
+        path: 'workspace/finance/wages',
+        loadComponent: () =>
+          import('./features/finance/wages/wage-payments.component').then(
+            (m) => m.WagePaymentsComponent
+          ),
+      },
+      {
+        path: 'workspace/finance/prepaid',
+        loadComponent: () =>
+          import('./features/finance/prepaid/prepaid-expenses.component').then(
+            (m) => m.PrepaidExpensesComponent
+          ),
+      },
+      {
+        path: 'workspace/finance/opening-balance',
+        loadComponent: () =>
+          import('./features/finance/opening-balance/opening-balance.component').then(
+            (m) => m.OpeningBalanceComponent
+          ),
+      },
+      {
+        path: 'workspace/finance/journals',
+        loadComponent: () =>
+          import('./features/finance/journals/manual-journals.component').then(
+            (m) => m.ManualJournalsComponent
+          ),
+      },
+      {
+        path: 'workspace/finance/period-close',
+        loadComponent: () =>
+          import('./features/finance/period-close/period-close.component').then(
+            (m) => m.PeriodCloseComponent
+          ),
+      },
+      {
+        path: 'coa',
+        redirectTo: 'workspace/finance/coa',
+        pathMatch: 'full',
+      },
+      {
+        path: 'cash',
+        redirectTo: 'workspace/finance/cash-bank',
+        pathMatch: 'full',
+      },
+      {
+        path: 'cash-bank',
+        redirectTo: 'workspace/finance/cash-bank',
+        pathMatch: 'full',
+      },
+      {
+        path: 'expenses',
+        redirectTo: 'workspace/finance/expenses',
+        pathMatch: 'full',
+      },
+      {
+        path: 'wages',
+        redirectTo: 'workspace/finance/wages',
+        pathMatch: 'full',
+      },
+      {
+        path: 'prepaid',
+        redirectTo: 'workspace/finance/prepaid',
+        pathMatch: 'full',
+      },
+      {
+        path: 'opening-balance',
+        redirectTo: 'workspace/finance/opening-balance',
+        pathMatch: 'full',
+      },
+      {
+        path: 'journals',
+        redirectTo: 'workspace/finance/journals',
+        pathMatch: 'full',
+      },
+      {
+        path: 'period-close',
+        redirectTo: 'workspace/finance/period-close',
+        pathMatch: 'full',
+      },
       {
         path: 'sales',
         redirectTo: 'workspace/sales',

@@ -2907,8 +2907,10 @@ export type Database = {
           employee_id: string
           gross_amount: number
           id: string
+          is_paid: boolean
           item_id: string | null
           paid_amount: number
+          payment_document_id: string | null
           posted_at: string
           quantity: number
           rate: number
@@ -2922,8 +2924,10 @@ export type Database = {
           employee_id: string
           gross_amount: number
           id?: string
+          is_paid?: boolean
           item_id?: string | null
           paid_amount?: number
+          payment_document_id?: string | null
           posted_at?: string
           quantity: number
           rate: number
@@ -2937,8 +2941,10 @@ export type Database = {
           employee_id?: string
           gross_amount?: number
           id?: string
+          is_paid?: boolean
           item_id?: string | null
           paid_amount?: number
+          payment_document_id?: string | null
           posted_at?: string
           quantity?: number
           rate?: number
@@ -2995,6 +3001,13 @@ export type Database = {
             columns: ["item_id"]
             isOneToOne: false
             referencedRelation: "master_record"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wage_liability_payment_document_id_fkey"
+            columns: ["payment_document_id"]
+            isOneToOne: false
+            referencedRelation: "business_document"
             referencedColumns: ["id"]
           },
           {
@@ -3151,6 +3164,14 @@ export type Database = {
         Args: { p_company_id: string; p_creator_user_id: string }
         Returns: undefined
       }
+      close_accounting_period: {
+        Args: {
+          p_company_id: string
+          p_period_month: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       confirm_operator_cutting: {
         Args: {
           p_actual_date: string
@@ -3183,6 +3204,19 @@ export type Database = {
           p_order_date?: string
           p_order_number?: string
           p_target_delivery_date?: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
+      create_prepaid_expense: {
+        Args: {
+          p_company_id: string
+          p_description: string
+          p_expense_account_id: string
+          p_number_of_months: number
+          p_original_amount: number
+          p_prepaid_account_id: string
+          p_start_date: string
           p_user_id?: string
         }
         Returns: Json
@@ -3275,6 +3309,60 @@ export type Database = {
           username: string
         }[]
       }
+      post_cash_transfer: {
+        Args: {
+          p_amount: number
+          p_company_id: string
+          p_destination_cash_id: string
+          p_notes?: string
+          p_source_cash_id: string
+          p_transfer_date?: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
+      post_manual_journal: {
+        Args: {
+          p_company_id: string
+          p_description: string
+          p_lines: Json
+          p_transaction_date: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
+      post_opening_balance: {
+        Args: {
+          p_balance_date: string
+          p_company_id: string
+          p_lines?: Json
+          p_notes?: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
+      post_operating_expense: {
+        Args: {
+          p_cash_account_id?: string
+          p_company_id: string
+          p_expense_date?: string
+          p_funding_method: string
+          p_lines?: Json
+          p_notes?: string
+          p_supplier_id?: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
+      post_prepaid_amortization: {
+        Args: {
+          p_company_id: string
+          p_period_month: string
+          p_prepaid_id: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
       post_purchase_document: {
         Args: { p_document_id: string; p_user_id: string }
         Returns: Json
@@ -3305,9 +3393,65 @@ export type Database = {
         }
         Returns: Json
       }
+      post_wage_payment: {
+        Args: {
+          p_cash_account_id: string
+          p_company_id: string
+          p_employee_id: string
+          p_liability_ids?: Json
+          p_notes?: string
+          p_payment_date?: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
+      reopen_accounting_period: {
+        Args: {
+          p_company_id: string
+          p_period_month: string
+          p_reason: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      reverse_manual_journal: {
+        Args: {
+          p_company_id: string
+          p_journal_id: string
+          p_reason: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
+      save_accounting_mappings: {
+        Args: { p_company_id: string; p_mappings: Json; p_user_id?: string }
+        Returns: Json
+      }
+      save_report_account_mappings: {
+        Args: { p_company_id: string; p_mappings: Json; p_user_id?: string }
+        Returns: Json
+      }
       sync_production_operator_profiles: {
         Args: { p_company_id: string }
         Returns: number
+      }
+      update_ledger_account_status: {
+        Args: {
+          p_account_id: string
+          p_company_id: string
+          p_is_active: boolean
+          p_user_id?: string
+        }
+        Returns: Json
+      }
+      void_operating_expense: {
+        Args: {
+          p_company_id: string
+          p_document_id: string
+          p_reason: string
+          p_user_id?: string
+        }
+        Returns: Json
       }
       void_purchase_document: {
         Args: { p_document_id: string; p_reason: string; p_user_id: string }

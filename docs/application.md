@@ -31,6 +31,7 @@ src/
 │   │   ├── services/
 │   │   │   ├── auth.service.ts         # Reactive session & user state via Signals + waitForAuthReady()
 │   │   │   ├── company.service.ts      # Multi-company context, RLS tenant scope, & local storage persistence
+│   │   │   ├── finance.service.ts      # Layanan Keuangan & Buku Besar: COA, Kas/Bank, Biaya, Upah, Prepaid, SA, Jurnal, Periode
 │   │   │   ├── master-data.service.ts  # Layanan CRUD UOM, Pelanggan, Pemasok, Material, Produk, BOM, Pegawai, & Tarif Upah
 │   │   │   ├── production.service.ts   # Layanan Operasional Pabrik: Perintah Produksi, SPK 4 Tahap, Catat Potong/Sablon, Bundle, & Repair
 │   │   │   ├── purchasing-inventory.service.ts # Layanan Pengadaan (Bahan, Perlengkapan, Non-Produksi, Pembayaran) & Inventaris
@@ -43,6 +44,15 @@ src/
 │   ├── features/
 │   │   ├── auth/login/                 # Komponen halaman masuk login
 │   │   ├── dashboard/                  # Komponen overview metrik manufaktur
+│   │   ├── finance/                    # Modul Keuangan, Akuntansi & Buku Besar (Fase 7)
+│   │   │   ├── cash-bank/              # Manajemen Likuiditas Kas & Transfer Antar Bank (/workspace/finance/cash-bank)
+│   │   │   ├── coa/                    # Bagan Akun & Pemetaan Sistem 21 Akun (/workspace/finance/coa)
+│   │   │   ├── expenses/               # Biaya Operasional Tunai & Akrual (/workspace/finance/expenses)
+│   │   │   ├── journals/               # Jurnal Memorial & Jurnal Pembalik (/workspace/finance/journals)
+│   │   │   ├── opening-balance/        # Saldo Awal Neraca & Kas Terseimbang (/workspace/finance/opening-balance)
+│   │   │   ├── period-close/           # Audit 4 Kontrol & Penutupan Periode Buku (/workspace/finance/period-close)
+│   │   │   ├── prepaid/                # Biaya Dibayar Dimuka & Amortisasi (/workspace/finance/prepaid)
+│   │   │   └── wages/                  # Pembayaran Upah & Gaji Borongan Operator (/workspace/finance/wages)
 │   │   ├── inventory/                  # Modul Buku Besar Inventaris, Kartu Mutasi, & Roll (/workspace/inventory)
 │   │   ├── master-data/                # Modul Master Data & Bill of Materials
 │   │   │   ├── bom/                    # Komponen resep Bill of Materials (/workspace/bom)
@@ -317,6 +327,87 @@ Modul ini mengelola alur manufaktur end-to-end dari penetapan target produksi hi
    - Visualisasi pipeline kuantitas per tahapan: **Target PP** -> **Potong (Cut)** -> **Sablon (Print)** -> **Jahit (Sew)** -> **Kemas (Pack)**.
    - Menghitung persentase penyelesaian pesanan (`completionPercentage`), jumlah ikatan aktif yang sedang beredar di lantai pabrik (*active bundles*), dan kasus perbaikan yang belum selesai (*active repairs*).
    - Pemantauan status dokumen, target tanggal penyelesaian, dan indikator penguncian spesifikasi teknis (*code locked*).
+
+---
+
+## Modul Penjualan & Piutang Dagang (Sales & Accounts Receivable)
+
+Modul ini mengelola siklus pesanan penjualan dari pelanggan, pembuatan faktur penjualan, penerimaan piutang dagang, dan pemenuhan pengiriman produk jadi:
+
+1. **Pesanan Pelanggan / Sales Orders (`customer_order`)** (`/workspace/sales-orders`):
+   - Pencatatan pesanan produk jadi dari pelanggan dengan nomor otomatis `SO-YYMMDD-###`.
+   - Tracking status alur pesanan: `draft` -> `confirmed` -> `fulfilled` / `cancelled`.
+   - Integrasi permintaan kuantitas terhadap ketersediaan persediaan barang jadi atau pemicu Perintah Produksi (PP).
+
+2. **Faktur Penjualan (`sales_invoice`)** (`/workspace/sales`):
+   - Penerbitan faktur tagihan penjualan dengan penomoran `FJ-YYMMDD-###`.
+   - Metode pembayaran: **Tunai (Cash)** langsung ke akun kas/bank atau **Kredit (Term)** yang mencatat piutang dagang pelanggan (`customer_receivable`).
+   - Pengurangan stok barang jadi secara otomatis dari inventaris gudang (`inventory_movement` jenis `sales_issue`).
+   - Pembukuan jurnal penjualan: Debit Kas/Piutang Usaha vs Kredit Pendapatan Penjualan dan HPP vs Persediaan Barang Jadi.
+
+3. **Penerimaan Pembayaran Piutang (`sales_receipt`)** (`/workspace/sales-receipts`):
+   - Penerimaan pelunasan piutang pelanggan atas faktur yang belum lunas dengan bukti transaksi `KM-YYMMDD-###`.
+   - Mengurangi saldo piutang faktur terkait (`paid_amount`) dan membukukan mutasi kas masuk (`cash_movement` jenis `revenue`).
+   - Pencatatan buku pembantu piutang (`subledger_entry` kind `customer_receivable`).
+
+4. **Pengiriman & Pemenuhan Pesanan (`sales_fulfillment`)** (`/workspace/sales-fulfillment`):
+   - Pencatatan Surat Jalan Pengiriman (`SJ-YYMMDD-###`) dan pelacakan status ekspedisi logistik.
+   - Konfirmasi serah terima barang kepada pelanggan dan pemenuhan status SO.
+
+---
+
+## Modul Keuangan, Akuntansi & Buku Besar (Finance, Accounting & General Ledger)
+
+Modul Keuangan & Akuntansi (Fase 7) mengimplementasikan sistem buku besar berpasangan (*Double-Entry Bookkeeping*) berstandar PSAK dengan kontrol validasi ketat dan fungsi transaksi atomik PostgreSQL:
+
+1. **Bagan Akun Standar (COA) & Pemetaan Sistem 21 Akun (`ledger_account`)** (`/workspace/finance/coa`):
+   - Bagan akun 5 klasifikasi: **Aset (1)**, **Kewajiban (2)**, **Ekuitas (3)**, **Pendapatan (4)**, dan **Beban (5)**.
+   - Penomoran akun terstruktur: `[Tipe]-[Level1].[Level2].[Nomor]` (misal: `1-1.1.01 Kas Utama`, `2-1.1.01 Hutang Usaha`).
+   - **System Mapping (21 Akun Standar)**: Menghubungkan logika transaksi otomatis dari seluruh modul bisnis (pembelian, penjualan, persediaan, upah, amortisasi) ke akun buku besar yang kompatibel.
+   - **Report Mapping**: Pengelompokan akun ke dalam pos manajemen laporan keuangan (*Revenue, COGS, Operating Expense, Payroll*) dan aktivitas arus kas (*Operating, Investing, Financing*).
+   - Akun khusus `3-3.0.00` (*Laba Tahun Berjalan*) adalah virtual presentation-only account yang dikalkulasi secara reaktif dan dilarang menerima posting jurnal langsung.
+
+2. **Manajemen Likuiditas Kas & Bank (`cash_bank`)** (`/workspace/finance/cash-bank`):
+   - Pengelolaan seluruh akun kas fisik, rekening bank, dan dompet digital perusahaan.
+   - Monitoring saldo likuiditas real-time dan buku pembantu mutasi kas masuk/keluar (`cash_movement`).
+   - **Transfer Antar Rekening Kas/Bank**: Stored procedure `post_cash_transfer` yang memindahkan likuiditas antar rekening secara atomik dengan validasi kecukupan saldo pengirim dan menghasilkan dokumen `TRF-YYYYMM-XXXX`.
+
+3. **Biaya Operasional Multi-Akun (`operating_expense`)** (`/workspace/finance/expenses`):
+   - Pencatatan pengeluaran operasional perusahaan dengan nomor dokumen `BO-YYYYMM-XXXX`.
+   - Mendukung dua metode pendanaan: **Kas Langsung (Tunai)** atau **Hutang Biaya Akrual (Payable)** ke rekanan/vendor.
+   - Multi-line allocation: Mendistribusikan satu bukti pengeluaran ke berbagai pos akun beban GL yang berbeda.
+   - Pembatalan transaksi aman via stored procedure `void_operating_expense` yang membalikkan jurnal dan mutasi kas secara utuh disertai alasan pembatalan untuk audit trail.
+
+4. **Pembayaran Upah & Gaji Borongan (`wage_payment`)** (`/workspace/finance/wages`):
+   - Pelunasan kewajiban hutang upah operator produksi borongan (`wage_liability`) yang tercatat dari SPK 4 tahap pengerjaan (*Cutting, Printing, Sewing, Finishing, QC, Packing*).
+   - Multi-selection per operator: Menjamin 1 voucher pengeluaran kas (`KK-UP-YYYYMM-XXXX`) dialokasikan khusus untuk satu penerima.
+   - Stored procedure `post_wage_payment` secara atomik menandai kewajiban `is_paid = true`, mengurangi hutang tenaga kerja di buku besar, dan memotong saldo rekening kas pembayar.
+
+5. **Biaya Dibayar Dimuka & Amortisasi (`prepaid_expense`)** (`/workspace/finance/prepaid`):
+   - Pencatatan aset dibayar dimuka (sewa gedung tahunan, polis asuransi pabrik, dsb) dengan jadwal amortisasi proporsional bulanan.
+   - Pendaftaran kontrak baru via `create_prepaid_expense` menetapkan akun aset prepaid, akun beban pengakuan, durasi bulan, dan total nilai kontrak.
+   - Posting amortisasi bulanan via `post_prepaid_amortization` mendebit akun beban dan mengkredit akun aset prepaid, mencatat riwayat entri pada `prepaid_amortization_entry`, dan memperbarui persentase progress penyerapan.
+
+6. **Saldo Awal Neraca & Kas (`opening_balance`)** (`/workspace/finance/opening-balance`):
+   - Inisialisasi posisi awal seluruh akun neraca (Aset, Kewajiban, Ekuitas) saat pembukuan baru perusahaan dimulai.
+   - Monitor Keseimbangan Real-time: Memvalidasi Total Debit = Total Kredit ($\Delta = 0$) sebelum tombol posting diaktifkan.
+   - Stored procedure `post_opening_balance` menerbitkan dokumen `SA-YYYYMM-XXXX`, membukukan jurnal pembuka ke `general_ledger_line`, dan menyelaraskan saldo kas awal ke `cash_movement`.
+
+7. **Jurnal Memorial / Manual (`manual_journal`)** (`/workspace/finance/journals`):
+   - Pencatatan jurnal penyesuaian akhir periode, koreksi pembukuan, atau transaksi memorial non-operasional dengan nomor dokumen `JU-YYYYMM-XXXX`.
+   - Validasi keseimbangan multi-baris otomatis (total debit = total kredit) dan larangan posting ke akun virtual `3-3.0.00`.
+   - Fitur Pembalik Jurnal (*Reversal*): Stored procedure `reverse_manual_journal` membuat entri jurnal pembalik otomatis yang memutar balik posisi debit dan kredit dari jurnal sumber dengan penanda relasi `reversal_of_id`.
+
+8. **Penutupan Periode Akuntansi (`period_close`)** (`/workspace/finance/period-close`):
+   - Penguncian pembukuan bulanan (`accounting_period`) untuk menjaga integritas laporan historis.
+   - **Pre-close Verification (4 Control Checks)**:
+     1. *Keseimbangan Jurnal*: Total debit = total kredit pada seluruh jurnal umum periode tersebut.
+     2. *Transaksi Draf Gantung*: Tidak ada transaksi berstatus draft yang belum diselesaikan.
+     3. *Rekonsiliasi Kas*: Seluruh mutasi likuiditas kas & bank terverifikasi sah.
+     4. *Konsistensi Subledger*: Buku pembantu piutang, hutang, dan upah sinkron dengan saldo buku besar.
+   - Penutupan via `close_accounting_period` mengunci periode dari penambahan, pengubahan, atau pembatalan transaksi dengan tanggal pada periode tersebut.
+   - Pembukaan kembali (*Reopen*) via `reopen_accounting_period` dibatasi secara ketat hanya dapat dieksekusi oleh peran **Owner** dengan menyertakan alasan resmi untuk audit trail.
+
 
 
 

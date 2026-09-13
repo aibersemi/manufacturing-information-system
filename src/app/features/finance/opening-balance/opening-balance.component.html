@@ -1,0 +1,470 @@
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+        <ng-icon name="phosphorScales" class="text-primary text-3xl" />
+        Saldo Awal Neraca & Kas
+      </h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Inisialisasi posisi awal akun neraca (Aset, Kewajiban, Ekuitas) dan rekening kas dengan verifikasi keseimbangan debit-kredit mutlak.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button
+        hlmBtn
+        variant="outline"
+        class="rounded-full gap-2 text-sm h-10 px-4"
+        (click)="refreshData()"
+        [disabled]="isLoading()"
+      >
+        <ng-icon name="phosphorArrowsClockwise" [class.animate-spin]="isLoading()" />
+        Muat Ulang
+      </button>
+
+      <!-- View Switcher -->
+      <div class="inline-flex p-1 bg-muted/60 rounded-full">
+        <button
+          type="button"
+          class="px-4 py-1.5 text-xs font-semibold rounded-full transition-all"
+          [class.bg-card]="activeView() === 'editor'"
+          [class.text-foreground]="activeView() === 'editor'"
+          [class.shadow-xs]="activeView() === 'editor'"
+          [class.text-muted-foreground]="activeView() !== 'editor'"
+          (click)="activeView.set('editor')"
+        >
+          Editor Saldo
+        </button>
+        <button
+          type="button"
+          class="px-4 py-1.5 text-xs font-semibold rounded-full transition-all"
+          [class.bg-card]="activeView() === 'history'"
+          [class.text-foreground]="activeView() === 'history'"
+          [class.shadow-xs]="activeView() === 'history'"
+          [class.text-muted-foreground]="activeView() !== 'history'"
+          (click)="activeView.set('history')"
+        >
+          Riwayat Dokumen ({{ openingBalances().length }})
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  @if (errorMessage()) {
+    <div class="flex items-center gap-3 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+      <ng-icon name="phosphorWarningCircle" class="text-xl shrink-0" />
+      <div class="flex-1 font-medium">{{ errorMessage() }}</div>
+      <button (click)="errorMessage.set(null)" class="text-destructive hover:opacity-80">
+        <ng-icon name="phosphorX" class="text-lg" />
+      </button>
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="flex items-center gap-3 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm">
+      <ng-icon name="phosphorCheckCircle" class="text-xl shrink-0" />
+      <div class="flex-1 font-medium">{{ successMessage() }}</div>
+      <button (click)="successMessage.set(null)" class="hover:opacity-80">
+        <ng-icon name="phosphorX" class="text-lg" />
+      </button>
+    </div>
+  }
+
+  <!-- View 1: Editor Saldo Awal -->
+  @if (activeView() === 'editor') {
+    <!-- Real-time Balance Monitor -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Debit</p>
+          <div class="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+            <ng-icon name="phosphorMoney" class="text-xl" />
+          </div>
+        </div>
+        <div class="mt-4">
+          <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ formatRupiah(totalDebit()) }}</h3>
+          <p class="text-xs text-muted-foreground mt-1">Akumulasi seluruh posisi aktiva</p>
+        </div>
+      </div>
+
+      <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Kredit</p>
+          <div class="w-10 h-10 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+            <ng-icon name="phosphorMoney" class="text-xl" />
+          </div>
+        </div>
+        <div class="mt-4">
+          <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ formatRupiah(totalCredit()) }}</h3>
+          <p class="text-xs text-muted-foreground mt-1">Akumulasi pasiva & modal</p>
+        </div>
+      </div>
+
+      <div
+        class="border rounded-3xl p-6 shadow-xs relative overflow-hidden transition-colors"
+        [class.bg-emerald-500/5]="isBalanced()"
+        [class.border-emerald-500/30]="isBalanced()"
+        [class.bg-card]="!isBalanced()"
+        [class.border-border]="!isBalanced()"
+      >
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-semibold uppercase tracking-wider"
+            [class.text-emerald-600]="isBalanced()"
+            [class.dark:text-emerald-400]="isBalanced()"
+            [class.text-muted-foreground]="!isBalanced()"
+          >
+            Status Keseimbangan
+          </p>
+          <div
+            class="w-10 h-10 rounded-2xl flex items-center justify-center"
+            [class.bg-emerald-500/10]="isBalanced()"
+            [class.text-emerald-600]="isBalanced()"
+            [class.dark:text-emerald-400]="isBalanced()"
+            [class.bg-rose-500/10]="!isBalanced()"
+            [class.text-rose-600]="!isBalanced()"
+            [class.dark:text-rose-400]="!isBalanced()"
+          >
+            @if (isBalanced()) {
+              <ng-icon name="phosphorCheckCircle" class="text-xl" />
+            } @else {
+              <ng-icon name="phosphorScales" class="text-xl" />
+            }
+          </div>
+        </div>
+        <div class="mt-4">
+          @if (isBalanced()) {
+            <h3 class="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">SEIMBANG (Δ = 0)</h3>
+            <p class="text-xs text-emerald-600/80 dark:text-emerald-400/80 mt-1">Jurnal siap diposting ke buku besar</p>
+          } @else {
+            <h3 class="text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400">
+              SELISIH: {{ formatRupiah(balanceDifference()) }}
+            </h3>
+            <p class="text-xs text-rose-600/80 dark:text-rose-400/80 mt-1">Total debit dan kredit harus sama</p>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Info Dokumen -->
+    <div class="bg-card border border-border rounded-3xl p-6 shadow-xs space-y-4">
+      <h2 class="text-base font-semibold text-foreground flex items-center gap-2">
+        <ng-icon name="phosphorBookOpen" class="text-primary" />
+        Parameter Dokumen Saldo Awal
+      </h2>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label for="opening-balance-date" class="block text-xs font-semibold text-foreground mb-1.5">
+            Tanggal Efektif Saldo Awal <span class="text-destructive">*</span>
+          </label>
+          <input
+            id="opening-balance-date"
+            type="date"
+            class="w-full px-4 py-2 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            [ngModel]="balanceDate()"
+            (ngModelChange)="balanceDate.set($event)"
+          />
+        </div>
+        <div class="sm:col-span-2">
+          <label for="opening-balance-notes" class="block text-xs font-semibold text-foreground mb-1.5">
+            Keterangan Dokumen / Referensi Audit
+          </label>
+          <input
+            id="opening-balance-notes"
+            type="text"
+            class="w-full px-4 py-2 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            [ngModel]="balanceNotes()"
+            (ngModelChange)="balanceNotes.set($event)"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Editor -->
+    <div class="bg-card border border-border rounded-3xl shadow-xs overflow-hidden">
+      <!-- Table Filter Header -->
+      <div class="p-6 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="relative w-full sm:w-80">
+          <ng-icon name="phosphorMagnifyingGlass" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm" />
+          <input
+            type="text"
+            placeholder="Cari akun neraca..."
+            class="w-full pl-9 pr-4 py-2 bg-background border border-input rounded-full text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)"
+          />
+        </div>
+
+        <div class="flex items-center gap-1.5 p-1 bg-muted/60 rounded-full text-xs">
+          <button
+            type="button"
+            class="px-3 py-1 rounded-full font-medium transition-all"
+            [class.bg-card]="typeFilter() === 'all'"
+            [class.text-foreground]="typeFilter() === 'all'"
+            [class.shadow-xs]="typeFilter() === 'all'"
+            [class.text-muted-foreground]="typeFilter() !== 'all'"
+            (click)="typeFilter.set('all')"
+          >
+            Semua
+          </button>
+          <button
+            type="button"
+            class="px-3 py-1 rounded-full font-medium transition-all"
+            [class.bg-card]="typeFilter() === 'asset'"
+            [class.text-foreground]="typeFilter() === 'asset'"
+            [class.shadow-xs]="typeFilter() === 'asset'"
+            [class.text-muted-foreground]="typeFilter() !== 'asset'"
+            (click)="typeFilter.set('asset')"
+          >
+            Aset
+          </button>
+          <button
+            type="button"
+            class="px-3 py-1 rounded-full font-medium transition-all"
+            [class.bg-card]="typeFilter() === 'liability'"
+            [class.text-foreground]="typeFilter() === 'liability'"
+            [class.shadow-xs]="typeFilter() === 'liability'"
+            [class.text-muted-foreground]="typeFilter() !== 'liability'"
+            (click)="typeFilter.set('liability')"
+          >
+            Kewajiban
+          </button>
+          <button
+            type="button"
+            class="px-3 py-1 rounded-full font-medium transition-all"
+            [class.bg-card]="typeFilter() === 'equity'"
+            [class.text-foreground]="typeFilter() === 'equity'"
+            [class.shadow-xs]="typeFilter() === 'equity'"
+            [class.text-muted-foreground]="typeFilter() !== 'equity'"
+            (click)="typeFilter.set('equity')"
+          >
+            Ekuitas
+          </button>
+        </div>
+      </div>
+
+      <!-- Table Content -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left border-collapse">
+          <thead class="bg-muted/40 text-xs uppercase font-semibold text-muted-foreground border-b border-border">
+            <tr>
+              <th class="px-6 py-4">Kode Akun</th>
+              <th class="px-6 py-4">Nama Akun Neraca</th>
+              <th class="px-6 py-4">Tipe</th>
+              <th class="px-6 py-4 text-right w-48">Saldo Debit (Rp)</th>
+              <th class="px-6 py-4 text-right w-48">Saldo Kredit (Rp)</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border font-normal">
+            @for (row of filteredRows(); track row.accountId) {
+              <tr class="hover:bg-muted/20 transition-colors">
+                <td class="px-6 py-4 font-mono font-semibold text-primary text-xs whitespace-nowrap">
+                  {{ row.code }}
+                </td>
+                <td class="px-6 py-4 font-medium text-foreground whitespace-nowrap">
+                  {{ row.name }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                    [class.bg-blue-500/10]="row.accountType === 'asset'"
+                    [class.text-blue-600]="row.accountType === 'asset'"
+                    [class.bg-amber-500/10]="row.accountType === 'liability'"
+                    [class.text-amber-600]="row.accountType === 'liability'"
+                    [class.bg-purple-500/10]="row.accountType === 'equity'"
+                    [class.text-purple-600]="row.accountType === 'equity'"
+                  >
+                    {{ translateAccountType(row.accountType) }}
+                  </span>
+                </td>
+                <td class="px-6 py-3 text-right">
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    class="w-full px-3 py-1.5 bg-background border border-input rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring font-mono text-right"
+                    [ngModel]="row.debit"
+                    (ngModelChange)="updateRow(row.accountId, { debit: $event ? +$event : null })"
+                  />
+                </td>
+                <td class="px-6 py-3 text-right">
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    class="w-full px-3 py-1.5 bg-background border border-input rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring font-mono text-right"
+                    [ngModel]="row.credit"
+                    (ngModelChange)="updateRow(row.accountId, { credit: $event ? +$event : null })"
+                  />
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="px-6 py-12 text-center text-muted-foreground text-sm">
+                  Tidak ada akun neraca yang cocok dengan filter pencarian.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Action Footer -->
+      <div class="p-6 bg-muted/40 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="text-xs text-muted-foreground">
+          Pastikan total debit dan kredit seimbang sebelum mengunci saldo awal.
+        </div>
+        <div class="flex items-center gap-3">
+          <button
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm h-10 px-5"
+            (click)="resetEditor()"
+            [disabled]="isSubmitting()"
+          >
+            Reset Form
+          </button>
+          <button
+            hlmBtn
+            class="rounded-full text-sm h-10 px-6 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+            (click)="submitOpeningBalance()"
+            [disabled]="!isBalanced() || isSubmitting()"
+          >
+            @if (isSubmitting()) {
+              <ng-icon name="phosphorArrowsClockwise" class="animate-spin mr-2" />
+              Menyimpan...
+            } @else {
+              Posting Saldo Awal ke GL
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- View 2: Riwayat Dokumen SA -->
+  @if (activeView() === 'history') {
+    <div class="bg-card border border-border rounded-3xl shadow-xs overflow-hidden">
+      <div class="p-6 border-b border-border">
+        <h2 class="text-base font-semibold text-foreground flex items-center gap-2">
+          <ng-icon name="phosphorFileText" class="text-primary" />
+          Riwayat Dokumen Saldo Awal yang Telah Diposting
+        </h2>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left border-collapse">
+          <thead class="bg-muted/40 text-xs uppercase font-semibold text-muted-foreground border-b border-border">
+            <tr>
+              <th class="px-6 py-4">Nomor Dokumen</th>
+              <th class="px-6 py-4">Tanggal Saldo</th>
+              <th class="px-6 py-4">Keterangan</th>
+              <th class="px-6 py-4 text-right">Total Nilai</th>
+              <th class="px-6 py-4 text-center">Status</th>
+              <th class="px-6 py-4 text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border font-normal">
+            @for (doc of openingBalances(); track doc.id) {
+              <tr class="hover:bg-muted/20 transition-colors">
+                <td class="px-6 py-4 font-mono font-semibold text-primary text-xs whitespace-nowrap">
+                  {{ doc.documentNumber }}
+                </td>
+                <td class="px-6 py-4 text-xs font-mono text-muted-foreground whitespace-nowrap">
+                  {{ doc.transactionDate | date:'dd/MM/yyyy' }}
+                </td>
+                <td class="px-6 py-4 text-xs text-muted-foreground">
+                  {{ doc.notes || '-' }}
+                </td>
+                <td class="px-6 py-4 text-right font-bold text-foreground whitespace-nowrap">
+                  {{ formatRupiah(doc.totalAmount) }}
+                </td>
+                <td class="px-6 py-4 text-center whitespace-nowrap">
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    Diposting
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-center whitespace-nowrap">
+                  <button
+                    type="button"
+                    class="p-1.5 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors"
+                    title="Lihat Rincian Akun"
+                    (click)="openDetailModal(doc)"
+                  >
+                    <ng-icon name="phosphorEye" class="text-base" />
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="px-6 py-12 text-center text-muted-foreground text-sm">
+                  Belum ada dokumen saldo awal yang pernah diposting.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Detail Dokumen SA -->
+  @if (selectedDocumentForDetail(); as doc) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs">
+      <div class="bg-card border border-border rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div class="px-6 py-5 border-b border-border flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-foreground flex items-center gap-2">
+              <ng-icon name="phosphorFileText" class="text-primary" />
+              Detail Dokumen {{ doc.documentNumber }}
+            </h3>
+            <p class="text-xs text-muted-foreground mt-0.5">
+              Tanggal Efektif: {{ doc.transactionDate | date:'dd MMMM yyyy' }}
+            </p>
+          </div>
+          <button
+            class="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted transition-colors"
+            (click)="closeDetailModal()"
+          >
+            <ng-icon name="phosphorX" class="text-lg" />
+          </button>
+        </div>
+
+        <div class="p-6 space-y-4 max-h-[65vh] overflow-y-auto">
+          <div class="border border-border rounded-2xl overflow-hidden">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-muted/40 font-semibold text-muted-foreground border-b border-border">
+                <tr>
+                  <th class="px-4 py-2.5">Kode Akun</th>
+                  <th class="px-4 py-2.5">Nama Akun</th>
+                  <th class="px-4 py-2.5">Keterangan</th>
+                  <th class="px-4 py-2.5 text-right">Nominal</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border">
+                @for (l of doc.lines; track l.accountId || $index) {
+                  <tr>
+                    <td class="px-4 py-2.5 font-mono text-primary">{{ l.accountCode }}</td>
+                    <td class="px-4 py-2.5 text-foreground font-medium">{{ l.accountName }}</td>
+                    <td class="px-4 py-2.5 text-muted-foreground">{{ l.description || '-' }}</td>
+                    <td class="px-4 py-2.5 text-right font-bold text-foreground">{{ formatRupiah(l.debit || l.credit) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 bg-muted/40 border-t border-border flex items-center justify-end">
+          <button
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm h-10 px-5"
+            (click)="closeDetailModal()"
+          >
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

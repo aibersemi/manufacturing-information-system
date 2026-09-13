@@ -1,0 +1,431 @@
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+        <ng-icon name="phosphorCurrencyDollar" class="text-primary text-3xl" />
+        Pembayaran Upah & Gaji Borongan
+      </h1>
+      <p class="text-sm text-muted-foreground mt-1">
+        Pelunasan kewajiban hutang upah operator produksi borongan dengan pengeluaran kas otomatis terposting ke buku besar.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button
+        hlmBtn
+        variant="outline"
+        class="rounded-full gap-2 text-sm h-10 px-4"
+        (click)="refreshData()"
+        [disabled]="isLoading()"
+      >
+        <ng-icon name="phosphorArrowsClockwise" [class.animate-spin]="isLoading()" />
+        Muat Ulang
+      </button>
+      @if (selectedLiabilityIds().length > 0) {
+        <button
+          hlmBtn
+          class="rounded-full gap-2 text-sm h-10 px-5 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm animate-in fade-in"
+          (click)="openPaymentModal()"
+        >
+          <ng-icon name="phosphorMoney" />
+          Bayar Upah Terpilih ({{ selectedLiabilityIds().length }})
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  @if (errorMessage()) {
+    <div class="flex items-center gap-3 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+      <ng-icon name="phosphorWarningCircle" class="text-xl shrink-0" />
+      <div class="flex-1 font-medium">{{ errorMessage() }}</div>
+      <button (click)="errorMessage.set(null)" class="text-destructive hover:opacity-80">
+        <ng-icon name="phosphorX" class="text-lg" />
+      </button>
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="flex items-center gap-3 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm">
+      <ng-icon name="phosphorCheckCircle" class="text-xl shrink-0" />
+      <div class="flex-1 font-medium">{{ successMessage() }}</div>
+      <button (click)="successMessage.set(null)" class="hover:opacity-80">
+        <ng-icon name="phosphorX" class="text-lg" />
+      </button>
+    </div>
+  }
+
+  <!-- KPI Metrics Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Hutang Upah Tertunda</p>
+        <div class="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+          <ng-icon name="phosphorMoney" class="text-xl" />
+        </div>
+      </div>
+      <div class="mt-4">
+        <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ formatRupiah(totalUnpaidLiability()) }}</h3>
+        <p class="text-xs text-muted-foreground mt-1">Kewajiban upah belum terbayar</p>
+      </div>
+    </div>
+
+    <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Operator Menunggu</p>
+        <div class="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+          <ng-icon name="phosphorUsers" class="text-xl" />
+        </div>
+      </div>
+      <div class="mt-4">
+        <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ unpaidOperatorsCount() }} Pekerja</h3>
+        <p class="text-xs text-muted-foreground mt-1">Operator dengan saldo upah belum lunas</p>
+      </div>
+    </div>
+
+    <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Upah Terbayar</p>
+        <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+          <ng-icon name="phosphorCheckCircle" class="text-xl" />
+        </div>
+      </div>
+      <div class="mt-4">
+        <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ formatRupiah(totalPaidAmount()) }}</h3>
+        <p class="text-xs text-muted-foreground mt-1">Akumulasi upah yang telah lunas</p>
+      </div>
+    </div>
+
+    <div class="bg-card border border-border rounded-3xl p-6 shadow-xs relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Item Catatan</p>
+        <div class="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+          <ng-icon name="phosphorFileText" class="text-xl" />
+        </div>
+      </div>
+      <div class="mt-4">
+        <h3 class="text-2xl font-bold tracking-tight text-foreground">{{ totalLiabilitiesCount() }} Item</h3>
+        <p class="text-xs text-muted-foreground mt-1">Riwayat kewajiban borongan tercatat</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Selection Summary Banner -->
+  @if (selectedLiabilityIds().length > 0) {
+    <div class="p-4 bg-primary/10 border border-primary/20 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shrink-0">
+          <ng-icon name="phosphorUser" class="text-xl" />
+        </div>
+        <div>
+          <p class="text-sm font-bold text-foreground">
+            Terpilih: {{ selectedLiabilityIds().length }} item untuk {{ activeSelectedEmployee()?.name }}
+          </p>
+          <p class="text-xs text-muted-foreground">
+            Total yang akan dibayar: <strong class="text-foreground">{{ formatRupiah(selectedTotalAmount()) }}</strong>
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2.5">
+        <button
+          hlmBtn
+          variant="outline"
+          class="rounded-full text-xs h-9 px-4 bg-background"
+          (click)="clearSelection()"
+        >
+          Batalkan Pilihan
+        </button>
+        <button
+          hlmBtn
+          class="rounded-full text-xs h-9 px-5 bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs"
+          (click)="openPaymentModal()"
+        >
+          Lanjutkan Pembayaran
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Main Table Card -->
+  <div class="bg-card border border-border rounded-3xl shadow-xs overflow-hidden">
+    <!-- Filters Header -->
+    <div class="p-6 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="relative w-full md:w-80">
+        <ng-icon name="phosphorMagnifyingGlass" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm" />
+        <input
+          type="text"
+          placeholder="Cari nama operator, SPK, tahapan..."
+          class="w-full pl-9 pr-4 py-2 bg-background border border-input rounded-full text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+        />
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Status Filter Pill -->
+        <div class="flex items-center gap-1.5 p-1 bg-muted/60 rounded-full text-xs">
+          <button
+            type="button"
+            class="px-3 py-1 rounded-full font-medium transition-all"
+            [class.bg-card]="statusFilter() === 'unpaid'"
+            [class.text-foreground]="statusFilter() === 'unpaid'"
+            [class.shadow-xs]="statusFilter() === 'unpaid'"
+            [class.text-muted-foreground]="statusFilter() !== 'unpaid'"
+            (click)="statusFilter.set('unpaid')"
+          >
+            Belum Dibayar
+          </button>
+          <button
+            type="button"
+            class="px-3 py-1 rounded-full font-medium transition-all"
+            [class.bg-card]="statusFilter() === 'paid'"
+            [class.text-foreground]="statusFilter() === 'paid'"
+            [class.shadow-xs]="statusFilter() === 'paid'"
+            [class.text-muted-foreground]="statusFilter() !== 'paid'"
+            (click)="statusFilter.set('paid')"
+          >
+            Sudah Dibayar
+          </button>
+          <button
+            type="button"
+            class="px-3 py-1 rounded-full font-medium transition-all"
+            [class.bg-card]="statusFilter() === 'all'"
+            [class.text-foreground]="statusFilter() === 'all'"
+            [class.shadow-xs]="statusFilter() === 'all'"
+            [class.text-muted-foreground]="statusFilter() !== 'all'"
+            (click)="statusFilter.set('all')"
+          >
+            Semua
+          </button>
+        </div>
+
+        <!-- Filter Operator -->
+        <select
+          class="px-3 py-1.5 bg-background border border-input rounded-full text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          [ngModel]="selectedEmployeeFilter()"
+          (ngModelChange)="selectedEmployeeFilter.set($event)"
+        >
+          <option value="all">Semua Operator</option>
+          @for (emp of uniqueEmployees(); track emp.id) {
+            <option [value]="emp.id">{{ emp.name }}</option>
+          }
+        </select>
+
+        <!-- Filter Tahapan -->
+        <select
+          class="px-3 py-1.5 bg-background border border-input rounded-full text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          [ngModel]="serviceKindFilter()"
+          (ngModelChange)="serviceKindFilter.set($event)"
+        >
+          <option value="all">Semua Tahapan Kerja</option>
+          <option value="cutting">Cutting (Potong)</option>
+          <option value="printing">Printing (Sablon)</option>
+          <option value="sewing">Sewing (Jahit)</option>
+          <option value="finishing">Finishing</option>
+          <option value="qc">QC (Pemeriksaan)</option>
+          <option value="packing">Packing</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left border-collapse">
+        <thead class="bg-muted/40 text-xs uppercase font-semibold text-muted-foreground border-b border-border">
+          <tr>
+            <th class="px-6 py-4 w-12 text-center">Pilih</th>
+            <th class="px-6 py-4">Operator / Pekerja</th>
+            <th class="px-6 py-4">Tahapan Pekerjaan</th>
+            <th class="px-6 py-4">Dokumen SPK</th>
+            <th class="px-6 py-4 text-right">Kuantitas</th>
+            <th class="px-6 py-4 text-right">Tarif Borongan</th>
+            <th class="px-6 py-4 text-right">Total Upah</th>
+            <th class="px-6 py-4">Tanggal Catat</th>
+            <th class="px-6 py-4 text-center">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border font-normal">
+          @for (item of filteredLiabilities(); track item.id) {
+            <tr
+              class="hover:bg-muted/20 transition-colors"
+              [class.bg-primary/5]="isLiabilitySelected(item.id)"
+            >
+              <td class="px-6 py-4 text-center">
+                @if (!item.isPaid) {
+                  <input
+                    type="checkbox"
+                    class="w-4 h-4 rounded border-input text-primary focus:ring-primary cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                    [checked]="isLiabilitySelected(item.id)"
+                    [disabled]="!canSelectLiability(item)"
+                    (change)="toggleSelectLiability(item)"
+                  />
+                } @else {
+                  <ng-icon name="phosphorCheckCircle" class="text-emerald-600 dark:text-emerald-400 text-base" />
+                }
+              </td>
+              <td class="px-6 py-4 font-semibold text-foreground whitespace-nowrap">
+                {{ item.employeeName }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-muted text-foreground">
+                  <ng-icon name="phosphorScissors" class="text-xs" />
+                  {{ translateServiceKind(item.serviceKind) }}
+                </span>
+              </td>
+              <td class="px-6 py-4 font-mono text-xs text-primary whitespace-nowrap">
+                {{ item.sourceDocumentNumber || '-' }}
+              </td>
+              <td class="px-6 py-4 text-right font-mono text-xs text-foreground whitespace-nowrap">
+                {{ item.quantity.toLocaleString('id-ID') }} pcs
+              </td>
+              <td class="px-6 py-4 text-right font-mono text-xs text-muted-foreground whitespace-nowrap">
+                {{ formatRupiah(item.rate) }}
+              </td>
+              <td class="px-6 py-4 text-right font-bold text-foreground whitespace-nowrap">
+                {{ formatRupiah(item.grossAmount) }}
+              </td>
+              <td class="px-6 py-4 text-xs font-mono text-muted-foreground whitespace-nowrap">
+                {{ item.postedAt | date:'dd/MM/yyyy' }}
+              </td>
+              <td class="px-6 py-4 text-center whitespace-nowrap">
+                @if (item.isPaid) {
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    Lunas
+                  </span>
+                } @else {
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                    Belum Dibayar
+                  </span>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="9" class="px-6 py-12 text-center text-muted-foreground text-sm">
+                Tidak ada data kewajiban upah yang sesuai dengan filter.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal Pembayaran Upah Kas Keluar -->
+  @if (isPaymentModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs">
+      <div class="bg-card border border-border rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <!-- Modal Header -->
+        <div class="px-6 py-5 border-b border-border flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-foreground flex items-center gap-2">
+              <ng-icon name="phosphorMoney" class="text-primary" />
+              Proses Pembayaran Upah Borongan
+            </h3>
+            <p class="text-xs text-muted-foreground mt-0.5">
+              Penerima: <strong class="text-foreground">{{ activeSelectedEmployee()?.name }}</strong>
+            </p>
+          </div>
+          <button
+            class="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted transition-colors"
+            (click)="closePaymentModal()"
+          >
+            <ng-icon name="phosphorX" class="text-lg" />
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-6 space-y-4">
+          <!-- Summary Box -->
+          <div class="p-4 bg-muted/40 border border-border rounded-2xl space-y-2">
+            <div class="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Jumlah Item Kewajiban</span>
+              <span class="font-semibold text-foreground">{{ selectedLiabilityIds().length }} Baris SPK</span>
+            </div>
+            <div class="flex items-center justify-between pt-2 border-t border-border">
+              <span class="text-xs font-semibold text-foreground uppercase tracking-wider">Total Pembayaran</span>
+              <span class="text-lg font-bold text-primary">{{ formatRupiah(selectedTotalAmount()) }}</span>
+            </div>
+          </div>
+
+          <!-- Rekening Kas Pembayar -->
+          <div>
+            <label for="wage-cash-acc" class="block text-xs font-semibold text-foreground mb-1.5">
+              Rekening Kas / Bank Sumber Pembayaran <span class="text-destructive">*</span>
+            </label>
+            <select
+              id="wage-cash-acc"
+              class="w-full px-4 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              [ngModel]="selectedCashAccountId()"
+              (ngModelChange)="selectedCashAccountId.set($event)"
+            >
+              <option value="" disabled>Pilih Rekening Kas/Bank</option>
+              @for (acc of cashAccounts(); track acc.id) {
+                <option [value]="acc.id">{{ acc.name }} (Saldo: {{ formatRupiah(acc.balance) }})</option>
+              }
+            </select>
+            @if (selectedCashAccountId()) {
+              <p class="text-xs text-muted-foreground mt-1">
+                Saldo tersedia: <span class="font-semibold text-foreground">{{ formatRupiah(getSelectedAccountBalance()) }}</span>
+              </p>
+            }
+          </div>
+
+          <!-- Tanggal Pembayaran -->
+          <div>
+            <label for="wage-pay-date" class="block text-xs font-semibold text-foreground mb-1.5">
+              Tanggal Pembayaran <span class="text-destructive">*</span>
+            </label>
+            <input
+              id="wage-pay-date"
+              type="date"
+              class="w-full px-4 py-2.5 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              [ngModel]="paymentDate()"
+              (ngModelChange)="paymentDate.set($event)"
+            />
+          </div>
+
+          <!-- Catatan -->
+          <div>
+            <label for="wage-pay-notes" class="block text-xs font-semibold text-foreground mb-1.5">
+              Catatan Voucher Pembayaran
+            </label>
+            <textarea
+              id="wage-pay-notes"
+              rows="2"
+              class="w-full px-4 py-2 bg-background border border-input rounded-2xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              [ngModel]="paymentNotes()"
+              (ngModelChange)="paymentNotes.set($event)"
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 bg-muted/40 border-t border-border flex items-center justify-end gap-3">
+          <button
+            hlmBtn
+            variant="outline"
+            class="rounded-full text-sm h-10 px-5"
+            (click)="closePaymentModal()"
+            [disabled]="isSubmitting()"
+          >
+            Batal
+          </button>
+          <button
+            hlmBtn
+            class="rounded-full text-sm h-10 px-6 bg-primary text-primary-foreground hover:bg-primary/90"
+            (click)="submitPayment()"
+            [disabled]="isSubmitting()"
+          >
+            @if (isSubmitting()) {
+              <ng-icon name="phosphorArrowsClockwise" class="animate-spin mr-2" />
+              Memproses...
+            } @else {
+              Konfirmasi Bayar Kas
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
