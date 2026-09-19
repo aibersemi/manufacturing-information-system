@@ -108,23 +108,7 @@
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Bahan Baku
-              </a>
-              <a
-                routerLink="/workspace/materials/uom"
-                routerLinkActive="text-foreground font-semibold"
-                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
-                (click)="closeMobileMenu()"
-              >
-                Satuan Ukuran (UOM)
-              </a>
-              <a
-                routerLink="/workspace/products"
-                routerLinkActive="text-foreground font-semibold"
-                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
-                (click)="closeMobileMenu()"
-              >
-                Produk &amp; SKU
+                Material
               </a>
               <a
                 routerLink="/workspace/bom"
@@ -132,7 +116,23 @@
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Bill of Materials (BOM)
+                BOM (Formula Bahan)
+              </a>
+              <a
+                routerLink="/workspace/products"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                SKU
+              </a>
+              <a
+                routerLink="/workspace/materials/uom"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Satuan Ukuran
               </a>
               <a
                 routerLink="/workspace/employees"
@@ -154,17 +154,17 @@
           }
         </div>
 
-        <!-- Group: Pengadaan & Pembelian -->
+        <!-- Group 2: Pembelian -->
         <div class="flex flex-col">
           <button
             type="button"
             (click)="toggleGroup('purchasing')"
             class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-muted-foreground transition hover:bg-accent/50 hover:text-foreground"
-            [title]="isSidebarCollapsed() ? 'Pengadaan & Pembelian' : ''"
+            [title]="isSidebarCollapsed() ? 'Pembelian' : ''"
           >
             <ng-icon name="phosphorShoppingCart" class="size-4 shrink-0 text-foreground/80" />
             @if (!isSidebarCollapsed()) {
-              <span class="truncate font-medium text-foreground">Pengadaan &amp; Pembelian</span>
+              <span class="truncate font-medium text-foreground">Pembelian</span>
               <ng-icon
                 name="phosphorCaretRight"
                 class="ms-auto size-3.5 transition-transform duration-200"
@@ -181,7 +181,7 @@
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Pembelian Bahan Baku
+                Bahan Produksi
               </a>
               <a
                 routerLink="/workspace/purchase-supplies"
@@ -189,7 +189,7 @@
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Pembelian Perlengkapan
+                Perlengkapan Produksi
               </a>
               <a
                 routerLink="/workspace/purchase-non-production"
@@ -197,31 +197,31 @@
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Pembelian Non-Produksi
+                Non-Produksi
               </a>
               <a
-                routerLink="/workspace/purchase-payments"
+                routerLink="/workspace/asset-purchases"
                 routerLinkActive="text-foreground font-semibold"
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Bayar Pembelian
+                Belanja Aset
               </a>
             </div>
           }
         </div>
 
-        <!-- Group: Penjualan & Piutang (Fase 6) -->
+        <!-- Group 3: Penjualan -->
         <div class="flex flex-col">
           <button
             type="button"
             (click)="toggleGroup('sales')"
             class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-muted-foreground transition hover:bg-accent/50 hover:text-foreground"
-            [title]="isSidebarCollapsed() ? 'Penjualan & Piutang' : ''"
+            [title]="isSidebarCollapsed() ? 'Penjualan' : ''"
           >
             <ng-icon name="phosphorReceipt" class="size-4 shrink-0 text-foreground/80" />
             @if (!isSidebarCollapsed()) {
-              <span class="truncate font-medium text-foreground">Penjualan &amp; Piutang</span>
+              <span class="truncate font-medium text-foreground">Penjualan</span>
               <ng-icon
                 name="phosphorCaretRight"
                 class="ms-auto size-3.5 transition-transform duration-200"
@@ -238,7 +238,7 @@
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Pesanan Pelanggan (PO)
+                Daftar PO (PO Masuk)
               </a>
               <a
                 routerLink="/workspace/sales"
@@ -246,7 +246,7 @@
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Faktur Penjualan
+                Penjualan
               </a>
               <a
                 routerLink="/workspace/sales-receipts"
@@ -268,17 +268,209 @@
           }
         </div>
 
-        <!-- Group: Keuangan & Akuntansi (Fase 7) -->
+        <!-- Group 4: Kepala Konveksi -->
+        <div class="flex flex-col">
+          <button
+            type="button"
+            (click)="toggleGroup('kepalaKonveksi')"
+            class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-muted-foreground transition hover:bg-accent/50 hover:text-foreground"
+            [title]="isSidebarCollapsed() ? 'Kepala Konveksi' : ''"
+          >
+            <ng-icon name="phosphorScissors" class="size-4 shrink-0 text-foreground/80" />
+            @if (!isSidebarCollapsed()) {
+              <span class="truncate font-medium text-foreground">Kepala Konveksi</span>
+              <ng-icon
+                name="phosphorCaretRight"
+                class="ms-auto size-3.5 transition-transform duration-200"
+                [class.rotate-90]="isGroupOpen('kepalaKonveksi')"
+              />
+            }
+          </button>
+
+          @if (!isSidebarCollapsed() && isGroupOpen('kepalaKonveksi')) {
+            <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
+              <a
+                routerLink="/workspace/spk"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                SPK Potong
+              </a>
+              <a
+                routerLink="/workspace/spk"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                SPK Jahit
+              </a>
+              <a
+                routerLink="/workspace/production-progress"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Progress SPK
+              </a>
+              <a
+                routerLink="/workspace/production-orders"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Perintah Produksi
+              </a>
+              <a
+                routerLink="/workspace/production-repairs"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Kasus Perbaikan
+              </a>
+            </div>
+          }
+        </div>
+
+        <!-- Group 5: Operator -->
+        <div class="flex flex-col">
+          <button
+            type="button"
+            (click)="toggleGroup('operator')"
+            class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-muted-foreground transition hover:bg-accent/50 hover:text-foreground"
+            [title]="isSidebarCollapsed() ? 'Operator' : ''"
+          >
+            <ng-icon name="phosphorNeedle" class="size-4 shrink-0 text-foreground/80" />
+            @if (!isSidebarCollapsed()) {
+              <span class="truncate font-medium text-foreground">Operator</span>
+              <ng-icon
+                name="phosphorCaretRight"
+                class="ms-auto size-3.5 transition-transform duration-200"
+                [class.rotate-90]="isGroupOpen('operator')"
+              />
+            }
+          </button>
+
+          @if (!isSidebarCollapsed() && isGroupOpen('operator')) {
+            <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
+              <a
+                routerLink="/workspace/operator-cutting"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Catat Potongan
+              </a>
+              <a
+                routerLink="/workspace/operator-printing"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Catat Sablon
+              </a>
+              <a
+                routerLink="/workspace/operator-sewing"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Catat Jahit
+              </a>
+              <a
+                routerLink="/workspace/operator-packing"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Catat Packing
+              </a>
+            </div>
+          }
+        </div>
+
+        <!-- Group 6: Stok -->
+        <div class="flex flex-col">
+          <button
+            type="button"
+            (click)="toggleGroup('stok')"
+            class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-muted-foreground transition hover:bg-accent/50 hover:text-foreground"
+            [title]="isSidebarCollapsed() ? 'Stok' : ''"
+          >
+            <ng-icon name="phosphorWarehouse" class="size-4 shrink-0 text-foreground/80" />
+            @if (!isSidebarCollapsed()) {
+              <span class="truncate font-medium text-foreground">Stok</span>
+              <ng-icon
+                name="phosphorCaretRight"
+                class="ms-auto size-3.5 transition-transform duration-200"
+                [class.rotate-90]="isGroupOpen('stok')"
+              />
+            }
+          </button>
+
+          @if (!isSidebarCollapsed() && isGroupOpen('stok')) {
+            <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
+              <a
+                routerLink="/workspace/inventory"
+                [queryParams]="{ tab: 'stok-bahan' }"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Stok Bahan
+              </a>
+              <a
+                routerLink="/workspace/inventory"
+                [queryParams]="{ tab: 'stok-masuk' }"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Stok Masuk
+              </a>
+              <a
+                routerLink="/workspace/inventory"
+                [queryParams]="{ tab: 'stok-keluar' }"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Stok Keluar
+              </a>
+              <a
+                routerLink="/workspace/inventory"
+                [queryParams]="{ tab: 'stok-produksi' }"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Stok Produksi
+              </a>
+              <a
+                routerLink="/workspace/inventory"
+                [queryParams]="{ tab: 'stok-produk-jadi' }"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Stok Produk Jadi
+              </a>
+            </div>
+          }
+        </div>
+
+        <!-- Group 7: Keuangan -->
         <div class="flex flex-col">
           <button
             type="button"
             (click)="toggleGroup('finance')"
             class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-muted-foreground transition hover:bg-accent/50 hover:text-foreground"
-            [title]="isSidebarCollapsed() ? 'Keuangan & Akuntansi' : ''"
+            [title]="isSidebarCollapsed() ? 'Keuangan' : ''"
           >
             <ng-icon name="phosphorBank" class="size-4 shrink-0 text-foreground/80" />
             @if (!isSidebarCollapsed()) {
-              <span class="truncate font-medium text-foreground">Keuangan &amp; Akuntansi</span>
+              <span class="truncate font-medium text-foreground">Keuangan</span>
               <ng-icon
                 name="phosphorCaretRight"
                 class="ms-auto size-3.5 transition-transform duration-200"
@@ -290,20 +482,20 @@
           @if (!isSidebarCollapsed() && isGroupOpen('finance')) {
             <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
               <a
-                routerLink="/workspace/finance/coa"
+                routerLink="/workspace/purchase-payments"
                 routerLinkActive="text-foreground font-semibold"
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Bagan Akun (COA)
+                Bayar Pembelian
               </a>
               <a
-                routerLink="/workspace/finance/cash-bank"
+                routerLink="/workspace/finance/wages"
                 routerLinkActive="text-foreground font-semibold"
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Kas &amp; Bank
+                Bayar Pegawai
               </a>
               <a
                 routerLink="/workspace/finance/expenses"
@@ -314,28 +506,36 @@
                 Biaya Operasional
               </a>
               <a
-                routerLink="/workspace/finance/wages"
+                routerLink="/workspace/sales-receipts"
                 routerLinkActive="text-foreground font-semibold"
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Upah &amp; Gaji Borongan
+                Terima Pembayaran Penjualan
               </a>
               <a
-                routerLink="/workspace/finance/prepaid"
+                routerLink="/workspace/reports/profit-loss"
                 routerLinkActive="text-foreground font-semibold"
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Biaya Dibayar Dimuka
+                Laba Rugi
               </a>
               <a
-                routerLink="/workspace/finance/opening-balance"
+                routerLink="/workspace/reports/balance-sheet"
                 routerLinkActive="text-foreground font-semibold"
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Saldo Awal Neraca
+                Neraca
+              </a>
+              <a
+                routerLink="/workspace/reports/cash-flow"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Arus Kas
               </a>
               <a
                 routerLink="/workspace/finance/journals"
@@ -343,48 +543,39 @@
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Jurnal Memorial
+                Jurnal
               </a>
               <a
-                routerLink="/workspace/finance/period-close"
+                routerLink="/workspace/reports/general-ledger"
                 routerLinkActive="text-foreground font-semibold"
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Tutup Periode Buku
+                Buku Besar
               </a>
-            </div>
-          }
-        </div>
-
-        <!-- Group: Aset Tetap (Fase 8: Fixed Assets & Depreciation) -->
-        <div class="flex flex-col">
-          <button
-            type="button"
-            (click)="toggleGroup('assets')"
-            class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-muted-foreground transition hover:bg-accent/50 hover:text-foreground"
-            [title]="isSidebarCollapsed() ? 'Aset Tetap' : ''"
-          >
-            <ng-icon name="phosphorArmchair" class="size-4 shrink-0 text-foreground/80" />
-            @if (!isSidebarCollapsed()) {
-              <span class="truncate font-medium text-foreground">Aset Tetap</span>
-              <ng-icon
-                name="phosphorCaretRight"
-                class="ms-auto size-3.5 transition-transform duration-200"
-                [class.rotate-90]="isGroupOpen('assets')"
-              />
-            }
-          </button>
-
-          @if (!isSidebarCollapsed() && isGroupOpen('assets')) {
-            <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
               <a
-                routerLink="/workspace/asset-purchases"
+                routerLink="/workspace/reports/trial-balance"
                 routerLinkActive="text-foreground font-semibold"
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Pengadaan Aset
+                Neraca Saldo
+              </a>
+              <a
+                routerLink="/workspace/reports/hpp"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Laporan HPP Pabrik
+              </a>
+              <a
+                routerLink="/workspace/reports/reconciliation"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Rekonsiliasi &amp; Audit
               </a>
               <a
                 routerLink="/workspace/assets"
@@ -392,7 +583,7 @@
                 class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 (click)="closeMobileMenu()"
               >
-                Register Aset
+                Register Aset Tetap
               </a>
               <a
                 routerLink="/workspace/depreciation"
@@ -414,227 +605,7 @@
           }
         </div>
 
-        <!-- Group: Laporan & Analisis (Fase 9: Financial Reporting, HPP & Reconciliation) -->
-        <div class="flex flex-col">
-          <button
-            type="button"
-            (click)="toggleGroup('reports')"
-            class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-muted-foreground transition hover:bg-accent/50 hover:text-foreground"
-            [title]="isSidebarCollapsed() ? 'Laporan & Analisis' : ''"
-          >
-            <ng-icon name="phosphorChartPieSlice" class="size-4 shrink-0 text-foreground/80" />
-            @if (!isSidebarCollapsed()) {
-              <span class="truncate font-medium text-foreground">Laporan &amp; Analisis</span>
-              <ng-icon
-                name="phosphorCaretRight"
-                class="ms-auto size-3.5 transition-transform duration-200"
-                [class.rotate-90]="isGroupOpen('reports')"
-              />
-            }
-          </button>
-
-          @if (!isSidebarCollapsed() && isGroupOpen('reports')) {
-            <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
-              <a
-                routerLink="/workspace/reports/trial-balance"
-                routerLinkActive="text-foreground font-semibold"
-                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
-                (click)="closeMobileMenu()"
-              >
-                Neraca Saldo
-              </a>
-              <a
-                routerLink="/workspace/reports/profit-loss"
-                routerLinkActive="text-foreground font-semibold"
-                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
-                (click)="closeMobileMenu()"
-              >
-                Laba Rugi
-              </a>
-              <a
-                routerLink="/workspace/reports/balance-sheet"
-                routerLinkActive="text-foreground font-semibold"
-                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
-                (click)="closeMobileMenu()"
-              >
-                Neraca Keuangan
-              </a>
-              <a
-                routerLink="/workspace/reports/cash-flow"
-                routerLinkActive="text-foreground font-semibold"
-                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
-                (click)="closeMobileMenu()"
-              >
-                Arus Kas
-              </a>
-              <a
-                routerLink="/workspace/reports/general-ledger"
-                routerLinkActive="text-foreground font-semibold"
-                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
-                (click)="closeMobileMenu()"
-              >
-                Buku Besar (GL)
-              </a>
-              <a
-                routerLink="/workspace/reports/hpp"
-                routerLinkActive="text-foreground font-semibold"
-                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
-                (click)="closeMobileMenu()"
-              >
-                Laporan HPP Pabrik
-              </a>
-              <a
-                routerLink="/workspace/reports/reconciliation"
-                routerLinkActive="text-foreground font-semibold"
-                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
-                (click)="closeMobileMenu()"
-              >
-                Rekonsiliasi &amp; Audit
-              </a>
-            </div>
-          }
-        </div>
-
-        <!-- Group 2: Operasional Pabrik -->
-        <div class="flex flex-col">
-          <button
-            type="button"
-            (click)="toggleGroup('operations')"
-            class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-muted-foreground transition hover:bg-accent/50 hover:text-foreground"
-            [title]="isSidebarCollapsed() ? 'Operasional Pabrik' : ''"
-          >
-            <ng-icon name="phosphorFactory" class="size-4 shrink-0 text-foreground/80" />
-            @if (!isSidebarCollapsed()) {
-              <span class="truncate font-medium text-foreground">Operasional Pabrik</span>
-              <ng-icon
-                name="phosphorCaretRight"
-                class="ms-auto size-3.5 transition-transform duration-200"
-                [class.rotate-90]="isGroupOpen('operations')"
-              />
-            }
-          </button>
-
-          @if (!isSidebarCollapsed() && isGroupOpen('operations')) {
-            <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
-              <a
-                routerLink="/workspace/production-orders"
-                routerLinkActive="text-foreground font-semibold"
-                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
-                (click)="closeMobileMenu()"
-              >
-                Perintah Produksi (PP)
-              </a>
-              <a
-                routerLink="/workspace/spk"
-                routerLinkActive="text-foreground font-semibold"
-                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
-                (click)="closeMobileMenu()"
-              >
-                Surat Perintah Kerja (SPK)
-              </a>
-              <a
-                routerLink="/workspace/operator-cutting"
-                routerLinkActive="text-foreground font-semibold"
-                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
-                (click)="closeMobileMenu()"
-              >
-                Catat Potong (Operator)
-              </a>
-              <a
-                routerLink="/workspace/operator-printing"
-                routerLinkActive="text-foreground font-semibold"
-                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
-                (click)="closeMobileMenu()"
-              >
-                Catat Sablon (Operator)
-              </a>
-              <a
-                routerLink="/workspace/production-repairs"
-                routerLinkActive="text-foreground font-semibold"
-                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
-                (click)="closeMobileMenu()"
-              >
-                Perbaikan Produksi
-              </a>
-              <a
-                routerLink="/workspace/production-progress"
-                routerLinkActive="text-foreground font-semibold"
-                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
-                (click)="closeMobileMenu()"
-              >
-                Progress Produksi
-              </a>
-            </div>
-          }
-        </div>
-
-        <!-- Group 3: Stok & Gudang -->
-        <div class="flex flex-col">
-          <button
-            type="button"
-            (click)="toggleGroup('inventory')"
-            class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-muted-foreground transition hover:bg-accent/50 hover:text-foreground"
-            [title]="isSidebarCollapsed() ? 'Stok & Gudang' : ''"
-          >
-            <ng-icon name="phosphorWarehouse" class="size-4 shrink-0 text-foreground/80" />
-            @if (!isSidebarCollapsed()) {
-              <span class="truncate font-medium text-foreground">Stok &amp; Gudang</span>
-              <ng-icon
-                name="phosphorCaretRight"
-                class="ms-auto size-3.5 transition-transform duration-200"
-                [class.rotate-90]="isGroupOpen('inventory')"
-              />
-            }
-          </button>
-
-          @if (!isSidebarCollapsed() && isGroupOpen('inventory')) {
-            <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
-              <a
-                routerLink="/workspace/inventory"
-                routerLinkActive="text-foreground font-semibold"
-                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
-                (click)="closeMobileMenu()"
-              >
-                Stok &amp; Mutasi Barang
-              </a>
-            </div>
-          }
-        </div>
-
-        <!-- Group 4: Kontrol Kualitas -->
-        <div class="flex flex-col">
-          <button
-            type="button"
-            (click)="toggleGroup('qc')"
-            class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-muted-foreground transition hover:bg-accent/50 hover:text-foreground"
-            [title]="isSidebarCollapsed() ? 'Kontrol Kualitas' : ''"
-          >
-            <ng-icon name="phosphorShieldCheck" class="size-4 shrink-0 text-foreground/80" />
-            @if (!isSidebarCollapsed()) {
-              <span class="truncate font-medium text-foreground">Kontrol Kualitas</span>
-              <ng-icon
-                name="phosphorCaretRight"
-                class="ms-auto size-3.5 transition-transform duration-200"
-                [class.rotate-90]="isGroupOpen('qc')"
-              />
-            }
-          </button>
-
-          @if (!isSidebarCollapsed() && isGroupOpen('qc')) {
-            <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
-              <a
-                routerLink="/workspace/production-repairs"
-                routerLinkActive="text-foreground font-semibold"
-                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
-                (click)="closeMobileMenu()"
-              >
-                Inspeksi QC &amp; Defect
-              </a>
-            </div>
-          }
-        </div>
-
-        <!-- Group 5: Pengaturan -->
+        <!-- Group 8: Pengaturan -->
         <div class="flex flex-col">
           <button
             type="button"
@@ -655,24 +626,22 @@
 
           @if (!isSidebarCollapsed() && isGroupOpen('settings')) {
             <div class="ms-3.5 flex flex-col border-s border-border/80 ps-3 pt-0.5 pb-1 gap-0.5">
-              @if (isOwner()) {
-                <a
-                  routerLink="/workspace/companies"
-                  routerLinkActive="text-foreground font-semibold"
-                  class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
-                  (click)="closeMobileMenu()"
-                >
-                  Perusahaan
-                </a>
-                <a
-                  routerLink="/workspace/users-access"
-                  routerLinkActive="text-foreground font-semibold"
-                  class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
-                  (click)="closeMobileMenu()"
-                >
-                  Pengguna &amp; Akses
-                </a>
-              }
+              <a
+                routerLink="/workspace/companies"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Konveksi (Multi Tenant)
+              </a>
+              <a
+                routerLink="/workspace/users-access"
+                routerLinkActive="text-foreground font-semibold"
+                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+                (click)="closeMobileMenu()"
+              >
+                Pengguna &amp; Akses
+              </a>
               <a
                 routerLink="/workspace/profile"
                 routerLinkActive="text-foreground font-semibold"

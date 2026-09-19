@@ -174,6 +174,89 @@ describe('DashboardLayoutComponent', () => {
     expect(newComponent.isGroupOpen('masterData')).toBe(true);
   });
 
+  it('should have DEFAULT_NAV_GROUPS configured with 8 business groups and backward-compatibility keys', () => {
+    expect(DEFAULT_NAV_GROUPS).toEqual({
+      masterData: true,
+      purchasing: true,
+      sales: true,
+      kepalaKonveksi: true,
+      operator: true,
+      stok: true,
+      finance: true,
+      settings: false,
+      assets: true,
+      reports: true,
+      operations: true,
+      inventory: true,
+    });
+  });
+
+  it('should toggle new business groups (kepalaKonveksi, operator, stok)', () => {
+    expect(component.isGroupOpen('kepalaKonveksi')).toBe(true);
+    component.toggleGroup('kepalaKonveksi');
+    expect(component.isGroupOpen('kepalaKonveksi')).toBe(false);
+
+    expect(component.isGroupOpen('operator')).toBe(true);
+    component.toggleGroup('operator');
+    expect(component.isGroupOpen('operator')).toBe(false);
+
+    expect(component.isGroupOpen('stok')).toBe(true);
+    component.toggleGroup('stok');
+    expect(component.isGroupOpen('stok')).toBe(false);
+  });
+
+  it('should render links for all 8 business groups in template when expanded', () => {
+    component.openNavGroups.set({
+      masterData: true,
+      purchasing: true,
+      sales: true,
+      kepalaKonveksi: true,
+      operator: true,
+      stok: true,
+      finance: true,
+      settings: true,
+    });
+    component.isSidebarCollapsed.set(false);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const links = compiled.querySelectorAll('nav a');
+    expect(links.length).toBeGreaterThan(0);
+
+    // Check key labels in template
+    const text = compiled.textContent || '';
+    expect(text).toContain('Master Data');
+    expect(text).toContain('Pembelian');
+    expect(text).toContain('Penjualan');
+    expect(text).toContain('Kepala Konveksi');
+    expect(text).toContain('Operator');
+    expect(text).toContain('Stok');
+    expect(text).toContain('Keuangan');
+    expect(text).toContain('Pengaturan');
+
+    // Check specific links for new groups
+    expect(text).toContain('SPK Potong');
+    expect(text).toContain('SPK Jahit');
+    expect(text).toContain('Progress SPK');
+    expect(text).toContain('Perintah Produksi');
+    expect(text).toContain('Kasus Perbaikan');
+
+    expect(text).toContain('Catat Potongan');
+    expect(text).toContain('Catat Sablon');
+    expect(text).toContain('Catat Jahit');
+    expect(text).toContain('Catat Packing');
+
+    expect(text).toContain('Stok Bahan');
+    expect(text).toContain('Stok Masuk');
+    expect(text).toContain('Stok Keluar');
+    expect(text).toContain('Stok Produksi');
+    expect(text).toContain('Stok Produk Jadi');
+
+    expect(text).toContain('Konveksi (Multi Tenant)');
+    expect(text).toContain('Pengguna & Akses');
+    expect(text).toContain('Profil Pengguna');
+  });
+
   it('should handle logout flow', async () => {
     const navigateSpy = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
 
