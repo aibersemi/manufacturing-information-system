@@ -213,11 +213,14 @@ BEGIN
           END
       END AS presentation_amount
     FROM public.ledger_account la
-    LEFT JOIN public.journal_line jl ON jl.account_id = la.id AND jl.company_id = la.company_id
-    LEFT JOIN public.journal_entry je ON je.id = jl.journal_entry_id AND je.company_id = jl.company_id
-      AND je.status = 'posted'
-      AND je.transaction_date >= v_date_from
-      AND je.transaction_date <= v_date_to
+    LEFT JOIN (
+      SELECT jl.account_id, jl.company_id, jl.debit, jl.credit
+      FROM public.journal_line jl
+      JOIN public.journal_entry je ON je.id = jl.journal_entry_id AND je.company_id = jl.company_id
+      WHERE je.status = 'posted'
+        AND je.transaction_date >= v_date_from
+        AND je.transaction_date <= v_date_to
+    ) jl ON jl.account_id = la.id AND jl.company_id = la.company_id
     WHERE la.company_id = p_company_id
       AND la.account_type IN ('revenue', 'expense')
     GROUP BY la.id, la.code, la.name, la.level1, la.level2, la.level3, la.account_type, la.normal_balance, la.report_sign
@@ -410,10 +413,13 @@ BEGIN
         ELSE 0
       END AS presentation_amount
     FROM public.ledger_account la
-    LEFT JOIN public.journal_line jl ON jl.account_id = la.id AND jl.company_id = la.company_id
-    LEFT JOIN public.journal_entry je ON je.id = jl.journal_entry_id AND je.company_id = jl.company_id
-      AND je.status = 'posted'
-      AND je.transaction_date <= v_date_to
+    LEFT JOIN (
+      SELECT jl.account_id, jl.company_id, jl.debit, jl.credit
+      FROM public.journal_line jl
+      JOIN public.journal_entry je ON je.id = jl.journal_entry_id AND je.company_id = jl.company_id
+      WHERE je.status = 'posted'
+        AND je.transaction_date <= v_date_to
+    ) jl ON jl.account_id = la.id AND jl.company_id = la.company_id
     WHERE la.company_id = p_company_id
       AND la.account_type IN ('asset', 'liability', 'equity')
       -- Akun virtual 3-3.0.00 di-exclude agar tidak double counting
