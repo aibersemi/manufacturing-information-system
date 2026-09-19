@@ -1137,7 +1137,12 @@ BEGIN
   v_as_of_date := coalesce(p_as_of_date, (now() AT TIME ZONE 'Asia/Jakarta')::date);
 
   -- 1. Pos Kas & Bank
-  SELECT coalesce(sum(amount), 0)
+  SELECT coalesce(sum(
+    CASE 
+      WHEN movement_type IN ('expense', 'transfer_out') THEN -amount
+      ELSE amount
+    END
+  ), 0)
   INTO v_cash_subledger
   FROM public.cash_movement
   WHERE company_id = p_company_id
@@ -1154,11 +1159,12 @@ BEGIN
     AND la.level3 = 'KAS DAN BANK';
 
   -- 2. Pos Piutang Usaha
-  SELECT coalesce(sum(amount), 0)
+  SELECT coalesce(sum(remaining_balance), 0)
   INTO v_ar_subledger
   FROM public.subledger_entry
   WHERE company_id = p_company_id
     AND subledger_kind = 'receivable'
+    AND status = 'open'
     AND transaction_date <= v_as_of_date;
 
   SELECT coalesce(sum(jl.debit - jl.credit), 0)
@@ -1174,11 +1180,12 @@ BEGIN
     ));
 
   -- 3. Pos Hutang Usaha (Normal Kredit)
-  SELECT coalesce(sum(amount), 0)
+  SELECT coalesce(sum(remaining_balance), 0)
   INTO v_ap_subledger
   FROM public.subledger_entry
   WHERE company_id = p_company_id
     AND subledger_kind = 'supplier_payable'
+    AND status = 'open'
     AND transaction_date <= v_as_of_date;
 
   SELECT coalesce(sum(jl.credit - jl.debit), 0)
@@ -1246,7 +1253,7 @@ BEGIN
   JOIN public.ledger_account la ON la.id = jl.account_id AND la.company_id = jl.company_id
   WHERE je.company_id = p_company_id
     AND je.status = 'posted'
-    AND je.transaction_date <= v_as_of_date
+    AND to_char(je.transaction_date, 'YYYY-MM') <= to_char(v_as_of_date, 'YYYY-MM')
     AND la.level3 = 'PENYUSUTAN AKTIVA TETAP';
 
   -- Hitung Jumlah Pos yang Sinkron
