@@ -326,12 +326,15 @@ export class ReportService {
   readonly loading = signal<boolean>(false);
   readonly error = signal<string | null>(null);
 
-  private getActiveCompanyId(): string {
-    const id = this.companyService.activeCompanyId();
-    if (!id) {
+  private async getActiveCompanyId(): Promise<string> {
+    let companyId = this.companyService.activeCompanyId();
+    if (!companyId) {
+      companyId = await this.companyService.waitForActiveCompany();
+    }
+    if (!companyId) {
       throw new Error('Tidak ada perusahaan aktif terpilih.');
     }
-    return id;
+    return companyId;
   }
 
   setDateRange(from: string, to: string): void {
@@ -345,7 +348,7 @@ export class ReportService {
 
   async loadAvailableAccounts(): Promise<CoaAccountOption[]> {
     try {
-      const companyId = this.getActiveCompanyId();
+      const companyId = await this.getActiveCompanyId();
       const { data, error } = await this.supabase.client
         .from('ledger_account')
         .select('id, code, name, level1, level2, level3, account_type, normal_balance')
@@ -376,7 +379,7 @@ export class ReportService {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const companyId = this.getActiveCompanyId();
+      const companyId = await this.getActiveCompanyId();
       const from = dateFrom ?? this.dateFrom();
       const to = dateTo ?? this.dateTo();
 
@@ -404,7 +407,7 @@ export class ReportService {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const companyId = this.getActiveCompanyId();
+      const companyId = await this.getActiveCompanyId();
       const from = dateFrom ?? this.dateFrom();
       const to = dateTo ?? this.dateTo();
 
@@ -432,7 +435,7 @@ export class ReportService {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const companyId = this.getActiveCompanyId();
+      const companyId = await this.getActiveCompanyId();
       const to = asOfDate ?? this.dateTo();
 
       const { data, error } = await this.supabase.client.rpc('get_balance_sheet', {
@@ -458,7 +461,7 @@ export class ReportService {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const companyId = this.getActiveCompanyId();
+      const companyId = await this.getActiveCompanyId();
       const from = dateFrom ?? this.dateFrom();
       const to = dateTo ?? this.dateTo();
 
@@ -497,7 +500,7 @@ export class ReportService {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const companyId = this.getActiveCompanyId();
+      const companyId = await this.getActiveCompanyId();
       const from = dateFrom ?? this.dateFrom();
       const to = dateTo ?? this.dateTo();
 
@@ -528,7 +531,7 @@ export class ReportService {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const companyId = this.getActiveCompanyId();
+      const companyId = await this.getActiveCompanyId();
       const from = dateFrom ?? this.dateFrom();
       const to = dateTo ?? this.dateTo();
 
@@ -556,7 +559,7 @@ export class ReportService {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const companyId = this.getActiveCompanyId();
+      const companyId = await this.getActiveCompanyId();
       const to = asOfDate ?? this.dateTo();
 
       const { data, error } = await this.supabase.client.rpc('get_accounting_reconciliation_summary', {

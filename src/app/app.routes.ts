@@ -523,6 +523,11 @@ export const routes: Routes = [
         pathMatch: 'full',
       },
       {
+        path: 'quality',
+        redirectTo: 'workspace/production-repairs',
+        pathMatch: 'full',
+      },
+      {
         path: 'production/progress',
         redirectTo: 'workspace/production-progress',
         pathMatch: 'full',

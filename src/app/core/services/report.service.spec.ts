@@ -15,6 +15,7 @@ describe('ReportService', () => {
   };
   let mockCompanyService: {
     activeCompanyId: ReturnType<typeof signal<string | null>>;
+    waitForActiveCompany: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -26,7 +27,8 @@ describe('ReportService', () => {
     };
 
     mockCompanyService = {
-      activeCompanyId: signal('company-123'),
+      activeCompanyId: signal<string | null>('company-123'),
+      waitForActiveCompany: vi.fn().mockResolvedValue('company-123'),
     };
 
     TestBed.configureTestingModule({
@@ -397,5 +399,24 @@ describe('ReportService', () => {
     expect(result).toBeNull();
     expect(service.error()).toBe('Database query failed');
     expect(service.loading()).toBe(false);
+  });
+
+  it('should wait for active company if activeCompanyId signal is initially null', async () => {
+    mockCompanyService.activeCompanyId.set(null);
+    mockCompanyService.waitForActiveCompany.mockResolvedValueOnce('company-lazy-999');
+
+    mockSupabase.client.rpc.mockResolvedValueOnce({
+      data: { companyId: 'company-lazy-999' },
+      error: null,
+    });
+
+    const result = await service.loadTrialBalance('2026-09-01', '2026-09-30');
+    expect(mockCompanyService.waitForActiveCompany).toHaveBeenCalled();
+    expect(mockSupabase.client.rpc).toHaveBeenCalledWith('get_trial_balance', {
+      p_company_id: 'company-lazy-999',
+      p_date_from: '2026-09-01',
+      p_date_to: '2026-09-30',
+    });
+    expect(result).toBeDefined();
   });
 });

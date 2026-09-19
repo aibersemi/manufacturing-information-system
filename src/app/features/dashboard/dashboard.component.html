@@ -4,7 +4,7 @@
     <div>
       <h1 class="text-2xl font-semibold tracking-tight text-foreground">Dashboard</h1>
       <p class="text-sm text-muted-foreground mt-1">
-        Ringkasan operasional Pabrik Semikonduktor Aiber.
+        Ringkasan operasional {{ companyName() }}.
       </p>
     </div>
 
@@ -13,24 +13,28 @@
         hlmBtn
         variant="outline"
         size="sm"
+        type="button"
+        (click)="refreshData()"
+        [disabled]="isLoading()"
         class="h-9 gap-1.5 rounded-full border-border/80 bg-card/80 px-3.5 text-sm font-medium shadow-2xs hover:bg-accent"
       >
-        <ng-icon name="phosphorArrowsClockwise" class="size-4" />
+        <ng-icon name="phosphorArrowsClockwise" class="size-4" [class.animate-spin]="isLoading()" />
         <span>Segarkan Data</span>
       </button>
 
-      <button
+      <a
+        routerLink="/workspace/production-orders"
         hlmBtn
         size="sm"
         class="h-9 gap-1.5 rounded-full px-4 text-sm font-medium shadow-xs"
       >
         <ng-icon name="phosphorPlus" class="size-4" />
         <span>Work Order Baru</span>
-      </button>
+      </a>
     </div>
   </div>
 
-  <!-- KPI Metrics Grid (Cards rounded-3xl Identik Konveksi) -->
+  <!-- KPI Metrics Grid (Cards rounded-3xl) -->
   <section
     class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
     aria-label="Ringkasan Metrik"
@@ -38,34 +42,34 @@
     <!-- Metric 1: Output Produksi -->
     <div hlmCard class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
       <div class="flex items-center justify-between">
-        <span class="text-sm font-medium text-muted-foreground">Output Produksi Shift</span>
+        <span class="text-sm font-medium text-muted-foreground">Output Produksi</span>
         <div class="flex size-7 items-center justify-center rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400">
           <ng-icon name="phosphorTrendUp" class="size-4" />
         </div>
       </div>
       <div class="mt-2 text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
-        14,280 <span class="text-sm font-normal text-muted-foreground">Unit</span>
+        {{ formatNumber(productionOutputMetric().completedUnits) }} <span class="text-sm font-normal text-muted-foreground">Unit</span>
       </div>
       <div class="mt-1 flex items-center gap-1.5 text-xs">
-        <span class="font-semibold text-emerald-600 dark:text-emerald-400">98.5% Target</span>
-        <span class="text-muted-foreground">• Kuota 14,500</span>
+        <span class="font-semibold text-emerald-600 dark:text-emerald-400">{{ productionOutputMetric().percentage }}% Target</span>
+        <span class="text-muted-foreground">• Kuota {{ formatNumber(productionOutputMetric().targetUnits) }}</span>
       </div>
     </div>
 
-    <!-- Metric 2: Efisiensi Mesin (OEE) -->
+    <!-- Metric 2: Efisiensi Produksi -->
     <div hlmCard class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
       <div class="flex items-center justify-between">
-        <span class="text-sm font-medium text-muted-foreground">Efisiensi Mesin (OEE)</span>
+        <span class="text-sm font-medium text-muted-foreground">Efisiensi Produksi</span>
         <div class="flex size-7 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
           <ng-icon name="phosphorCpu" class="size-4" />
         </div>
       </div>
       <div class="mt-2 text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
-        89.4%
+        {{ productionEfficiencyMetric().rate }}%
       </div>
       <div class="mt-1 flex items-center gap-1.5 text-xs">
-        <span class="font-semibold text-emerald-600 dark:text-emerald-400">+2.1%</span>
-        <span class="text-muted-foreground">Di atas standar industri 85%</span>
+        <span class="font-semibold text-emerald-600 dark:text-emerald-400">Progress Lini</span>
+        <span class="text-muted-foreground">• {{ productionEfficiencyMetric().subtitle }}</span>
       </div>
     </div>
 
@@ -78,11 +82,11 @@
         </div>
       </div>
       <div class="mt-2 text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
-        18 <span class="text-sm font-normal text-muted-foreground">Dokumen</span>
+        {{ formatNumber(activeWorkOrdersMetric().totalActive) }} <span class="text-sm font-normal text-muted-foreground">Dokumen</span>
       </div>
       <div class="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-        <span class="font-medium text-foreground">4 antrean</span>
-        <span>• 0 kendala lini</span>
+        <span class="font-medium text-foreground">{{ activeWorkOrdersMetric().queuedCount }} antrean</span>
+        <span>• {{ activeWorkOrdersMetric().inProgressCount }} berjalan</span>
       </div>
     </div>
 
@@ -95,16 +99,16 @@
         </div>
       </div>
       <div class="mt-2 text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
-        99.2%
+        {{ qualityYieldMetric().yieldRate }}%
       </div>
       <div class="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-        <span class="font-semibold text-emerald-600 dark:text-emerald-400">Defect 0.8%</span>
-        <span>• Batas maks 1.5%</span>
+        <span class="font-semibold text-emerald-600 dark:text-emerald-400">{{ qualityYieldMetric().defectCount }} defect</span>
+        <span>• {{ qualityYieldMetric().openRepairs }} perlu tindakan</span>
       </div>
     </div>
   </section>
 
-  <!-- Filter & Search Controls (Pill Bar Khas Konveksi Workspace) -->
+  <!-- Filter & Search Controls (Pill Bar) -->
   <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div class="relative w-full max-w-sm">
       <ng-icon
@@ -155,7 +159,7 @@
     </div>
   </div>
 
-  <!-- Aktivitas Terbaru / Work Orders Card (Khas Konveksi) -->
+  <!-- Aktivitas Terbaru / Work Orders Card -->
   <div hlmCard class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
     <div hlmCardHeader class="border-b border-border/60 px-5 py-4">
       <div class="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
@@ -164,10 +168,11 @@
             Aktivitas Perintah Kerja Terkini
           </h2>
           <p hlmCardDescription class="text-sm text-muted-foreground">
-            Aktivitas lini fabrikasi wafer, pengemasan IC, dan pemantauan operator
+            Aktivitas lini pemotongan, sablon, jahit, dan pemantauan operator
           </p>
         </div>
-        <button
+        <a
+          routerLink="/workspace/production-orders"
           hlmBtn
           variant="ghost"
           size="sm"
@@ -175,7 +180,7 @@
         >
           <span>Lihat Semua</span>
           <ng-icon name="phosphorArrowUpRight" class="size-4" />
-        </button>
+        </a>
       </div>
     </div>
 
@@ -183,7 +188,7 @@
       @if (filteredWorkOrders().length === 0) {
         <div class="flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
           <p class="text-sm font-medium">Tidak ada data perintah kerja</p>
-          <p class="text-xs text-muted-foreground mt-1">Coba gunakan kata kunci pencarian atau filter status yang lain.</p>
+          <p class="text-xs text-muted-foreground mt-1">Belum ada perintah kerja produksi aktif untuk fasilitas ini.</p>
         </div>
       } @else {
         <div class="divide-y divide-border/60">
@@ -220,12 +225,12 @@
                   <div class="h-1.5 w-24 overflow-hidden rounded-full bg-muted mt-1">
                     <div
                       class="h-full bg-teal-600 dark:bg-teal-400 transition-all duration-300"
-                      [style.width.%]="(wo.completedUnits / wo.targetUnits) * 100"
+                      [style.width.%]="getProgressPercent(wo.completedUnits, wo.targetUnits)"
                     ></div>
                   </div>
                 </div>
 
-                <!-- Status Pill Badge (Identik Konveksi) -->
+                <!-- Status Pill Badge -->
                 <span
                   hlmBadge
                   [variant]="getStatusBadgeVariant(wo.status)"
@@ -241,4 +246,3 @@
     </div>
   </div>
 </main>
-

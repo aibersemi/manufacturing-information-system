@@ -271,5 +271,55 @@ describe('FinanceService', () => {
         p_user_id: 'user-finance-1',
       });
     });
+
+    it('should check period integrity using date range gte and lte', async () => {
+      const mockJournalData = [
+        {
+          id: 'je-1',
+          journal_line: [
+            { debit: 100000, credit: 0 },
+            { debit: 0, credit: 100000 },
+          ],
+        },
+      ];
+
+      const journalChain: any = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn(),
+        gte: vi.fn().mockReturnThis(),
+        lte: vi.fn().mockReturnThis(),
+      };
+      journalChain.eq.mockImplementation((field: string, val: any) => {
+        if (field === 'status' && val === 'posted') {
+          return Promise.resolve({ data: mockJournalData, error: null });
+        }
+        return journalChain;
+      });
+
+      const draftDocChain: any = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        gte: vi.fn().mockReturnThis(),
+        lte: vi.fn().mockResolvedValue({ count: 0, error: null }),
+      };
+
+      mockSupabase.client.from.mockImplementation((table: string) => {
+        if (table === 'journal_entry') return journalChain;
+        if (table === 'business_document') return draftDocChain;
+        return {};
+      });
+
+      const result = await service.checkPeriodIntegrity('2026-09');
+      expect(journalChain.gte).toHaveBeenCalledWith('transaction_date', '2026-09-01');
+      expect(journalChain.lte).toHaveBeenCalledWith('transaction_date', '2026-09-30');
+      expect(draftDocChain.gte).toHaveBeenCalledWith('transaction_date', '2026-09-01');
+      expect(draftDocChain.lte).toHaveBeenCalledWith('transaction_date', '2026-09-30');
+      expect(result.canClose).toBe(true);
+      expect(result.balancedJournals).toBe(true);
+      expect(result.totalDebit).toBe(100000);
+      expect(result.totalCredit).toBe(100000);
+      expect(result.pendingDrafts).toBe(0);
+      expect(result.errors).toEqual([]);
+    });
   });
 });

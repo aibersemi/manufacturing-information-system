@@ -1283,12 +1283,18 @@ export class FinanceService {
     const companyId = await this.requireActiveCompanyId();
     const errors: string[] = [];
 
+    const [year, month] = periodMonth.split('-').map(Number);
+    const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    const startDate = `${periodMonth}-01`;
+    const endDate = `${periodMonth}-${String(lastDay).padStart(2, '0')}`;
+
     // 1. Cek Jurnal
     const { data: journalData } = await this.supabase.client
       .from('journal_entry')
       .select('id, journal_line(debit, credit)')
       .eq('company_id', companyId)
-      .like('transaction_date', `${periodMonth}%`)
+      .gte('transaction_date', startDate)
+      .lte('transaction_date', endDate)
       .eq('status', 'posted');
 
     let totalDebit = 0;
@@ -1315,7 +1321,8 @@ export class FinanceService {
       .select('*', { count: 'exact', head: true })
       .eq('company_id', companyId)
       .eq('status', 'draft')
-      .like('transaction_date', `${periodMonth}%`);
+      .gte('transaction_date', startDate)
+      .lte('transaction_date', endDate);
 
     const pendingDrafts = draftCount || 0;
     if (pendingDrafts > 0) {
