@@ -44,23 +44,52 @@
             </div>
           }
 
-          <!-- Entitas / Pabrik (Pill Select Trigger) -->
+          <!-- Entitas / Pabrik (Pill Select Dynamic dari Database) -->
           <div class="flex flex-col gap-2">
-            <span class="text-sm font-medium text-foreground">
+            <label for="facility-select" class="text-sm font-medium text-foreground">
               Pabrik / Unit Operasi
-            </span>
-            <div
-              id="facility-select"
-              class="flex h-10 w-full items-center justify-between rounded-full border border-border bg-muted/40 px-4 text-sm text-foreground shadow-2xs"
-            >
-              <div class="flex items-center gap-2.5 truncate">
-                <ng-icon name="phosphorBuildings" class="size-4.5 text-muted-foreground shrink-0" />
-                <span class="truncate">Pabrik Semikonduktor Aiber (Utama)</span>
-              </div>
-              <span class="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 shrink-0">
-                Aktif
-              </span>
+            </label>
+            <div class="relative">
+              <ng-icon
+                name="phosphorBuildings"
+                class="pointer-events-none absolute start-3.5 top-1/2 size-4.5 -translate-y-1/2 text-muted-foreground z-10"
+                aria-hidden="true"
+              />
+              <select
+                id="facility-select"
+                [ngModel]="selectedFacilityId()"
+                (ngModelChange)="onFacilityChange($event)"
+                [ngModelOptions]="{ standalone: true }"
+                [disabled]="isLoadingFacilities() || availableFacilities().length === 0"
+                class="h-10 w-full appearance-none rounded-full border border-border bg-muted/40 ps-10 pe-10 text-sm font-medium text-foreground transition focus:bg-background focus:ring-2 focus:ring-ring focus:outline-hidden cursor-pointer shadow-2xs disabled:opacity-60"
+              >
+                @if (isLoadingFacilities()) {
+                  <option value="" disabled>Memuat daftar fasilitas pabrik...</option>
+                } @else if (availableFacilities().length === 0) {
+                  <option value="" disabled>Tidak ada unit operasi aktif</option>
+                } @else {
+                  @for (facility of availableFacilities(); track facility.id) {
+                    <option [value]="facility.id">
+                      {{ facility.name }} ({{ facility.code }})
+                    </option>
+                  }
+                }
+              </select>
+              <ng-icon
+                name="phosphorCaretDown"
+                class="pointer-events-none absolute end-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground z-10"
+                aria-hidden="true"
+              />
             </div>
+            @if (selectedFacility()) {
+              <div class="flex items-center justify-between px-1 text-xs text-muted-foreground">
+                <span>Kode: <strong class="font-mono text-foreground">{{ selectedFacility()?.code }}</strong></span>
+                <span class="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                  <span class="size-1.5 rounded-full bg-emerald-500"></span>
+                  Unit Operasional Aktif
+                </span>
+              </div>
+            }
           </div>
 
           <!-- Field Username atau Email -->

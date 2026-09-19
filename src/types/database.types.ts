@@ -3393,6 +3393,14 @@ export type Database = {
         Args: { p_company_id: string; p_date_from?: string; p_date_to?: string }
         Returns: Json
       }
+      get_public_active_companies: {
+        Args: never
+        Returns: {
+          code: string
+          id: string
+          name: string
+        }[]
+      }
       get_sales_fulfillment_summary: {
         Args: { p_company_id: string }
         Returns: Json
