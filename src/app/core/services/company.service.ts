@@ -137,6 +137,19 @@ export class CompanyService {
     this.setActiveCompanyInternal(companyId, this.userAssignments());
   }
 
+  /**
+   * Mengalihkan perusahaan aktif ke entitas baru dengan validasi ketersediaan
+   */
+  switchActiveCompany(companyId: string): boolean {
+    const target = this.availableCompanies().find((c) => c.id === companyId);
+    if (!target) {
+      console.warn(`Perusahaan dengan ID ${companyId} tidak ditemukan.`);
+      return false;
+    }
+    this.setActiveCompany(companyId);
+    return true;
+  }
+
   private setActiveCompanyInternal(
     companyId: string | null,
     assignments: UserCompanyAssignment[]

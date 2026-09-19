@@ -577,3 +577,40 @@ Modul **Financial Reporting, HPP & Reconciliation (Fase 9)** mengimplementasikan
   5. **Aset Tetap**: Total harga perolehan unit aktif di register aset modal vs Saldo Akun Aset Tetap (`1-2.0.xx`).
   6. **Akumulasi Penyusutan**: Akumulasi depresiasi terhitung di modul aset vs Saldo Kredit Akun Akumulasi Penyusutan (`1-2.1.xx`).
 - **Uji Integritas Real-time**: Tombol *Uji Rekonsiliasi Real-time* mengevaluasi ke-6 pos secara serentak. Jika ada selisih, sistem memberikan peringatan anomali beserta navigasi cepat ke modul terkait untuk investigasi jurnal koreksi.
+
+---
+
+## Modul Manajemen Perusahaan & Multi-Tenant (`/workspace/companies`)
+
+Modul ini bertanggung jawab atas pengelolaan struktur multi-tenant, identitas fasilitas manufaktur, status operasional, serta inisialisasi master data otomatis (*bootstrapping*).
+
+### 1. Inisialisasi Tenant Atomik (`create_company_with_bootstrap`)
+- **Rute**: `/workspace/companies`
+- **Komponen**: `CompaniesComponent`
+- **Otorisasi**: Khusus peran `owner` (dilindungi oleh `ownerGuard`).
+- **Mekanisme Bootstrap**:
+  Saat pendaftaran entitas baru disubmit, fungsi PostgreSQL `create_company_with_bootstrap` dieksekusi dalam satu transaksi atomik:
+  1. Validasi keunikan kode dan nama perusahaan.
+  2. Penyimpanan data identitas: Kode, Nama, Alamat Fasilitas/Pabrik, Nomor Telepon Kontak, dan Email Resmi.
+  3. Pemanggilan `bootstrap_company_data` untuk secara otomatis menginisialisasi:
+     - 65 akun Bagan Akun Standar (*Chart of Accounts* - COA).
+     - 11 Satuan Standar (*Units of Measure* - UOM: CM, GROSS, KG, LUSIN, M, PAK, PCS, RIM, SET, ROLL, YARD).
+     - Kategori konfigurasi beban operasional, overhead pabrik, dan aset tetap.
+     - Penomoran otomatis dokumen transaksi (SO, INV, PO, WO, CUT, PRT, SEW, PCK, PAY, RCP, EXP, JV, AST).
+     - Matriks izin akses default untuk 7 peran di seluruh 38 menu sistem.
+     - Penugasan pengguna pembuat sebagai `owner` aktif di `user_company_assignment`.
+  4. Pencatatan jejak audit otomatis pada `audit_log` (`action: 'company.create'`).
+
+### 2. Aturan Bisnis & Proteksi Integritas
+- **Integritas Kode (`code_locked`)**:
+  - Kolom `code_locked` menjaga agar kode perusahaan yang telah digunakan dalam penomoran dokumen akuntansi dan jurnal tidak dapat diubah sembarangan.
+  - Perusahaan yang berstatus `code_locked = true` menampilkan badge gembok dan menonaktifkan input kode pada form edit.
+- **Proteksi Penonaktifan Sesi Aktif**:
+  - Sistem melarang penonaktifan entitas yang sedang aktif digunakan dalam sesi kerja pengguna saat ini.
+  - Pengguna harus beralih (*switch*) ke entitas lain terlebih dahulu sebelum dapat menonaktifkan entitas tersebut.
+- **Optimistic Concurrency Control**:
+  - Pembaruan entitas menyertakan nomor `version` guna mencegah penimpaan data simultan (*race condition*).
+
+### 3. Pengalihan Sesi Kerja Cepat (*Quick Tenant Switch*)
+- Pengguna dapat langsung menekan tombol **Gunakan** pada baris tabel perusahaan untuk mengalihkan konteks tenant yang aktif tanpa harus membuka dropdown navigasi atas. Sesi aktif langsung diperbarui secara reaktif ke seluruh komponen aplikasi.
+

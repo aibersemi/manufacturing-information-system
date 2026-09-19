@@ -3215,6 +3215,35 @@ export type Database = {
         }
         Returns: Json
       }
+      create_company_with_bootstrap: {
+        Args: {
+          p_address?: string
+          p_code: string
+          p_email?: string
+          p_name: string
+          p_phone?: string
+        }
+        Returns: {
+          address: string | null
+          code: string
+          code_locked: boolean
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean
+          logo_storage_key: string | null
+          name: string
+          phone: string | null
+          updated_at: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "company"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_customer_po: {
         Args: {
           p_company_id: string
@@ -3288,6 +3317,24 @@ export type Database = {
       get_cash_flow_statement: {
         Args: { p_company_id: string; p_date_from?: string; p_date_to?: string }
         Returns: Json
+      }
+      get_companies_with_stats: {
+        Args: never
+        Returns: {
+          address: string
+          assigned_users_count: number
+          code: string
+          code_locked: boolean
+          created_at: string
+          email: string
+          id: string
+          is_active: boolean
+          logo_storage_key: string
+          name: string
+          phone: string
+          updated_at: string
+          version: number
+        }[]
       }
       get_company_users_with_profiles: {
         Args: { p_company_id: string }
@@ -3539,6 +3586,38 @@ export type Database = {
           p_user_id?: string
         }
         Returns: Json
+      }
+      update_company_details: {
+        Args: {
+          p_address?: string
+          p_code?: string
+          p_company_id: string
+          p_email?: string
+          p_expected_version?: number
+          p_is_active?: boolean
+          p_name: string
+          p_phone?: string
+        }
+        Returns: {
+          address: string | null
+          code: string
+          code_locked: boolean
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean
+          logo_storage_key: string | null
+          name: string
+          phone: string | null
+          updated_at: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "company"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       update_ledger_account_status: {
         Args: {

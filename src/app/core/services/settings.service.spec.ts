@@ -76,35 +76,35 @@ describe('SettingsService', () => {
       );
     });
 
-    it('should insert new company and call bootstrap_company_data RPC', async () => {
+    it('should call create_company_with_bootstrap RPC and reload user companies', async () => {
       const createdCompany = {
         id: 'new-comp-uuid',
         code: 'AIBER002',
         name: 'PT Semikonduktor Maju',
+        address: 'Jl. Industri No. 5',
+        phone: '021-998877',
+        email: 'info@aiber.co.id',
         is_active: true,
         version: 1,
       };
 
-      const mockQueryBuilder = {
-        insert: vi.fn().mockReturnThis(),
-        select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: createdCompany, error: null }),
-      };
+      mockSupabase.client.rpc.mockResolvedValue({ data: createdCompany, error: null });
 
-      mockSupabase.client.from.mockImplementation((table: string) => {
-        if (table === 'company') return mockQueryBuilder;
-        if (table === 'audit_log') return { insert: vi.fn().mockResolvedValue({ error: null }) };
-        return {};
+      const res = await service.createCompany({
+        code: 'aiber002',
+        name: 'PT Semikonduktor Maju',
+        address: 'Jl. Industri No. 5',
+        phone: '021-998877',
+        email: 'info@aiber.co.id',
       });
 
-      mockSupabase.client.rpc.mockResolvedValue({ error: null });
-
-      const res = await service.createCompany({ code: 'aiber002', name: 'PT Semikonduktor Maju' });
-
       expect(res.code).toBe('AIBER002');
-      expect(mockSupabase.client.rpc).toHaveBeenCalledWith('bootstrap_company_data', {
-        p_company_id: 'new-comp-uuid',
-        p_creator_user_id: 'user-owner-123',
+      expect(mockSupabase.client.rpc).toHaveBeenCalledWith('create_company_with_bootstrap', {
+        p_code: 'AIBER002',
+        p_name: 'PT Semikonduktor Maju',
+        p_address: 'Jl. Industri No. 5',
+        p_phone: '021-998877',
+        p_email: 'info@aiber.co.id',
       });
       expect(mockCompanyService.loadUserCompanies).toHaveBeenCalled();
     });
@@ -121,35 +121,40 @@ describe('SettingsService', () => {
       );
     });
 
-    it('should increment version when updating company', async () => {
-      const existing = { id: 'comp-2', name: 'PT Lama', is_active: true, version: 3 };
-      const updated = { id: 'comp-2', name: 'PT Baru', is_active: true, version: 4 };
+    it('should call update_company_details RPC and reload user companies', async () => {
+      const updated = {
+        id: 'comp-2',
+        code: 'BDG002',
+        name: 'PT Bandung Silikon Baru',
+        address: 'Jl. Sukajadi',
+        phone: '022-12345',
+        email: 'bdg@silikon.id',
+        is_active: true,
+        version: 4,
+      };
 
-      mockSupabase.client.from.mockImplementation((table: string) => {
-        if (table === 'company') {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: existing, error: null }),
-              }),
-            }),
-            update: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  select: vi.fn().mockReturnValue({
-                    single: vi.fn().mockResolvedValue({ data: updated, error: null }),
-                  }),
-                }),
-              }),
-            }),
-          };
-        }
-        if (table === 'audit_log') return { insert: vi.fn().mockResolvedValue({ error: null }) };
-        return {};
+      mockSupabase.client.rpc.mockResolvedValue({ data: updated, error: null });
+
+      const res = await service.updateCompany('comp-2', {
+        name: 'PT Bandung Silikon Baru',
+        address: 'Jl. Sukajadi',
+        phone: '022-12345',
+        email: 'bdg@silikon.id',
+        version: 3,
       });
 
-      const res = await service.updateCompany('comp-2', { name: 'PT Baru' });
       expect(res.version).toBe(4);
+      expect(mockSupabase.client.rpc).toHaveBeenCalledWith('update_company_details', {
+        p_company_id: 'comp-2',
+        p_name: 'PT Bandung Silikon Baru',
+        p_code: undefined,
+        p_address: 'Jl. Sukajadi',
+        p_phone: '022-12345',
+        p_email: 'bdg@silikon.id',
+        p_is_active: undefined,
+        p_expected_version: 3,
+      });
+      expect(mockCompanyService.loadUserCompanies).toHaveBeenCalled();
     });
   });
 

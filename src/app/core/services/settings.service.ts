@@ -9,6 +9,28 @@ export type UserCompanyAssignment = Tables<'user_company_assignment'>;
 export type AccessPermission = Tables<'access_permission'>;
 export type AuditLog = Tables<'audit_log'>;
 
+export interface CompanyWithStats extends Company {
+  assigned_users_count?: number;
+}
+
+export interface CreateCompanyPayload {
+  code: string;
+  name: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+}
+
+export interface UpdateCompanyPayload {
+  name: string;
+  code?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  isActive?: boolean;
+  version?: number;
+}
+
 export interface CompanyUserWithProfile {
   company_id: string;
   user_id: string;
@@ -63,9 +85,22 @@ export class SettingsService {
   // ============================================================================
 
   /**
-   * Mengambil daftar seluruh perusahaan terdaftar (khusus role owner)
+   * Mengambil daftar seluruh perusahaan terdaftar beserta statistik jumlah personil aktif
    */
-  async getCompanies(): Promise<Company[]> {
+  async getCompanies(): Promise<CompanyWithStats[]> {
+    // 1. Coba panggil RPC get_companies_with_stats
+    const { data: rpcData, error: rpcError } = await this.supabase.client.rpc(
+      'get_companies_with_stats',
+    );
+
+    if (!rpcError && rpcData) {
+      return (rpcData as CompanyWithStats[]).map((c) => ({
+        ...c,
+        assigned_users_count: Number(c.assigned_users_count || 0),
+      }));
+    }
+
+    // 2. Fallback query standar jika RPC belum siap
     const { data, error } = await this.supabase.client
       .from('company')
       .select('*')
@@ -75,15 +110,18 @@ export class SettingsService {
       throw new Error(`Gagal memuat daftar perusahaan: ${error.message}`);
     }
 
-    return (data ?? []) as Company[];
+    return (data ?? []) as CompanyWithStats[];
   }
 
   /**
-   * Mendaftarkan perusahaan baru, menginisialisasi skema bootstrap, dan mencatat audit log
+   * Mendaftarkan perusahaan baru, menginisialisasi skema bootstrap secara atomik, dan mencatat audit log
    */
-  async createCompany(data: { code: string; name: string }): Promise<Company> {
+  async createCompany(data: CreateCompanyPayload): Promise<Company> {
     const rawCode = (data.code || '').trim().toUpperCase();
     const rawName = (data.name || '').trim();
+    const rawAddress = (data.address || '').trim();
+    const rawPhone = (data.phone || '').trim();
+    const rawEmail = (data.email || '').trim();
 
     if (!rawCode) {
       throw new Error('Kode perusahaan wajib diisi.');
@@ -91,6 +129,10 @@ export class SettingsService {
 
     if (!/^[A-Z0-9_-]+$/.test(rawCode)) {
       throw new Error('Kode perusahaan hanya boleh berupa huruf kapital dan angka tanpa spasi.');
+    }
+
+    if (rawCode.length < 2 || rawCode.length > 20) {
+      throw new Error('Kode perusahaan harus terdiri dari 2 hingga 20 karakter.');
     }
 
     if (!rawName) {
@@ -102,58 +144,39 @@ export class SettingsService {
       throw new Error('Sesi pengguna tidak valid.');
     }
 
-    // 1. Simpan baris baru ke tabel company
-    const { data: createdCompany, error: insertError } = await this.supabase.client
-      .from('company')
-      .insert({
-        code: rawCode,
-        name: rawName,
-        is_active: true,
-      })
-      .select('*')
-      .single();
+    // 1. Panggil stored procedure create_company_with_bootstrap untuk atomic transaction
+    const { data: createdCompany, error: rpcError } = await this.supabase.client.rpc(
+      'create_company_with_bootstrap',
+      {
+        p_code: rawCode,
+        p_name: rawName,
+        p_address: rawAddress || undefined,
+        p_phone: rawPhone || undefined,
+        p_email: rawEmail || undefined,
+      },
+    );
 
-    if (insertError) {
-      if (insertError.code === '23505') {
+    if (rpcError) {
+      if (rpcError.code === '23505') {
         throw new Error('Kode atau nama perusahaan sudah digunakan.');
       }
-      throw new Error(`Gagal membuat perusahaan: ${insertError.message}`);
+      throw new Error(`Gagal membuat perusahaan: ${rpcError.message}`);
     }
 
     const companyRecord = createdCompany as Company;
 
-    // 2. Panggil stored procedure bootstrap_company_data
-    const { error: rpcError } = await this.supabase.client.rpc('bootstrap_company_data', {
-      p_company_id: companyRecord.id,
-      p_creator_user_id: currentUser.id,
-    });
-
-    if (rpcError) {
-      console.error('Gagal menjalankan bootstrap data perusahaan baru:', rpcError);
-    }
-
-    // 3. Catat audit log
-    await this.logAudit({
-      companyId: companyRecord.id,
-      action: 'company.create',
-      targetType: 'company',
-      targetId: companyRecord.id,
-      details: { code: companyRecord.code, name: companyRecord.name },
-      after: companyRecord,
-    });
-
-    // 4. Muat ulang daftar perusahaan aktif di CompanyService
+    // 2. Muat ulang daftar perusahaan aktif di CompanyService
     await this.companyService.loadUserCompanies();
 
     return companyRecord;
   }
 
   /**
-   * Memperbarui informasi nama dan status aktif perusahaan
+   * Memperbarui informasi identitas perusahaan (nama, alamat, telepon, email, kode, dan status aktif)
    */
   async updateCompany(
     id: string,
-    data: { name: string; isActive?: boolean },
+    data: UpdateCompanyPayload,
   ): Promise<Company> {
     const rawName = (data.name || '').trim();
     if (!rawName) {
@@ -167,7 +190,27 @@ export class SettingsService {
       );
     }
 
-    // Ambil data existing untuk optimistic versioning
+    // 1. Coba pembaruan via RPC update_company_details
+    const { data: rpcData, error: rpcError } = await this.supabase.client.rpc(
+      'update_company_details',
+      {
+        p_company_id: id,
+        p_name: rawName,
+        p_code: data.code ? data.code.trim().toUpperCase() : undefined,
+        p_address: data.address ? data.address.trim() : undefined,
+        p_phone: data.phone ? data.phone.trim() : undefined,
+        p_email: data.email ? data.email.trim() : undefined,
+        p_is_active: typeof data.isActive === 'boolean' ? data.isActive : undefined,
+        p_expected_version: data.version ?? undefined,
+      },
+    );
+
+    if (!rpcError && rpcData) {
+      await this.companyService.loadUserCompanies();
+      return rpcData as Company;
+    }
+
+    // 2. Fallback query standar jika RPC belum terdaftar
     const { data: existing, error: findError } = await this.supabase.client
       .from('company')
       .select('*')
@@ -183,6 +226,22 @@ export class SettingsService {
       version: existing.version + 1,
     };
 
+    if (data.code && !existing.code_locked) {
+      updatePayload.code = data.code.trim().toUpperCase();
+    }
+
+    if (data.address !== undefined) {
+      updatePayload.address = data.address.trim() || null;
+    }
+
+    if (data.phone !== undefined) {
+      updatePayload.phone = data.phone.trim() || null;
+    }
+
+    if (data.email !== undefined) {
+      updatePayload.email = data.email.trim() || null;
+    }
+
     if (typeof data.isActive === 'boolean') {
       updatePayload.is_active = data.isActive;
     }
@@ -197,7 +256,7 @@ export class SettingsService {
 
     if (updateError) {
       if (updateError.code === '23505') {
-        throw new Error('Nama perusahaan sudah digunakan oleh entitas lain.');
+        throw new Error('Nama atau kode perusahaan sudah digunakan oleh entitas lain.');
       }
       throw new Error(`Gagal memperbarui perusahaan: ${updateError.message}`);
     }
