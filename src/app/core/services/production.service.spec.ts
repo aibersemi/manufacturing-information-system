@@ -204,6 +204,118 @@ describe('ProductionService', () => {
     });
   });
 
+  describe('confirmSewing', () => {
+    it('should call confirm_operator_sewing RPC with correct parameters', async () => {
+      mockSupabase.client.rpc.mockResolvedValue({
+        data: {
+          actualId: 'act-jah-1',
+          actualNumber: 'ACT-JAH-260920-001',
+          bundleCode: 'IKT-02',
+          successQuantity: 45,
+          repairQuantity: 3,
+          rejectQuantity: 2,
+          wageAmount: 750000,
+          repairCaseId: 'rep-jah-1',
+          spkCompleted: false,
+        },
+        error: null,
+      });
+
+      const res = await service.confirmSewing({
+        spkId: 'spk-jah-1',
+        bundleId: 'bundle-2',
+        successQty: 45,
+        repairQty: 3,
+        rejectQty: 2,
+        notes: 'Jahitan samping melenceng',
+      });
+
+      expect(res.actualNumber).toBe('ACT-JAH-260920-001');
+      expect(res.successQuantity).toBe(45);
+      expect(res.repairQuantity).toBe(3);
+      expect(res.rejectQuantity).toBe(2);
+      expect(res.wageAmount).toBe(750000);
+      expect(res.repairCaseId).toBe('rep-jah-1');
+      expect(res.spkCompleted).toBe(false);
+      expect(mockSupabase.client.rpc).toHaveBeenCalledWith('confirm_operator_sewing', {
+        p_spk_id: 'spk-jah-1',
+        p_bundle_id: 'bundle-2',
+        p_success_qty: 45,
+        p_repair_qty: 3,
+        p_reject_qty: 2,
+        p_notes: 'Jahitan samping melenceng',
+        p_user_id: 'user-head-1',
+      });
+    });
+
+    it('should throw error when confirm_operator_sewing RPC fails', async () => {
+      mockSupabase.client.rpc.mockResolvedValue({
+        data: null,
+        error: { message: 'Total kuantitas hasil jahit wajib tepat sama dengan kuantitas aktif ikatan' },
+      });
+
+      await expect(
+        service.confirmSewing({
+          spkId: 'spk-jah-1',
+          bundleId: 'bundle-2',
+          successQty: 40,
+          repairQty: 0,
+          rejectQty: 0,
+        })
+      ).rejects.toThrow('Total kuantitas hasil jahit wajib tepat sama dengan kuantitas aktif ikatan');
+    });
+  });
+
+  describe('confirmPacking', () => {
+    it('should call confirm_operator_packing RPC with correct parameters', async () => {
+      mockSupabase.client.rpc.mockResolvedValue({
+        data: {
+          actualId: 'act-pck-1',
+          actualNumber: 'ACT-PCK-260920-001',
+          bundleCode: 'IKT-03',
+          successQuantity: 50,
+          wageAmount: 50000,
+          spkCompleted: true,
+        },
+        error: null,
+      });
+
+      const res = await service.confirmPacking({
+        spkId: 'spk-pck-1',
+        bundleId: 'bundle-3',
+        successQty: 50,
+        notes: 'Packing selesai rapi',
+      });
+
+      expect(res.actualNumber).toBe('ACT-PCK-260920-001');
+      expect(res.successQuantity).toBe(50);
+      expect(res.wageAmount).toBe(50000);
+      expect(res.spkCompleted).toBe(true);
+      expect(mockSupabase.client.rpc).toHaveBeenCalledWith('confirm_operator_packing', {
+        p_spk_id: 'spk-pck-1',
+        p_bundle_id: 'bundle-3',
+        p_success_qty: 50,
+        p_notes: 'Packing selesai rapi',
+        p_user_id: 'user-head-1',
+      });
+    });
+
+    it('should throw error when confirm_operator_packing RPC fails', async () => {
+      mockSupabase.client.rpc.mockResolvedValue({
+        data: null,
+        error: { message: 'Kuantitas hasil packing wajib tepat sama dengan kuantitas aktif ikatan' },
+      });
+
+      await expect(
+        service.confirmPacking({
+          spkId: 'spk-pck-1',
+          bundleId: 'bundle-3',
+          successQty: 40,
+        })
+      ).rejects.toThrow('Kuantitas hasil packing wajib tepat sama dengan kuantitas aktif ikatan');
+    });
+  });
+
   describe('assignRepair', () => {
     it('should call assign_repair_spk RPC', async () => {
       mockSupabase.client.rpc.mockResolvedValue({

@@ -103,6 +103,22 @@ export interface ConfirmPrintingPayload {
   notes?: string;
 }
 
+export interface ConfirmSewingPayload {
+  spkId: string;
+  bundleId: string;
+  successQty: number;
+  repairQty: number;
+  rejectQty: number;
+  notes?: string;
+}
+
+export interface ConfirmPackingPayload {
+  spkId: string;
+  bundleId: string;
+  successQty: number;
+  notes?: string;
+}
+
 export interface AssignRepairPayload {
   repairCaseId: string;
   operatorId: string;
@@ -537,7 +553,7 @@ export class ProductionService {
   }
 
   // ============================================================================
-  // 3. CATAT AKTUAL OPERATOR (POTONG & SABLON)
+  // 3. CATAT AKTUAL OPERATOR (POTONG, SABLON, JAHIT, & PACKING)
   // ============================================================================
 
   async getAvailableRollsForSpk(spkId: string): Promise<ProductionMaterialUnit[]> {
@@ -665,6 +681,76 @@ export class ProductionService {
       rejectQuantity: number;
       wageAmount: number;
       repairCaseId: string | null;
+      spkCompleted: boolean;
+    };
+  }
+
+  async confirmSewing(payload: ConfirmSewingPayload): Promise<{
+    actualId: string;
+    actualNumber: string;
+    bundleCode: string;
+    successQuantity: number;
+    repairQuantity: number;
+    rejectQuantity: number;
+    wageAmount: number;
+    repairCaseId: string | null;
+    spkCompleted: boolean;
+  }> {
+    const currentUser = this.authService.currentUser();
+    if (!currentUser) throw new Error('Pengguna tidak terautentikasi.');
+
+    const { data, error } = await this.supabase.client.rpc('confirm_operator_sewing', {
+      p_spk_id: payload.spkId,
+      p_bundle_id: payload.bundleId,
+      p_success_qty: payload.successQty,
+      p_repair_qty: payload.repairQty,
+      p_reject_qty: payload.rejectQty,
+      p_notes: payload.notes || '',
+      p_user_id: currentUser.id,
+    });
+
+    if (error) throw new Error(error.message);
+
+    return data as {
+      actualId: string;
+      actualNumber: string;
+      bundleCode: string;
+      successQuantity: number;
+      repairQuantity: number;
+      rejectQuantity: number;
+      wageAmount: number;
+      repairCaseId: string | null;
+      spkCompleted: boolean;
+    };
+  }
+
+  async confirmPacking(payload: ConfirmPackingPayload): Promise<{
+    actualId: string;
+    actualNumber: string;
+    bundleCode: string;
+    successQuantity: number;
+    wageAmount: number;
+    spkCompleted: boolean;
+  }> {
+    const currentUser = this.authService.currentUser();
+    if (!currentUser) throw new Error('Pengguna tidak terautentikasi.');
+
+    const { data, error } = await this.supabase.client.rpc('confirm_operator_packing', {
+      p_spk_id: payload.spkId,
+      p_bundle_id: payload.bundleId,
+      p_success_qty: payload.successQty,
+      p_notes: payload.notes || '',
+      p_user_id: currentUser.id,
+    });
+
+    if (error) throw new Error(error.message);
+
+    return data as {
+      actualId: string;
+      actualNumber: string;
+      bundleCode: string;
+      successQuantity: number;
+      wageAmount: number;
       spkCompleted: boolean;
     };
   }

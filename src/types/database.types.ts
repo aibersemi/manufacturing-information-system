@@ -3192,7 +3192,42 @@ export type Database = {
         }
         Returns: Json
       }
+      confirm_operator_packing:
+        | {
+            Args: {
+              p_bundle_id: string
+              p_notes: string
+              p_spk_id: string
+              p_success_qty: number
+              p_user_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_bundle_id: string
+              p_notes: string
+              p_reject_qty: number
+              p_repair_qty: number
+              p_spk_id: string
+              p_success_qty: number
+              p_user_id: string
+            }
+            Returns: Json
+          }
       confirm_operator_printing: {
+        Args: {
+          p_bundle_id: string
+          p_notes: string
+          p_reject_qty: number
+          p_repair_qty: number
+          p_spk_id: string
+          p_success_qty: number
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      confirm_operator_sewing: {
         Args: {
           p_bundle_id: string
           p_notes: string
