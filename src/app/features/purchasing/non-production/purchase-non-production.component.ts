@@ -17,6 +17,7 @@ import {
   phosphorXCircle,
 } from '@ng-icons/phosphor-icons/regular';
 import { HlmButton } from '@spartan-ng/helm/button';
+import { toast } from 'ngx-sonner';
 import { CompanyService } from '../../../core/services/company.service';
 import {
   BusinessDocument,
@@ -283,7 +284,7 @@ export class PurchaseNonProductionComponent {
 
     if (!docId) return;
     if (!reason) {
-      alert('Alasan pembatalan wajib diisi.');
+      toast.error('Alasan pembatalan wajib diisi.');
       return;
     }
 
@@ -295,7 +296,7 @@ export class PurchaseNonProductionComponent {
       await this.loadData();
       setTimeout(() => this.successMessage.set(null), 3000);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Gagal membatalkan dokumen');
+      toast.error(err instanceof Error ? err.message : 'Gagal membatalkan dokumen');
     } finally {
       this.isSubmitting.set(false);
     }

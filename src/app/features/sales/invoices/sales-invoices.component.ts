@@ -21,6 +21,7 @@ import {
   phosphorXCircle,
 } from '@ng-icons/phosphor-icons/regular';
 import { HlmButton } from '@spartan-ng/helm/button';
+import { toast } from 'ngx-sonner';
 import {
   CreateSalesInvoicePayload,
   CustomerOrder,
@@ -405,7 +406,7 @@ export class SalesInvoicesComponent implements OnInit {
 
     if (!id) return;
     if (!reason) {
-      alert('Alasan pembatalan faktur wajib diisi.');
+      toast.error('Alasan pembatalan faktur wajib diisi.');
       return;
     }
 

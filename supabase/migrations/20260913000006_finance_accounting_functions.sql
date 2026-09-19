@@ -533,6 +533,9 @@ DECLARE
   v_cash_record RECORD;
   v_supplier_record RECORD;
   v_payable_account_id uuid;
+  v_credit_account_id uuid;
+  v_cash_account_name text := NULL;
+  v_supplier_name text := NULL;
   v_line jsonb;
   v_line_acc_id uuid;
   v_line_acc RECORD;
@@ -583,6 +586,9 @@ BEGIN
     IF v_cash_record.ledger_account_id IS NULL THEN
       RAISE EXCEPTION 'Rekening kas/bank belum terhubung dengan akun bagan akun (COA).';
     END IF;
+
+    v_cash_account_name := v_cash_record.name;
+    v_credit_account_id := v_cash_record.ledger_account_id;
   ELSE
     IF p_supplier_id IS NULL THEN
       RAISE EXCEPTION 'Pemasok/rekanan wajib dipilih untuk biaya operasional bertempo (hutang).';
@@ -604,6 +610,9 @@ BEGIN
     IF v_payable_account_id IS NULL THEN
       RAISE EXCEPTION 'Pemetaan sistem untuk akun Hutang Pemasok (supplier_payable) belum dikonfigurasi.';
     END IF;
+
+    v_supplier_name := v_supplier_record.name;
+    v_credit_account_id := v_payable_account_id;
   END IF;
 
   -- Validasi Tiap Baris Beban
@@ -671,8 +680,8 @@ BEGIN
     jsonb_build_object(
       'fundingMethod', p_funding_method,
       'cashAccountId', p_cash_account_id,
-      'cashAccountName', CASE WHEN v_cash_record IS NOT NULL THEN v_cash_record.name ELSE NULL END,
-      'supplierName', CASE WHEN v_supplier_record IS NOT NULL THEN v_supplier_record.name ELSE NULL END,
+      'cashAccountName', v_cash_account_name,
+      'supplierName', v_supplier_name,
       'notes', coalesce(p_notes, '')
     ),
     now(), p_user_id::text, p_user_id::text, now(), now()
@@ -772,9 +781,9 @@ BEGIN
     debit_amount, credit_amount, debit, credit, description
   ) VALUES (
     p_company_id, v_journal_id, v_line_idx,
-    CASE WHEN p_funding_method = 'cash' THEN v_cash_record.ledger_account_id ELSE v_payable_account_id END,
+    v_credit_account_id,
     0, v_total_amount, 0, v_total_amount,
-    CASE WHEN p_funding_method = 'cash' THEN 'Kas/Bank (' || v_cash_record.name || ')' ELSE 'Hutang Biaya Operasional' END
+    CASE WHEN p_funding_method = 'cash' THEN 'Kas/Bank (' || coalesce(v_cash_account_name, '') || ')' ELSE 'Hutang Biaya Operasional' END
   );
 
   RETURN jsonb_build_object(
