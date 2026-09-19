@@ -181,6 +181,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'workspace/operator-packing',
+        loadComponent: () =>
+          import('./features/production/operator-packing/operator-packing.component').then(
+            (m) => m.OperatorPackingComponent
+          ),
+      },
+      {
         path: 'workspace/production-repairs',
         loadComponent: () =>
           import('./features/production/repairs/production-repairs.component').then(
@@ -532,6 +539,16 @@ export const routes: Routes = [
       {
         path: 'operator-sewing',
         redirectTo: 'workspace/operator-sewing',
+        pathMatch: 'full',
+      },
+      {
+        path: 'production/operator/packing',
+        redirectTo: 'workspace/operator-packing',
+        pathMatch: 'full',
+      },
+      {
+        path: 'operator-packing',
+        redirectTo: 'workspace/operator-packing',
         pathMatch: 'full',
       },
       {
