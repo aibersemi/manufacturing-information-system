@@ -56,8 +56,113 @@ describe('UsersAccessComponent', () => {
     },
     {
       company_id: 'c1',
+      role: 'owner',
+      menu_key: 'operators.cutting',
+      can_view: true,
+      can_create: true,
+      can_edit: true,
+      can_delete: true,
+      can_post: true,
+      can_void: true,
+      allowed: true,
+      version: 1,
+      updated_by_user_id: null,
+      updated_at: '2026-01-01T00:00:00Z',
+    },
+    {
+      company_id: 'c1',
+      role: 'owner',
+      menu_key: 'production.orders',
+      can_view: true,
+      can_create: true,
+      can_edit: true,
+      can_delete: true,
+      can_post: true,
+      can_void: true,
+      allowed: true,
+      version: 1,
+      updated_by_user_id: null,
+      updated_at: '2026-01-01T00:00:00Z',
+    },
+    {
+      company_id: 'c1',
       role: 'operator_jahit',
-      menu_key: 'production',
+      menu_key: 'dashboard',
+      can_view: true,
+      can_create: false,
+      can_edit: false,
+      can_delete: false,
+      can_post: false,
+      can_void: false,
+      allowed: true,
+      version: 1,
+      updated_by_user_id: null,
+      updated_at: '2026-01-01T00:00:00Z',
+    },
+    {
+      company_id: 'c1',
+      role: 'operator_jahit',
+      menu_key: 'operators.sewing',
+      can_view: true,
+      can_create: true,
+      can_edit: true,
+      can_delete: false,
+      can_post: false,
+      can_void: false,
+      allowed: true,
+      version: 1,
+      updated_by_user_id: null,
+      updated_at: '2026-01-01T00:00:00Z',
+    },
+    {
+      company_id: 'c1',
+      role: 'operator_jahit',
+      menu_key: 'production.sewing-orders',
+      can_view: true,
+      can_create: false,
+      can_edit: false,
+      can_delete: false,
+      can_post: false,
+      can_void: false,
+      allowed: true,
+      version: 1,
+      updated_by_user_id: null,
+      updated_at: '2026-01-01T00:00:00Z',
+    },
+    {
+      company_id: 'c1',
+      role: 'operator_packing',
+      menu_key: 'dashboard',
+      can_view: true,
+      can_create: false,
+      can_edit: false,
+      can_delete: false,
+      can_post: false,
+      can_void: false,
+      allowed: true,
+      version: 1,
+      updated_by_user_id: null,
+      updated_at: '2026-01-01T00:00:00Z',
+    },
+    {
+      company_id: 'c1',
+      role: 'operator_packing',
+      menu_key: 'operators.packing',
+      can_view: true,
+      can_create: true,
+      can_edit: true,
+      can_delete: false,
+      can_post: false,
+      can_void: false,
+      allowed: true,
+      version: 1,
+      updated_by_user_id: null,
+      updated_at: '2026-01-01T00:00:00Z',
+    },
+    {
+      company_id: 'c1',
+      role: 'operator_packing',
+      menu_key: 'production.packing-orders',
       can_view: true,
       can_create: false,
       can_edit: false,
@@ -85,7 +190,7 @@ describe('UsersAccessComponent', () => {
         is_active: true,
       }),
       updatePermission: vi.fn().mockResolvedValue({
-        ...mockPermissions[1],
+        ...mockPermissions[0],
         can_create: true,
       }),
     };
@@ -179,5 +284,121 @@ describe('UsersAccessComponent', () => {
     await component.updateSinglePermission(ownerPerm as any, 'can_create', false);
 
     expect(mockSettingsService.updatePermission).not.toHaveBeenCalled();
+  });
+
+  it('should filter matrix permissions by search query matching menu_key, label, or module', () => {
+    component.permissions.set(mockPermissions as any);
+    component.setMatrixRole('operator_jahit');
+
+    expect(component.filteredMatrixPermissions().length).toBe(3);
+
+    // Search by technical menu_key
+    component.setMatrixSearchQuery('operators.sewing');
+    expect(component.filteredMatrixPermissions().length).toBe(1);
+    expect(component.filteredMatrixPermissions()[0].menu_key).toBe('operators.sewing');
+
+    // Search by Indonesian label
+    component.setMatrixSearchQuery('Catat Jahit');
+    expect(component.filteredMatrixPermissions().length).toBe(1);
+    expect(component.filteredMatrixPermissions()[0].menu_key).toBe('operators.sewing');
+
+    // Search by module name
+    component.setMatrixSearchQuery('Produksi');
+    expect(component.filteredMatrixPermissions().length).toBe(1);
+    expect(component.filteredMatrixPermissions()[0].menu_key).toBe('production.sewing-orders');
+
+    // Clear search
+    component.setMatrixSearchQuery('');
+    expect(component.filteredMatrixPermissions().length).toBe(3);
+  });
+
+  it('should filter matrix permissions by module category', () => {
+    component.permissions.set(mockPermissions as any);
+    component.setMatrixRole('operator_jahit');
+
+    // Filter by 'Operator' category
+    component.setCategoryFilter('Operator');
+    expect(component.filteredMatrixPermissions().length).toBe(1);
+    expect(component.filteredMatrixPermissions()[0].menu_key).toBe('operators.sewing');
+
+    // Filter by 'Produksi' category
+    component.setCategoryFilter('Produksi');
+    expect(component.filteredMatrixPermissions().length).toBe(1);
+    expect(component.filteredMatrixPermissions()[0].menu_key).toBe('production.sewing-orders');
+
+    // Filter by 'Dashboard' category
+    component.setCategoryFilter('Dashboard');
+    expect(component.filteredMatrixPermissions().length).toBe(1);
+    expect(component.filteredMatrixPermissions()[0].menu_key).toBe('dashboard');
+
+    // Reset filter to 'all'
+    component.setCategoryFilter('all');
+    expect(component.filteredMatrixPermissions().length).toBe(3);
+  });
+
+  it('should support operator_jahit and operator_packing roles with their specific menu permissions', () => {
+    component.permissions.set(mockPermissions as any);
+
+    // Test operator_jahit
+    component.setMatrixRole('operator_jahit');
+    expect(component.matrixPermissions().length).toBe(3);
+
+    component.setCategoryFilter('Operator');
+    const jahitPerms = component.filteredMatrixPermissions();
+    expect(jahitPerms.length).toBe(1);
+    expect(jahitPerms[0].menu_key).toBe('operators.sewing');
+    expect(component.getMenuLabel('operators.sewing')).toBe('Catat Jahit');
+    expect(component.getMenuModule('operators.sewing')).toBe('Operator');
+
+    // Test operator_packing
+    component.setMatrixRole('operator_packing');
+    expect(component.matrixPermissions().length).toBe(3);
+
+    const packingPerms = component.filteredMatrixPermissions();
+    expect(packingPerms.length).toBe(1);
+    expect(packingPerms[0].menu_key).toBe('operators.packing');
+    expect(component.getMenuLabel('operators.packing')).toBe('Catat Packing');
+    expect(component.getMenuModule('operators.packing')).toBe('Operator');
+
+    // Search query for packing
+    component.setCategoryFilter('all');
+    component.setMatrixSearchQuery('packing');
+    const filteredKeys = component.filteredMatrixPermissions().map((p) => p.menu_key);
+    expect(filteredKeys).toContain('operators.packing');
+    expect(filteredKeys).toContain('production.packing-orders');
+  });
+
+  it('should provide accurate Indonesian labels and categories across all key modules', () => {
+    // Operator
+    expect(component.getMenuLabel('operators.cutting')).toBe('Catat Potongan');
+    expect(component.getMenuModule('operators.cutting')).toBe('Operator');
+    expect(component.getMenuLabel('operators.printing')).toBe('Catat Sablon');
+    expect(component.getMenuModule('operators.printing')).toBe('Operator');
+
+    // Produksi
+    expect(component.getMenuLabel('production.sewing-orders')).toBe('SPK Jahit');
+    expect(component.getMenuModule('production.sewing-orders')).toBe('Produksi');
+    expect(component.getMenuLabel('production.packing-orders')).toBe('SPK Packing');
+    expect(component.getMenuModule('production.packing-orders')).toBe('Produksi');
+
+    // Stok
+    expect(component.getMenuLabel('inventory.finished-goods')).toBe('Stok Produk Jadi');
+    expect(component.getMenuModule('inventory.finished-goods')).toBe('Stok');
+    expect(component.getMenuLabel('inventory.wip')).toBe('Stok WIP (Produksi)');
+    expect(component.getMenuModule('inventory.wip')).toBe('Stok');
+
+    // Keuangan
+    expect(component.getMenuLabel('finance.wage-payments')).toBe('Upah & Payroll Borongan');
+    expect(component.getMenuModule('finance.wage-payments')).toBe('Keuangan');
+
+    // Fallback for custom or unrecognized keys
+    expect(component.getMenuLabel('custom.menu')).toBe('custom.menu');
+    expect(component.getMenuModule('custom.menu')).toBe('Pengaturan');
+    expect(component.getMenuModule('production.unknown')).toBe('Produksi');
+
+    // Badge styling
+    expect(component.getModuleBadgeClass('Operator')).toContain('amber');
+    expect(component.getModuleBadgeClass('Produksi')).toContain('blue');
+    expect(component.getModuleBadgeClass('Dashboard')).toContain('muted');
   });
 });

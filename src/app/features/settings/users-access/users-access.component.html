@@ -268,6 +268,51 @@
       </div>
     </div>
 
+    <!-- Search & Filter Controls Pill Bar for Matrix -->
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <!-- Search Pill -->
+      <div class="relative w-full max-w-sm">
+        <ng-icon
+          name="phosphorMagnifyingGlass"
+          class="pointer-events-none absolute start-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden="true"
+        />
+        <input
+          type="text"
+          [ngModel]="matrixSearchQuery()"
+          (ngModelChange)="matrixSearchQuery.set($event)"
+          placeholder="Cari fitur, menu_key, atau modul..."
+          class="w-full rounded-full border border-border bg-card ps-10 pe-4 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-2xs transition focus:bg-background focus:ring-2 focus:ring-ring focus:outline-hidden"
+        />
+      </div>
+
+      <!-- Filter Category Tab Pills -->
+      <div class="flex flex-wrap items-center gap-1 self-start rounded-2xl sm:rounded-full border border-border/80 bg-card p-1 shadow-2xs sm:self-auto">
+        <button
+          type="button"
+          (click)="setCategoryFilter('all')"
+          [class.bg-muted]="selectedCategoryFilter() === 'all'"
+          [class.text-foreground]="selectedCategoryFilter() === 'all'"
+          [class.font-semibold]="selectedCategoryFilter() === 'all'"
+          class="rounded-full px-3 py-1 text-xs sm:text-sm text-muted-foreground transition hover:text-foreground"
+        >
+          Semua ({{ matrixPermissions().length }})
+        </button>
+        @for (cat of moduleCategories; track cat) {
+          <button
+            type="button"
+            (click)="setCategoryFilter(cat)"
+            [class.bg-muted]="selectedCategoryFilter() === cat"
+            [class.text-foreground]="selectedCategoryFilter() === cat"
+            [class.font-semibold]="selectedCategoryFilter() === cat"
+            class="rounded-full px-3 py-1 text-xs sm:text-sm text-muted-foreground transition hover:text-foreground"
+          >
+            {{ cat }}
+          </button>
+        }
+      </div>
+    </div>
+
     <!-- Permission Matrix Card -->
     <div hlmCard class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
       <div hlmCardHeader class="border-b border-border/60 px-5 py-4">
@@ -275,6 +320,9 @@
           <div>
             <h2 hlmCardTitle class="text-base font-semibold tracking-tight text-foreground">
               Matriks Izin: {{ formatRoleLabel(selectedMatrixRole()) }}
+              <span class="text-xs font-normal text-muted-foreground ms-2">
+                ({{ filteredMatrixPermissions().length }} dari {{ matrixPermissions().length }} menu)
+              </span>
             </h2>
             <p hlmCardDescription class="text-sm text-muted-foreground">
               Pengaturan hak baca, buat, ubah, hapus, posting, dan void transaksi per modul aplikasi.
@@ -290,9 +338,13 @@
       </div>
 
       <div hlmCardContent class="p-0">
-        @if (matrixPermissions().length === 0) {
+        @if (filteredMatrixPermissions().length === 0) {
           <div class="p-8 text-center text-sm text-muted-foreground">
-            Tidak ada konfigurasi izin untuk peran ini.
+            @if (matrixPermissions().length === 0) {
+              Tidak ada konfigurasi izin untuk peran ini.
+            } @else {
+              Tidak ada menu atau izin yang cocok dengan kriteria pencarian/filter.
+            }
           </div>
         } @else {
           <div class="overflow-x-auto">
@@ -309,11 +361,26 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-border/60">
-                @for (perm of matrixPermissions(); track perm.menu_key) {
+                @for (perm of filteredMatrixPermissions(); track perm.menu_key) {
                   <tr class="transition hover:bg-muted/30">
-                    <!-- Menu Key -->
-                    <td class="px-5 py-3 font-mono text-sm font-semibold text-foreground">
-                      {{ perm.menu_key }}
+                    <!-- Menu / Fitur -->
+                    <td class="px-5 py-3.5">
+                      <div class="flex flex-col gap-1">
+                        <div class="flex items-center gap-2">
+                          <span class="text-sm font-semibold text-foreground">
+                            {{ getMenuLabel(perm.menu_key) }}
+                          </span>
+                          <span
+                            class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium"
+                            [class]="getModuleBadgeClass(getMenuModule(perm.menu_key))"
+                          >
+                            {{ getMenuModule(perm.menu_key) }}
+                          </span>
+                        </div>
+                        <span class="text-xs font-mono text-muted-foreground">
+                          {{ perm.menu_key }}
+                        </span>
+                      </div>
                     </td>
 
                     <!-- can_view -->
@@ -323,7 +390,8 @@
                         [checked]="perm.can_view"
                         (change)="updateSinglePermission(perm, 'can_view', $any($event.target).checked)"
                         [disabled]="selectedMatrixRole() === 'owner'"
-                        class="size-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50"
+                        class="size-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                        [title]="'Izin Lihat ' + getMenuLabel(perm.menu_key)"
                       />
                     </td>
 
@@ -334,7 +402,8 @@
                         [checked]="perm.can_create"
                         (change)="updateSinglePermission(perm, 'can_create', $any($event.target).checked)"
                         [disabled]="selectedMatrixRole() === 'owner'"
-                        class="size-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50"
+                        class="size-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                        [title]="'Izin Buat ' + getMenuLabel(perm.menu_key)"
                       />
                     </td>
 
@@ -345,7 +414,8 @@
                         [checked]="perm.can_edit"
                         (change)="updateSinglePermission(perm, 'can_edit', $any($event.target).checked)"
                         [disabled]="selectedMatrixRole() === 'owner'"
-                        class="size-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50"
+                        class="size-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                        [title]="'Izin Ubah ' + getMenuLabel(perm.menu_key)"
                       />
                     </td>
 
@@ -356,7 +426,8 @@
                         [checked]="perm.can_delete"
                         (change)="updateSinglePermission(perm, 'can_delete', $any($event.target).checked)"
                         [disabled]="selectedMatrixRole() === 'owner'"
-                        class="size-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50"
+                        class="size-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                        [title]="'Izin Hapus ' + getMenuLabel(perm.menu_key)"
                       />
                     </td>
 
@@ -367,7 +438,8 @@
                         [checked]="perm.can_post"
                         (change)="updateSinglePermission(perm, 'can_post', $any($event.target).checked)"
                         [disabled]="selectedMatrixRole() === 'owner'"
-                        class="size-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50"
+                        class="size-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                        [title]="'Izin Posting ' + getMenuLabel(perm.menu_key)"
                       />
                     </td>
 
@@ -378,7 +450,8 @@
                         [checked]="perm.can_void"
                         (change)="updateSinglePermission(perm, 'can_void', $any($event.target).checked)"
                         [disabled]="selectedMatrixRole() === 'owner'"
-                        class="size-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50"
+                        class="size-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                        [title]="'Izin Batal ' + getMenuLabel(perm.menu_key)"
                       />
                     </td>
                   </tr>

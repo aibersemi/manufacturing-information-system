@@ -27,6 +27,93 @@ import {
 import { AuthService } from '../../../core/services/auth.service';
 import { CompanyService } from '../../../core/services/company.service';
 
+export type ModuleCategory =
+  | 'Dashboard'
+  | 'Operator'
+  | 'Produksi'
+  | 'Stok'
+  | 'Master Data'
+  | 'Pembelian'
+  | 'Penjualan'
+  | 'Keuangan'
+  | 'Pengaturan';
+
+export interface MenuMetadata {
+  readonly label: string;
+  readonly module: ModuleCategory;
+}
+
+export const MODULE_CATEGORIES: ModuleCategory[] = [
+  'Dashboard',
+  'Operator',
+  'Produksi',
+  'Stok',
+  'Master Data',
+  'Pembelian',
+  'Penjualan',
+  'Keuangan',
+  'Pengaturan',
+];
+
+export const MENU_METADATA: Record<string, MenuMetadata> = {
+  // Dashboard
+  'dashboard': { label: 'Dashboard Utama', module: 'Dashboard' },
+
+  // Master Data
+  'master.customers': { label: 'Data Pelanggan', module: 'Master Data' },
+  'master.suppliers': { label: 'Data Pemasok', module: 'Master Data' },
+  'master.materials': { label: 'Bahan Baku & Material', module: 'Master Data' },
+  'master.bom': { label: 'BOM (Formula Bahan)', module: 'Master Data' },
+  'master.products': { label: 'SKU & Katalog Produk', module: 'Master Data' },
+  'master.employees': { label: 'Karyawan & Tenaga Kerja', module: 'Master Data' },
+
+  // Pembelian
+  'purchases.materials': { label: 'Pembelian Bahan Produksi', module: 'Pembelian' },
+  'purchases.supplies': { label: 'Pembelian Perlengkapan', module: 'Pembelian' },
+  'purchases.non-production': { label: 'Pengadaan Non-Produksi', module: 'Pembelian' },
+  'purchases.assets': { label: 'Belanja Aset Pabrik', module: 'Pembelian' },
+
+  // Penjualan
+  'sales.orders': { label: 'Pesanan Penjualan (PO Masuk)', module: 'Penjualan' },
+  'sales.invoices': { label: 'Faktur & Tagihan Penjualan', module: 'Penjualan' },
+
+  // Produksi
+  'production.orders': { label: 'Perintah Produksi (Work Order)', module: 'Produksi' },
+  'production.cutting-orders': { label: 'SPK Potong', module: 'Produksi' },
+  'production.printing-orders': { label: 'SPK Sablon', module: 'Produksi' },
+  'production.sewing-orders': { label: 'SPK Jahit', module: 'Produksi' },
+  'production.packing-orders': { label: 'SPK Packing', module: 'Produksi' },
+  'production.repairs': { label: 'Kasus Perbaikan (Rework)', module: 'Produksi' },
+  'production.progress': { label: 'Progress SPK & Produksi', module: 'Produksi' },
+
+  // Operator
+  'operators.cutting': { label: 'Catat Potongan', module: 'Operator' },
+  'operators.printing': { label: 'Catat Sablon', module: 'Operator' },
+  'operators.sewing': { label: 'Catat Jahit', module: 'Operator' },
+  'operators.packing': { label: 'Catat Packing', module: 'Operator' },
+
+  // Stok
+  'inventory.materials': { label: 'Stok Bahan Baku', module: 'Stok' },
+  'inventory.incoming': { label: 'Penerimaan Stok (Masuk)', module: 'Stok' },
+  'inventory.outgoing': { label: 'Pengeluaran Stok (Keluar)', module: 'Stok' },
+  'inventory.wip': { label: 'Stok WIP (Produksi)', module: 'Stok' },
+  'inventory.finished-goods': { label: 'Stok Produk Jadi', module: 'Stok' },
+
+  // Keuangan
+  'finance.purchase-payments': { label: 'Pembayaran Pembelian', module: 'Keuangan' },
+  'finance.wage-payments': { label: 'Upah & Payroll Borongan', module: 'Keuangan' },
+  'finance.expenses': { label: 'Biaya Operasional', module: 'Keuangan' },
+  'finance.sales-receipts': { label: 'Penerimaan Pembayaran Piutang', module: 'Keuangan' },
+  'finance.cash': { label: 'Kas & Rekening Bank', module: 'Keuangan' },
+  'finance.assets': { label: 'Register & Penyusutan Aset', module: 'Keuangan' },
+  'finance.coa': { label: 'Bagan Akun (Chart of Accounts)', module: 'Keuangan' },
+  'finance.reports': { label: 'Laporan Keuangan & Akuntansi', module: 'Keuangan' },
+
+  // Pengaturan
+  'settings.companies': { label: 'Perusahaan & Multi-Tenant', module: 'Pengaturan' },
+  'settings.users-access': { label: 'Pengguna & Hak Akses', module: 'Pengaturan' },
+};
+
 @Component({
   selector: 'app-users-access',
   imports: [
@@ -61,6 +148,11 @@ export class UsersAccessComponent implements OnInit {
   readonly isLoading = signal<boolean>(false);
   readonly searchQuery = signal<string>('');
   readonly statusFilter = signal<'all' | 'active' | 'inactive'>('all');
+
+  // Matrix Filter & Search State
+  readonly matrixSearchQuery = signal<string>('');
+  readonly selectedCategoryFilter = signal<string>('all');
+  readonly moduleCategories = MODULE_CATEGORIES;
 
   // Data lists
   readonly companyUsers = signal<CompanyUserWithProfile[]>([]);
@@ -113,6 +205,34 @@ export class UsersAccessComponent implements OnInit {
   readonly matrixPermissions = computed(() => {
     const role = this.selectedMatrixRole();
     return this.permissions().filter((p) => p.role === role);
+  });
+
+  // Filtered Permissions based on Role, Module Category, and Search Query
+  readonly filteredMatrixPermissions = computed(() => {
+    const list = this.matrixPermissions();
+    const q = this.matrixSearchQuery().trim().toLowerCase();
+    const cat = this.selectedCategoryFilter();
+
+    return list.filter((p) => {
+      const meta = this.getMenuMetadata(p.menu_key);
+
+      // Filter by category
+      if (cat !== 'all' && meta.module !== cat) {
+        return false;
+      }
+
+      // Filter by search query (menu_key, label, or module)
+      if (q) {
+        const matchKey = p.menu_key.toLowerCase().includes(q);
+        const matchLabel = meta.label.toLowerCase().includes(q);
+        const matchModule = meta.module.toLowerCase().includes(q);
+        if (!matchKey && !matchLabel && !matchModule) {
+          return false;
+        }
+      }
+
+      return true;
+    });
   });
 
   ngOnInit(): void {
@@ -290,5 +410,69 @@ export class UsersAccessComponent implements OnInit {
   formatRoleLabel(roleId: string): string {
     const match = this.availableRoles.find((r) => r.id === roleId);
     return match ? match.label : roleId;
+  }
+
+  setCategoryFilter(category: string): void {
+    this.selectedCategoryFilter.set(category);
+  }
+
+  setMatrixSearchQuery(query: string): void {
+    this.matrixSearchQuery.set(query);
+  }
+
+  getMenuMetadata(menuKey: string): MenuMetadata {
+    if (MENU_METADATA[menuKey]) {
+      return MENU_METADATA[menuKey];
+    }
+
+    // Fallback for custom or legacy keys
+    const prefix = menuKey.split('.')[0]?.toLowerCase() ?? '';
+    let fallbackModule: ModuleCategory = 'Pengaturan';
+    if (prefix === 'dashboard') fallbackModule = 'Dashboard';
+    else if (prefix === 'operators' || prefix === 'operator') fallbackModule = 'Operator';
+    else if (prefix === 'production') fallbackModule = 'Produksi';
+    else if (prefix === 'inventory') fallbackModule = 'Stok';
+    else if (prefix === 'master') fallbackModule = 'Master Data';
+    else if (prefix === 'purchases' || prefix === 'purchasing') fallbackModule = 'Pembelian';
+    else if (prefix === 'sales') fallbackModule = 'Penjualan';
+    else if (prefix === 'finance') fallbackModule = 'Keuangan';
+    else if (prefix === 'settings') fallbackModule = 'Pengaturan';
+
+    return {
+      label: menuKey,
+      module: fallbackModule,
+    };
+  }
+
+  getMenuLabel(menuKey: string): string {
+    return this.getMenuMetadata(menuKey).label;
+  }
+
+  getMenuModule(menuKey: string): ModuleCategory {
+    return this.getMenuMetadata(menuKey).module;
+  }
+
+  getModuleBadgeClass(module: string): string {
+    switch (module) {
+      case 'Operator':
+        return 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20';
+      case 'Produksi':
+        return 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20';
+      case 'Stok':
+        return 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-500/20';
+      case 'Master Data':
+        return 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20';
+      case 'Pembelian':
+        return 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20';
+      case 'Penjualan':
+        return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20';
+      case 'Keuangan':
+        return 'bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/20';
+      case 'Pengaturan':
+        return 'bg-slate-500/10 text-slate-700 dark:text-slate-400 border-slate-500/20';
+      case 'Dashboard':
+      default:
+        return 'bg-muted text-muted-foreground border-border/80';
+    }
   }
 }
