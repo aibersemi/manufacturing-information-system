@@ -41,11 +41,11 @@ Panduan wajib bagi agen AI saat bekerja di repositori ini.
 - Seluruh pengujian interaktif, verifikasi browser, atau visual testing wajib dilakukan langsung ke domain produksi nyata `https://${APP_DOMAIN}`, bukan ke `localhost`.
 - Jika diminta backup simpan di `/data/backups/manufacturing-information-system/<jenis-backup>/<YYYYMMDD-HHMMSS>/`.
 - Logging mengikuti mekanisme native Ubuntu.
+- Untuk Playwright E2E atau Browser gunakan `APP_DOMAIN` dan credential pada `.env` bagian `# Super User`. Untuk screenshot QA simpan di `tmp/browser-qa/<YYYYMMDD-HHMMSS>/`.
 
-### Database Testing and Security
+## Dummy Konveksi Test Data
 
-- Pengujian yang melakukan mutasi database wajib menggunakan database test atau lingkungan terisolasi, bukan database produksi.
-- Setelah pengujian selesai, kembalikan database dan konfigurasi terkait ke kondisi sebelum pengujian.
-- Hapus hanya data yang dibuat oleh pengujian dan rollback setiap migrasi atau perubahan skema sementara.
-- Verifikasi bahwa data serta struktur database awal tetap utuh.
-- Jika pemulihan tidak dapat dilakukan dengan aman atau data pengujian tidak dapat dibedakan dari data yang sudah ada, hentikan proses dan minta arahan user.
+- Data bisnis milik tenant/workspace **Dummy Konveksi** merupakan data uji yang boleh dibuat, dibaca, dimutasi, atau dihapus tanpa konfirmasi tambahan untuk keperluan development, debugging, testing, atau E2E.
+- Seluruh mutasi dan penghapusan (termasuk *bulk delete*) wajib dibatasi dalam filter scope tenant **Dummy Konveksi** menggunakan identifier/credential dari environment variable (bukan nama tampilan).
+- Izin ini murni berlaku untuk record data bisnis Dummy Konveksi; dilarang menyentuh tenant lain, user non-dummy, schema/migrasi database, konfigurasi runtime, secret/`.env`, maupun infrastruktur.
+- Pertahankan integritas referensial database dan jaga kerahasiaan credential Dummy Konveksi (jangan tuliskan di source code, dokumentasi, test output, atau commit message).
