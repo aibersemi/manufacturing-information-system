@@ -1,10 +1,10 @@
 <main class="flex flex-1 flex-col gap-6">
-  <!-- Header -->
+  <!-- 1. Header Halaman & Action Buttons -->
   <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div>
-      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Stok & Mutasi Inventaris</h1>
+      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Stok & Inventori</h1>
       <p class="text-sm text-muted-foreground mt-1">
-        Buku besar persediaan perpetual, kartu mutasi stok, dan pelacakan fisik roll kain.
+        Pemantauan pergerakan barang produksi: saldo material, penerimaan masuk, pengeluaran potong/penjualan/waste, ikatan WIP, dan produk jadi siap jual.
       </p>
     </div>
 
@@ -22,82 +22,155 @@
           class="size-4"
           [class.animate-spin]="isLoading()"
         />
-        <span>Segarkan</span>
+        <span>Segarkan Data</span>
       </button>
     </div>
   </div>
 
-  <!-- KPI Cards -->
-  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-    <div class="rounded-3xl border border-border/80 bg-card p-6 shadow-xs flex items-center gap-4">
-      <div class="rounded-2xl bg-primary/10 p-3.5 text-primary">
-        <ng-icon name="phosphorDatabase" class="size-6" />
-      </div>
-      <div>
-        <div class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Valuasi Persediaan</div>
-        <div class="text-2xl font-bold tracking-tight text-foreground mt-1">
-          {{ formatCurrency(totalValuation()) }}
+  <!-- 2. Ringkasan Metrik / KPI (5 Kategori Bisnis) -->
+  <section class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5" aria-label="Ringkasan Metrik Stok">
+    <!-- Metrik 1: Valuasi Stok Bahan -->
+    <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Valuasi Stok Bahan</span>
+        <div class="flex size-7 items-center justify-center rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400">
+          <ng-icon name="phosphorDatabase" class="size-4" />
         </div>
+      </div>
+      <div class="mt-2 text-xl font-semibold tracking-tight text-foreground sm:text-2xl truncate" [title]="formatCurrency(totalValuasiBahan())">
+        {{ formatCurrency(totalValuasiBahan()) }}
+      </div>
+      <div class="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <span class="font-medium text-emerald-600 dark:text-emerald-400">{{ stokBahanList().length }} Material</span>
+        <span>• Saldo aktif</span>
       </div>
     </div>
 
-    <div class="rounded-3xl border border-border/80 bg-card p-6 shadow-xs flex items-center gap-4">
-      <div class="rounded-2xl bg-amber-500/10 p-3.5 text-amber-600 dark:text-amber-400">
-        <ng-icon name="phosphorPackage" class="size-6" />
-      </div>
-      <div>
-        <div class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Item / SKU Aktif</div>
-        <div class="text-2xl font-bold tracking-tight text-foreground mt-1">
-          {{ totalItemsCount() }} Item
+    <!-- Metrik 2: Total Barang Masuk -->
+    <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Total Barang Masuk</span>
+        <div class="flex size-7 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <ng-icon name="phosphorArrowDownLeft" class="size-4" />
         </div>
+      </div>
+      <div class="mt-2 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+        {{ formatNumber(totalMasuk()) }} <span class="text-sm font-normal text-muted-foreground">Unit</span>
+      </div>
+      <div class="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <span class="font-medium text-emerald-600 dark:text-emerald-400">+{{ stokMasukList().length }} Dokumen</span>
+        <span>• Pembelian & terima</span>
       </div>
     </div>
 
-    <div class="rounded-3xl border border-border/80 bg-card p-6 shadow-xs flex items-center gap-4">
-      <div class="rounded-2xl bg-emerald-500/10 p-3.5 text-emerald-600 dark:text-emerald-400">
-        <ng-icon name="phosphorStack" class="size-6" />
-      </div>
-      <div>
-        <div class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Roll Kain Siap Pakai</div>
-        <div class="text-2xl font-bold tracking-tight text-foreground mt-1">
-          {{ availableRollsCount() }} Roll
+    <!-- Metrik 3: Total Barang Keluar & Waste -->
+    <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Total Keluar & Waste</span>
+        <div class="flex size-7 items-center justify-center rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400">
+          <ng-icon name="phosphorArrowUpRight" class="size-4" />
         </div>
       </div>
+      <div class="mt-2 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+        {{ formatNumber(totalKeluar()) }} <span class="text-sm font-normal text-muted-foreground">Unit</span>
+      </div>
+      <div class="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <span class="font-medium text-rose-600 dark:text-rose-400">{{ stokKeluarList().length }} Pengeluaran</span>
+        <span>• Potong, jual & sisa</span>
+      </div>
     </div>
-  </div>
 
-  <!-- Tabs Navigation & Filter -->
+    <!-- Metrik 4: Total Ikatan Produksi WIP -->
+    <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Ikatan Produksi WIP</span>
+        <div class="flex size-7 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
+          <ng-icon name="phosphorScissors" class="size-4" />
+        </div>
+      </div>
+      <div class="mt-2 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+        {{ formatNumber(totalWipIkatan()) }} <span class="text-sm font-normal text-muted-foreground">Pcs</span>
+      </div>
+      <div class="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <span class="font-medium text-amber-600 dark:text-amber-400">{{ stokProduksiList().length }} Ikatan</span>
+        <span>• Setengah jadi</span>
+      </div>
+    </div>
+
+    <!-- Metrik 5: Total Stok Produk Jadi Siap Jual -->
+    <div class="rounded-3xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition hover:shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Produk Jadi Siap Jual</span>
+        <div class="flex size-7 items-center justify-center rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
+          <ng-icon name="phosphorPackage" class="size-4" />
+        </div>
+      </div>
+      <div class="mt-2 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+        {{ formatNumber(totalProdukJadi()) }} <span class="text-sm font-normal text-muted-foreground">Pcs</span>
+      </div>
+      <div class="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <span class="font-medium text-blue-600 dark:text-blue-400">{{ stokProdukJadiList().length }} SKU</span>
+        <span>• Siap dipasarkan</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Navigation Filter Pill Bar & Pencarian -->
   <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-    <div class="flex items-center gap-1 rounded-full border border-border/80 bg-card p-1 shadow-2xs">
+    <div class="flex flex-wrap items-center gap-1 rounded-full border border-border/80 bg-card p-1 shadow-2xs">
       <button
         type="button"
-        (click)="activeTab.set('summary')"
-        [class.bg-primary]="activeTab() === 'summary'"
-        [class.text-primary-foreground]="activeTab() === 'summary'"
-        [class.text-muted-foreground]="activeTab() !== 'summary'"
-        class="rounded-full px-4 py-1.5 text-xs font-medium transition hover:text-foreground"
+        (click)="setActiveTab('stok-bahan')"
+        [class.bg-primary]="activeTab() === 'stok-bahan' || activeTab() === 'summary'"
+        [class.text-primary-foreground]="activeTab() === 'stok-bahan' || activeTab() === 'summary'"
+        [class.text-muted-foreground]="activeTab() !== 'stok-bahan' && activeTab() !== 'summary'"
+        class="rounded-full px-3.5 py-1.5 text-xs font-medium transition hover:text-foreground"
       >
-        Ringkasan Stok ({{ summaryItems().length }})
+        Stok Bahan ({{ stokBahanList().length }})
       </button>
+
       <button
         type="button"
-        (click)="activeTab.set('ledger')"
-        [class.bg-primary]="activeTab() === 'ledger'"
-        [class.text-primary-foreground]="activeTab() === 'ledger'"
-        [class.text-muted-foreground]="activeTab() !== 'ledger'"
-        class="rounded-full px-4 py-1.5 text-xs font-medium transition hover:text-foreground"
+        (click)="setActiveTab('stok-masuk')"
+        [class.bg-primary]="activeTab() === 'stok-masuk'"
+        [class.text-primary-foreground]="activeTab() === 'stok-masuk'"
+        [class.text-muted-foreground]="activeTab() !== 'stok-masuk'"
+        class="rounded-full px-3.5 py-1.5 text-xs font-medium transition hover:text-foreground"
       >
-        Kartu Mutasi Stok ({{ movements().length }})
+        Stok Masuk ({{ stokMasukList().length }})
       </button>
+
       <button
         type="button"
-        (click)="activeTab.set('rolls')"
-        [class.bg-primary]="activeTab() === 'rolls'"
-        [class.text-primary-foreground]="activeTab() === 'rolls'"
-        [class.text-muted-foreground]="activeTab() !== 'rolls'"
-        class="rounded-full px-4 py-1.5 text-xs font-medium transition hover:text-foreground"
+        (click)="setActiveTab('stok-keluar')"
+        [class.bg-primary]="activeTab() === 'stok-keluar'"
+        [class.text-primary-foreground]="activeTab() === 'stok-keluar'"
+        [class.text-muted-foreground]="activeTab() !== 'stok-keluar'"
+        class="rounded-full px-3.5 py-1.5 text-xs font-medium transition hover:text-foreground"
       >
-        Unit Fisik Roll Kain ({{ rolls().length }})
+        Stok Keluar ({{ stokKeluarList().length }})
+      </button>
+
+      <button
+        type="button"
+        (click)="setActiveTab('stok-produksi')"
+        [class.bg-primary]="activeTab() === 'stok-produksi'"
+        [class.text-primary-foreground]="activeTab() === 'stok-produksi'"
+        [class.text-muted-foreground]="activeTab() !== 'stok-produksi'"
+        class="rounded-full px-3.5 py-1.5 text-xs font-medium transition hover:text-foreground"
+      >
+        Stok Produksi ({{ stokProduksiList().length }})
+      </button>
+
+      <button
+        type="button"
+        (click)="setActiveTab('stok-produk-jadi')"
+        [class.bg-primary]="activeTab() === 'stok-produk-jadi'"
+        [class.text-primary-foreground]="activeTab() === 'stok-produk-jadi'"
+        [class.text-muted-foreground]="activeTab() !== 'stok-produk-jadi'"
+        class="rounded-full px-3.5 py-1.5 text-xs font-medium transition hover:text-foreground"
+      >
+        Stok Produk Jadi ({{ stokProdukJadiList().length }})
       </button>
     </div>
 
@@ -111,7 +184,7 @@
         type="text"
         [ngModel]="searchQuery()"
         (ngModelChange)="searchQuery.set($event)"
-        placeholder="Cari item atau nomor..."
+        placeholder="Cari item, kode, atau dokumen..."
         class="w-full rounded-full border border-border bg-card ps-10 pe-4 py-1.5 text-sm text-foreground placeholder:text-muted-foreground shadow-2xs transition focus:bg-background focus:ring-2 focus:ring-ring focus:outline-hidden"
       />
     </div>
@@ -127,13 +200,168 @@
     </div>
   }
 
-  <!-- Tab 1: Ringkasan Stok -->
-  @if (activeTab() === 'summary') {
+  <!-- ======================================================================== -->
+  <!-- TAB 1: STOK BAHAN (Material Saldo & Sub-panel Roll Fisik)               -->
+  <!-- ======================================================================== -->
+  @if (activeTab() === 'stok-bahan' || activeTab() === 'summary') {
+    <div class="flex flex-col gap-6">
+      <!-- Tabel Saldo Material -->
+      <div class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
+        <div class="p-6 border-b border-border/60">
+          <h2 class="text-base font-semibold text-foreground">Saldo Stok Bahan Baku</h2>
+          <p class="text-xs text-muted-foreground mt-0.5">
+            Posisi saldo material aktif di gudang dengan kalkulasi Moving Average Cost dan total valuasi aset.
+          </p>
+        </div>
+
+        <div class="overflow-x-auto">
+          @if (isLoading()) {
+            <div class="p-12 text-center text-sm text-muted-foreground">
+              <ng-icon name="phosphorArrowsClockwise" class="size-6 animate-spin mx-auto mb-2 text-primary" />
+              Memuat data saldo stok bahan...
+            </div>
+          } @else if (stokBahanList().length === 0) {
+            <div class="p-12 text-center">
+              <ng-icon name="phosphorPackage" class="size-10 mx-auto text-muted-foreground/50 mb-3" />
+              <h3 class="text-sm font-semibold text-foreground">Tidak ada saldo bahan</h3>
+              <p class="text-xs text-muted-foreground mt-1">
+                Data bahan baku akan otomatis terakumulasi setelah Anda memposting penerimaan pembelian material.
+              </p>
+            </div>
+          } @else {
+            <table class="w-full text-left text-sm">
+              <thead class="bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/60">
+                <tr>
+                  <th scope="col" class="px-6 py-3.5">Nama Bahan Baku</th>
+                  <th scope="col" class="px-6 py-3.5">Kategori</th>
+                  <th scope="col" class="px-6 py-3.5">Satuan (UOM)</th>
+                  <th scope="col" class="px-6 py-3.5 text-right">Total Masuk</th>
+                  <th scope="col" class="px-6 py-3.5 text-right">Total Keluar</th>
+                  <th scope="col" class="px-6 py-3.5 text-right font-bold text-foreground">Stok Saat Ini</th>
+                  <th scope="col" class="px-6 py-3.5 text-right">Harga Pokok Rata-rata</th>
+                  <th scope="col" class="px-6 py-3.5 text-right font-semibold text-foreground">Total Valuasi</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border/60">
+                @for (item of stokBahanList(); track item.item_id) {
+                  <tr class="hover:bg-muted/20 transition">
+                    <td class="px-6 py-4 font-medium text-foreground">
+                      {{ item.item_name }}
+                    </td>
+                    <td class="px-6 py-4">
+                      <span class="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
+                        {{ item.item_kind === 'material' ? 'Bahan Baku' : 'Material Pendukung' }}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 text-xs uppercase font-medium text-muted-foreground">
+                      {{ item.unit_code }}
+                    </td>
+                    <td class="px-6 py-4 text-right text-muted-foreground">
+                      {{ formatNumber(item.total_in) }}
+                    </td>
+                    <td class="px-6 py-4 text-right text-muted-foreground">
+                      {{ formatNumber(item.total_out) }}
+                    </td>
+                    <td class="px-6 py-4 text-right font-bold" [class.text-emerald-600]="item.current_stock > 0" [class.text-rose-600]="item.current_stock <= 0">
+                      {{ formatNumber(item.current_stock) }}
+                    </td>
+                    <td class="px-6 py-4 text-right text-muted-foreground">
+                      {{ formatCurrency(item.moving_avg_cost) }}
+                    </td>
+                    <td class="px-6 py-4 text-right font-semibold text-foreground">
+                      {{ formatCurrency(item.total_valuation) }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      </div>
+
+      <!-- Sub-panel Unit Fisik Roll Kain -->
+      <div class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
+        <div class="p-6 border-b border-border/60 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 class="text-base font-semibold text-foreground">Pelacakan Fisik Roll Kain (Unit Inventaris)</h3>
+            <p class="text-xs text-muted-foreground mt-0.5">
+              Identitas unit fisik per gelondong roll kain untuk alur SPK potong (tersedia {{ availableRollsCount() }} roll siap pakai).
+            </p>
+          </div>
+          <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+            {{ availableRollsCount() }} Roll Tersedia
+          </span>
+        </div>
+
+        <div class="overflow-x-auto">
+          @if (filteredRolls().length === 0) {
+            <div class="p-8 text-center text-xs text-muted-foreground">
+              Tidak ada unit fisik roll kain yang terdaftar atau cocok dengan pencarian.
+            </div>
+          } @else {
+            <table class="w-full text-left text-sm">
+              <thead class="bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/60">
+                <tr>
+                  <th scope="col" class="px-6 py-3.5">Kode Fisik Roll</th>
+                  <th scope="col" class="px-6 py-3.5">Nama Bahan</th>
+                  <th scope="col" class="px-6 py-3.5">No. Pembelian Masuk</th>
+                  <th scope="col" class="px-6 py-3.5 text-right">Isi Dasar Awal</th>
+                  <th scope="col" class="px-6 py-3.5">Satuan Stok</th>
+                  <th scope="col" class="px-6 py-3.5 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border/60">
+                @for (roll of filteredRolls(); track roll.id) {
+                  <tr class="hover:bg-muted/20 transition">
+                    <td class="px-6 py-4 font-mono font-semibold text-foreground">
+                      {{ roll.physical_code }}
+                    </td>
+                    <td class="px-6 py-4 font-medium text-foreground">
+                      {{ roll.material?.name || '-' }}
+                    </td>
+                    <td class="px-6 py-4 font-mono text-muted-foreground">
+                      {{ roll.doc?.document_number || '-' }}
+                    </td>
+                    <td class="px-6 py-4 text-right font-medium text-foreground">
+                      {{ formatNumber(roll.initial_base_quantity) }}
+                    </td>
+                    <td class="px-6 py-4 text-xs uppercase font-medium text-muted-foreground">
+                      {{ roll.stock_unit_code }}
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                      @if (roll.status === 'available') {
+                        <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                          Tersedia (Siap Pakai)
+                        </span>
+                      } @else if (roll.status === 'consumed') {
+                        <span class="inline-flex items-center rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400">
+                          Terpakai di Potong
+                        </span>
+                      } @else {
+                        <span class="inline-flex items-center rounded-full bg-zinc-500/10 px-2.5 py-0.5 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                          Dibatalkan (Reversed)
+                        </span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ======================================================================== -->
+  <!-- TAB 2: STOK MASUK (Penerimaan Persediaan & Pembelian)                   -->
+  <!-- ======================================================================== -->
+  @if (activeTab() === 'stok-masuk') {
     <div class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
       <div class="p-6 border-b border-border/60">
-        <h2 class="text-base font-semibold text-foreground">Saldo Stok Bahan Baku & Perlengkapan</h2>
+        <h2 class="text-base font-semibold text-foreground">Mutasi Stok Masuk (Penerimaan Persediaan)</h2>
         <p class="text-xs text-muted-foreground mt-0.5">
-          Posisi persediaan fisik saat ini dengan perhitungan biaya rata-rata bergerak (Moving Weighted Average).
+          Pergerakan barang masuk dari penerimaan pembelian material, perlengkapan, dan penyesuaian saldo awal persediaan.
         </p>
       </div>
 
@@ -141,58 +369,54 @@
         @if (isLoading()) {
           <div class="p-12 text-center text-sm text-muted-foreground">
             <ng-icon name="phosphorArrowsClockwise" class="size-6 animate-spin mx-auto mb-2 text-primary" />
-            Memuat ringkasan stok persediaan...
+            Memuat daftar mutasi stok masuk...
           </div>
-        } @else if (filteredSummary().length === 0) {
+        } @else if (stokMasukList().length === 0) {
           <div class="p-12 text-center">
-            <ng-icon name="phosphorPackage" class="size-10 mx-auto text-muted-foreground/50 mb-3" />
-            <h3 class="text-sm font-semibold text-foreground">Belum ada data stok</h3>
+            <ng-icon name="phosphorArrowDownLeft" class="size-10 mx-auto text-muted-foreground/50 mb-3" />
+            <h3 class="text-sm font-semibold text-foreground">Belum ada mutasi stok masuk</h3>
             <p class="text-xs text-muted-foreground mt-1">
-              Stok akan otomatis terakumulasi setelah Anda memposting transaksi pembelian bahan atau perlengkapan.
+              Catatan penerimaan persediaan akan tampil saat transaksi pembelian barang telah diposting.
             </p>
           </div>
         } @else {
           <table class="w-full text-left text-sm">
             <thead class="bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/60">
               <tr>
-                <th scope="col" class="px-6 py-3.5">Nama Item / Komoditas</th>
-                <th scope="col" class="px-6 py-3.5">Kategori</th>
-                <th scope="col" class="px-6 py-3.5">Satuan</th>
-                <th scope="col" class="px-6 py-3.5 text-right">Total Masuk</th>
-                <th scope="col" class="px-6 py-3.5 text-right">Total Keluar</th>
-                <th scope="col" class="px-6 py-3.5 text-right font-bold text-foreground">Stok Saat Ini</th>
-                <th scope="col" class="px-6 py-3.5 text-right">Harga Pokok Rata-rata</th>
-                <th scope="col" class="px-6 py-3.5 text-right font-semibold text-foreground">Total Valuasi</th>
+                <th scope="col" class="px-6 py-3.5">Tanggal</th>
+                <th scope="col" class="px-6 py-3.5">No. Dokumen Sumber</th>
+                <th scope="col" class="px-6 py-3.5">Nama Item</th>
+                <th scope="col" class="px-6 py-3.5">Jenis Masuk</th>
+                <th scope="col" class="px-6 py-3.5 text-right font-semibold text-foreground">Kuantitas Masuk</th>
+                <th scope="col" class="px-6 py-3.5 text-right">Biaya Satuan</th>
+                <th scope="col" class="px-6 py-3.5 text-right font-semibold text-foreground">Total Biaya</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-border/60">
-              @for (item of filteredSummary(); track item.item_id) {
+              @for (mov of stokMasukList(); track mov.id) {
                 <tr class="hover:bg-muted/20 transition">
+                  <td class="px-6 py-4 text-muted-foreground">
+                    {{ mov.transaction_date }}
+                  </td>
+                  <td class="px-6 py-4 font-mono font-semibold text-foreground">
+                    {{ mov.doc?.document_number || '-' }}
+                  </td>
                   <td class="px-6 py-4 font-medium text-foreground">
-                    {{ item.item_name }}
+                    {{ mov.item?.name || '-' }}
                   </td>
                   <td class="px-6 py-4">
-                    <span class="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
-                      {{ item.item_kind === 'material' ? 'Bahan Baku' : 'Perlengkapan' }}
+                    <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                      {{ getMovementTypeLabel(mov.movement_type) }}
                     </span>
                   </td>
-                  <td class="px-6 py-4 text-xs uppercase font-medium text-muted-foreground">
-                    {{ item.unit_code }}
+                  <td class="px-6 py-4 text-right font-bold text-emerald-600 dark:text-emerald-400">
+                    +{{ formatNumber(mov.quantity) }}
                   </td>
                   <td class="px-6 py-4 text-right text-muted-foreground">
-                    {{ formatNumber(item.total_in) }}
-                  </td>
-                  <td class="px-6 py-4 text-right text-muted-foreground">
-                    {{ formatNumber(item.total_out) }}
-                  </td>
-                  <td class="px-6 py-4 text-right font-bold" [class.text-emerald-600]="item.current_stock > 0" [class.text-rose-600]="item.current_stock <= 0">
-                    {{ formatNumber(item.current_stock) }}
-                  </td>
-                  <td class="px-6 py-4 text-right text-muted-foreground">
-                    {{ formatCurrency(item.moving_avg_cost) }}
+                    {{ formatCurrency(mov.unit_cost) }}
                   </td>
                   <td class="px-6 py-4 text-right font-semibold text-foreground">
-                    {{ formatCurrency(item.total_valuation) }}
+                    {{ formatCurrency(mov.total_cost) }}
                   </td>
                 </tr>
               }
@@ -203,7 +427,280 @@
     </div>
   }
 
-  <!-- Tab 2: Kartu Mutasi Stok -->
+  <!-- ======================================================================== -->
+  <!-- TAB 3: STOK KELUAR (Pemakaian Potong, Penjualan, & Sisa Kain Waste)      -->
+  <!-- ======================================================================== -->
+  @if (activeTab() === 'stok-keluar') {
+    <div class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
+      <div class="p-6 border-b border-border/60">
+        <h2 class="text-base font-semibold text-foreground">Mutasi Stok Keluar & Waste Kain</h2>
+        <p class="text-xs text-muted-foreground mt-0.5">
+          Pergerakan pengeluaran material untuk potong produksi, pengiriman penjualan produk jadi, dan pencatatan sisa kain waste.
+        </p>
+      </div>
+
+      <div class="overflow-x-auto">
+        @if (isLoading()) {
+          <div class="p-12 text-center text-sm text-muted-foreground">
+            <ng-icon name="phosphorArrowsClockwise" class="size-6 animate-spin mx-auto mb-2 text-primary" />
+            Memuat daftar mutasi stok keluar...
+          </div>
+        } @else if (stokKeluarList().length === 0) {
+          <div class="p-12 text-center">
+            <ng-icon name="phosphorArrowUpRight" class="size-10 mx-auto text-muted-foreground/50 mb-3" />
+            <h3 class="text-sm font-semibold text-foreground">Belum ada mutasi stok keluar</h3>
+            <p class="text-xs text-muted-foreground mt-1">
+              Catatan pengeluaran barang akan tercatat saat bahan dipakai di SPK potong atau pesanan penjualan dikirim.
+            </p>
+          </div>
+        } @else {
+          <table class="w-full text-left text-sm">
+            <thead class="bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/60">
+              <tr>
+                <th scope="col" class="px-6 py-3.5">Tanggal</th>
+                <th scope="col" class="px-6 py-3.5">Jenis Pengeluaran</th>
+                <th scope="col" class="px-6 py-3.5">No. Dokumen Acuan</th>
+                <th scope="col" class="px-6 py-3.5">Nama Item</th>
+                <th scope="col" class="px-6 py-3.5 text-right font-semibold text-foreground">Kuantitas Keluar</th>
+                <th scope="col" class="px-6 py-3.5 text-right">Biaya Satuan</th>
+                <th scope="col" class="px-6 py-3.5 text-right font-semibold text-foreground">Total Biaya</th>
+                <th scope="col" class="px-6 py-3.5 text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y border-border/60">
+              @for (mov of stokKeluarList(); track mov.id) {
+                <tr class="hover:bg-muted/20 transition">
+                  <td class="px-6 py-4 text-muted-foreground">
+                    {{ mov.transaction_date }}
+                  </td>
+                  <td class="px-6 py-4">
+                    @if (mov.movement_type === 'production_issue') {
+                      <span class="inline-flex items-center rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400">
+                        Pemakaian Potong SPK
+                      </span>
+                    } @else if (mov.movement_type === 'sales_issue') {
+                      <span class="inline-flex items-center rounded-full bg-purple-500/10 px-2.5 py-0.5 text-xs font-medium text-purple-600 dark:text-purple-400">
+                        Penjualan Produk Jadi
+                      </span>
+                    } @else if (mov.movement_type === 'production_reject' || mov.movement_type === 'waste') {
+                      <span class="inline-flex items-center rounded-full bg-rose-500/10 px-2.5 py-0.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+                        Sisa Kain / Waste
+                      </span>
+                    } @else {
+                      <span class="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                        {{ getMovementTypeLabel(mov.movement_type) }}
+                      </span>
+                    }
+                  </td>
+                  <td class="px-6 py-4 font-mono font-semibold text-foreground">
+                    {{ mov.doc?.document_number || '-' }}
+                  </td>
+                  <td class="px-6 py-4 font-medium text-foreground">
+                    {{ mov.item?.name || '-' }}
+                  </td>
+                  <td class="px-6 py-4 text-right font-bold text-rose-600 dark:text-rose-400">
+                    -{{ getAbsNumber(mov.quantity) }}
+                  </td>
+                  <td class="px-6 py-4 text-right text-muted-foreground">
+                    {{ formatCurrency(mov.unit_cost) }}
+                  </td>
+                  <td class="px-6 py-4 text-right font-semibold text-foreground">
+                    {{ formatCurrency(mov.total_cost) }}
+                  </td>
+                  <td class="px-6 py-4 text-center">
+                    <span class="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
+                      Tercatat
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ======================================================================== -->
+  <!-- TAB 4: STOK PRODUKSI (WIP Ikatan Komponen Setengah Jadi)                -->
+  <!-- ======================================================================== -->
+  @if (activeTab() === 'stok-produksi') {
+    <div class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
+      <div class="p-6 border-b border-border/60">
+        <h2 class="text-base font-semibold text-foreground">Stok Barang Setengah Jadi (WIP Ikatan Komponen)</h2>
+        <p class="text-xs text-muted-foreground mt-0.5">
+          Saldo ikatan komponen hasil potong, ikatan dalam/siap sablon, dan jahitan WIP yang masih dalam proses produksi.
+        </p>
+      </div>
+
+      <div class="overflow-x-auto">
+        @if (isLoading()) {
+          <div class="p-12 text-center text-sm text-muted-foreground">
+            <ng-icon name="phosphorArrowsClockwise" class="size-6 animate-spin mx-auto mb-2 text-primary" />
+            Memuat stok ikatan produksi WIP...
+          </div>
+        } @else if (stokProduksiList().length === 0) {
+          <div class="p-12 text-center">
+            <ng-icon name="phosphorScissors" class="size-10 mx-auto text-muted-foreground/50 mb-3" />
+            <h3 class="text-sm font-semibold text-foreground">Tidak ada ikatan WIP aktif</h3>
+            <p class="text-xs text-muted-foreground mt-1">
+              Ikatan komponen WIP akan otomatis terdata saat Operator Potong mencatat hasil potong SPK Cutting.
+            </p>
+          </div>
+        } @else {
+          <table class="w-full text-left text-sm">
+            <thead class="bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/60">
+              <tr>
+                <th scope="col" class="px-6 py-3.5">Kode Ikatan</th>
+                <th scope="col" class="px-6 py-3.5">SKU & Produk Jadi</th>
+                <th scope="col" class="px-6 py-3.5">Lot Potong</th>
+                <th scope="col" class="px-6 py-3.5">No. Perintah Kerja</th>
+                <th scope="col" class="px-6 py-3.5 text-center">Tahapan Alur</th>
+                <th scope="col" class="px-6 py-3.5 text-center">Kondisi Fisik</th>
+                <th scope="col" class="px-6 py-3.5 text-right font-semibold text-foreground">Kuantitas WIP</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border/60">
+              @for (bundle of stokProduksiList(); track bundle.id) {
+                <tr class="hover:bg-muted/20 transition">
+                  <td class="px-6 py-4 font-mono font-semibold text-foreground">
+                    {{ bundle.bundle_code }}
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="font-medium text-foreground">{{ bundle.product_name || 'Produk' }}</div>
+                    <div class="text-xs font-mono text-muted-foreground">{{ bundle.product_sku || '-' }}</div>
+                  </td>
+                  <td class="px-6 py-4 font-mono text-xs text-muted-foreground">
+                    {{ bundle.lot_code || '-' }}
+                  </td>
+                  <td class="px-6 py-4 font-mono text-xs text-muted-foreground">
+                    {{ bundle.production_order_number || '-' }}
+                  </td>
+                  <td class="px-6 py-4 text-center">
+                    @if (bundle.stage === 'cutting') {
+                      <span class="inline-flex items-center rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400">
+                        Potong
+                      </span>
+                    } @else if (bundle.stage === 'printing') {
+                      <span class="inline-flex items-center rounded-full bg-purple-500/10 px-2.5 py-0.5 text-xs font-medium text-purple-600 dark:text-purple-400">
+                        Sablon
+                      </span>
+                    } @else if (bundle.stage === 'sewing') {
+                      <span class="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                        Jahit (WIP)
+                      </span>
+                    } @else {
+                      <span class="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
+                        {{ getStageLabel(bundle.stage) }}
+                      </span>
+                    }
+                  </td>
+                  <td class="px-6 py-4 text-center">
+                    @if (bundle.work_condition === 'available') {
+                      <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                        Siap Proses
+                      </span>
+                    } @else if (bundle.work_condition === 'repair_hold') {
+                      <span class="inline-flex items-center rounded-full bg-rose-500/10 px-2.5 py-0.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+                        Tertahan Perbaikan
+                      </span>
+                    } @else {
+                      <span class="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
+                        {{ getConditionLabel(bundle.work_condition) }}
+                      </span>
+                    }
+                  </td>
+                  <td class="px-6 py-4 text-right font-bold text-foreground">
+                    {{ formatNumber(bundle.active_quantity) }} Pcs
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ======================================================================== -->
+  <!-- TAB 5: STOK PRODUK JADI (SKU Siap Jual)                                  -->
+  <!-- ======================================================================== -->
+  @if (activeTab() === 'stok-produk-jadi') {
+    <div class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
+      <div class="p-6 border-b border-border/60">
+        <h2 class="text-base font-semibold text-foreground">Stok Produk Jadi Siap Jual (Finished Goods)</h2>
+        <p class="text-xs text-muted-foreground mt-0.5">
+          Daftar stok produk jadi (SKU) hasil jahit dan packing yang siap dikirim untuk memenuhi PO pelanggan atau penjualan retail.
+        </p>
+      </div>
+
+      <div class="overflow-x-auto">
+        @if (isLoading()) {
+          <div class="p-12 text-center text-sm text-muted-foreground">
+            <ng-icon name="phosphorArrowsClockwise" class="size-6 animate-spin mx-auto mb-2 text-primary" />
+            Memuat stok produk jadi...
+          </div>
+        } @else if (stokProdukJadiList().length === 0) {
+          <div class="p-12 text-center">
+            <ng-icon name="phosphorPackage" class="size-10 mx-auto text-muted-foreground/50 mb-3" />
+            <h3 class="text-sm font-semibold text-foreground">Belum ada stok produk jadi siap jual</h3>
+            <p class="text-xs text-muted-foreground mt-1">
+              Produk jadi akan bertambah saat Operator Jahit & Packing menyelesaikan proses produksi atau persediaan produk jadi diposting.
+            </p>
+          </div>
+        } @else {
+          <table class="w-full text-left text-sm">
+            <thead class="bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/60">
+              <tr>
+                <th scope="col" class="px-6 py-3.5">Nama Produk Jadi</th>
+                <th scope="col" class="px-6 py-3.5">Kode SKU</th>
+                <th scope="col" class="px-6 py-3.5">Sumber Stok</th>
+                <th scope="col" class="px-6 py-3.5 text-right font-bold text-foreground">Kuantitas Siap Jual</th>
+                <th scope="col" class="px-6 py-3.5 text-right">Harga Pokok (HPP)</th>
+                <th scope="col" class="px-6 py-3.5 text-right font-semibold text-foreground">Total Valuasi</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border/60">
+              @for (prod of stokProdukJadiList(); track prod.id) {
+                <tr class="hover:bg-muted/20 transition">
+                  <td class="px-6 py-4 font-medium text-foreground">
+                    {{ prod.name }}
+                  </td>
+                  <td class="px-6 py-4 font-mono font-semibold text-foreground">
+                    {{ prod.sku || '-' }}
+                  </td>
+                  <td class="px-6 py-4">
+                    @if (prod.source_type === 'inventory_summary') {
+                      <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                        Gudang Jadi Inventori
+                      </span>
+                    } @else {
+                      <span class="inline-flex items-center rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400">
+                        Selesai Packing (Batch)
+                      </span>
+                    }
+                  </td>
+                  <td class="px-6 py-4 text-right font-bold text-emerald-600 dark:text-emerald-400">
+                    {{ formatNumber(prod.quantity) }} {{ prod.unit_code }}
+                  </td>
+                  <td class="px-6 py-4 text-right text-muted-foreground">
+                    {{ prod.moving_avg_cost > 0 ? formatCurrency(prod.moving_avg_cost) : '-' }}
+                  </td>
+                  <td class="px-6 py-4 text-right font-semibold text-foreground">
+                    {{ prod.total_valuation > 0 ? formatCurrency(prod.total_valuation) : '-' }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ======================================================================== -->
+  <!-- TAB KOMPATIBILITAS DATA LAMA: LEDGER & ROLLS                             -->
+  <!-- ======================================================================== -->
   @if (activeTab() === 'ledger') {
     <div class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
       <div class="p-6 border-b border-border/60">
@@ -281,7 +778,6 @@
     </div>
   }
 
-  <!-- Tab 3: Unit Fisik Roll Kain -->
   @if (activeTab() === 'rolls') {
     <div class="rounded-3xl border border-border/80 bg-card shadow-xs overflow-hidden">
       <div class="p-6 border-b border-border/60">
