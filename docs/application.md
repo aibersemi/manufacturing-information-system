@@ -34,7 +34,7 @@ src/
 │   │   │   ├── company.service.ts      # Multi-company context, RLS tenant scope, & local storage persistence
 │   │   │   ├── finance.service.ts      # Layanan Keuangan & Buku Besar: COA, Kas/Bank, Biaya, Upah, Prepaid, SA, Jurnal, Periode
 │   │   │   ├── master-data.service.ts  # Layanan CRUD UOM, Pelanggan, Pemasok, Material, Produk, BOM, Pegawai, & Tarif Upah
-│   │   │   ├── production.service.ts   # Layanan Operasional Pabrik: Perintah Produksi, SPK 4 Tahap, Catat Potong/Sablon, Bundle, & Repair
+│   │   │   ├── production.service.ts   # Layanan Operasional Pabrik: Perintah Produksi, SPK 4 Tahap, Catat Potong/Sablon/Jahit/Packing, Bundle, & Repair
 │   │   │   ├── purchasing-inventory.service.ts # Layanan Pengadaan (Bahan, Perlengkapan, Non-Produksi, Pembayaran) & Inventaris
 │   │   │   ├── report.service.ts       # Layanan Laporan Keuangan, HPP Pabrikasi & Rekonsiliasi Audit Subledger-GL (Fase 9)
 │   │   │   ├── sales.service.ts        # Layanan Penjualan & Piutang: Customer PO, Faktur Penjualan, Penerimaan Piutang, & Pemenuhan
@@ -60,7 +60,7 @@ src/
 │   │   │   ├── period-close/           # Audit 4 Kontrol & Penutupan Periode Buku (/workspace/finance/period-close)
 │   │   │   ├── prepaid/                # Biaya Dibayar Dimuka & Amortisasi (/workspace/finance/prepaid)
 │   │   │   └── wages/                  # Pembayaran Upah & Gaji Borongan Operator (/workspace/finance/wages)
-│   │   ├── inventory/                  # Modul Buku Besar Inventaris, Kartu Mutasi, & Roll (/workspace/inventory)
+│   │   ├── inventory/                  # Modul 5 Kategori Stok, Buku Besar Inventaris, Mutasi, & Roll (/workspace/inventory)
 │   │   ├── master-data/                # Modul Master Data & Bill of Materials
 │   │   │   ├── bom/                    # Komponen resep Bill of Materials (/workspace/bom)
 │   │   │   ├── customers/              # Komponen pelanggan (/workspace/customers)
@@ -75,6 +75,8 @@ src/
 │   │   │   ├── spk/                    # Surat Perintah Kerja 4 Tahap (/workspace/spk)
 │   │   │   ├── operator-cutting/       # Catat Hasil Potong Roll Kain Operator (/workspace/operator-cutting)
 │   │   │   ├── operator-printing/      # Catat Pengerjaan Sablon Operator (/workspace/operator-printing)
+│   │   │   ├── operator-sewing/        # Catat Hasil Jahit Operator (/workspace/operator-sewing)
+│   │   │   ├── operator-packing/       # Catat Hasil Kemas & Packing Operator (/workspace/operator-packing)
 │   │   │   ├── repairs/                # Kasus Perbaikan & Penugasan Ulang (/workspace/production-repairs)
 │   │   │   └── progress/               # Pipeline Progres Produksi & Visualisasi (/workspace/production-progress)
 │   │   ├── purchasing/                 # Modul Pengadaan & Pembelian
@@ -233,6 +235,81 @@ export class QcUploadComponent {
 
 ---
 
+## Layout & Navigasi Aplikasi (Dashboard Shell & Core Business Modules)
+
+Antarmuka utama Manufacturing Information System (MIS) dibungkus oleh komponen shell `DashboardLayoutComponent` (`src/app/layout/dashboard-layout/`) yang menyatukan header profil/tenant switcher dan sidebar navigasi collapsible. Navigasi aplikasi dikelompokkan ke dalam 8 modul bisnis utama berbasis alur operasional konveksi:
+
+### Struktur 8 Modul Navigasi Bisnis Utama
+
+1. **Penjualan (Sales & Customer Orders)**:
+   - **Rute Menu**:
+     - *Daftar PO (PO Masuk)*: `/workspace/sales-orders` (Manajemen pesanan penjualan pelanggan / Customer PO).
+     - *Penjualan*: `/workspace/sales` (Penerbitan faktur penjualan / Sales Invoice & pengurangan stok barang jadi).
+     - *Penerimaan Piutang*: `/workspace/sales-receipts` (Pencatatan kas masuk pelunasan piutang pelanggan / AR Receipts).
+     - *Pengiriman & Pemenuhan*: `/workspace/sales-fulfillment` (Pelacakan surat jalan logistik & pemenuhan pesanan).
+   - **Tujuan Operasional**: Mengelola siklus pesanan pelanggan dari konfirmasi PO, penagihan piutang, pelunasan pembayaran, hingga serah terima barang jadi.
+
+2. **Pembelian (Purchasing & Material Procurement)**:
+   - **Rute Menu**:
+     - *Bahan Produksi*: `/workspace/purchase-materials` (Pengadaan kain utama & pembentukan roll fisik `production_material_unit`).
+     - *Perlengkapan Produksi*: `/workspace/purchase-supplies` (Pengadaan aksesoris/perlengkapan pabrik: benang, kancing, resleting).
+     - *Non-Produksi*: `/workspace/purchase-non-production` (Belanja operasional kantor & kebutuhan umum/ATK).
+     - *Belanja Aset*: `/workspace/asset-purchases` (Pengadaan mesin & barang modal manufaktur / CapEx).
+   - **Tujuan Operasional**: Memastikan ketersediaan bahan baku dan perlengkapan lantai kerja melalui pengadaan yang tercatat langsung ke mutasi persediaan perpetual dan hutang usaha pemasok.
+
+3. **Produksi (Production Planning & SPK Management / Kepala Konveksi)**:
+   - **Rute Menu**:
+     - *SPK Potong*: `/workspace/spk` (Penerbitan surat perintah kerja pemotongan roll kain per lot).
+     - *SPK Jahit*: `/workspace/spk` (Penerbitan surat perintah kerja perakitan komponen jahit).
+     - *Progress SPK*: `/workspace/production-progress` (Visualisasi metrik pipeline tahapan manufaktur: Potong → Sablon → Jahit → Kemas).
+     - *Perintah Produksi*: `/workspace/production-orders` (Dokumen induk target pesanan pabrikasi / Production Order).
+     - *Kasus Perbaikan*: `/workspace/production-repairs` (Audit dan penerbitan SPK perbaikan ikatan komponen cacat).
+   - **Tujuan Operasional**: Memberikan kendali penuh kepada Kepala Konveksi untuk menerbitkan instruksi kerja resmi (SPK), memonitor throughput lini pabrik, serta menangani komponen rework/defect.
+
+4. **Operator (Shop Floor Execution & Labor Confirmations)**:
+   - **Rute Menu**:
+     - *Catat Potongan*: `/workspace/operator-cutting` (Konfirmasi pemotongan roll kain menjadi ikatan komponen via `confirm_operator_cutting`).
+     - *Catat Sablon*: `/workspace/operator-printing` (Konfirmasi hasil pengerjaan sablon/cetak via `confirm_operator_printing`).
+     - *Catat Jahit*: `/workspace/operator-sewing` (Konfirmasi hasil jahit komponen via `confirm_operator_sewing`).
+     - *Catat Packing*: `/workspace/operator-packing` (Konfirmasi penyelesaian dan kemas barang jadi via `confirm_operator_packing`).
+   - **Tujuan Operasional**: Antarmuka ringkas khusus lantai kerja bagi operator stasiun kerja untuk mengonfirmasi hasil fisik per bundle, yang secara otomatis membukukan mutasi WIP/produk jadi dan menghitung kewajiban upah borongan (`wage_liability`).
+
+5. **Stok (Warehouse Inventory & 5-View Breakdown)**:
+   - **Rute Menu**: `/workspace/inventory` dengan parameter URL:
+     - *Stok Bahan*: `?tab=stok-bahan` (Posisi persediaan bahan baku kain, UOM, dan nilai valuasi perolehan).
+     - *Stok Masuk*: `?tab=stok-masuk` (Riwayat mutasi penerimaan barang dari pembelian vendor).
+     - *Stok Keluar*: `?tab=stok-keluar` (Riwayat pengeluaran bahan untuk produksi, penjualan, atau limbah).
+     - *Stok Produksi*: `?tab=stok-produksi` (Pelacakan ikatan komponen WIP yang sedang berproses di stasiun pabrik).
+     - *Stok Produk Jadi*: `?tab=stok-produk-jadi` (Inventori produk siap jual dari gudang dan hasil packing).
+   - **Tujuan Operasional**: Memberikan visibilitas terperinci atas 5 kategori kondisi stok fisik dengan sinkronisasi URL query parameter dan kartu ringkasan metrik KPI terintegrasi.
+
+6. **Transaksi (Operational Transactions & Disbursements)**:
+   - **Rute Menu**:
+     - *Bayar Pembelian*: `/workspace/purchase-payments` (Pelunasan faktur hutang dagang kepada pemasok).
+     - *Bayar Pegawai*: `/workspace/finance/wages` (Pembayaran kewajiban upah borongan operator SPK dan gaji).
+     - *Biaya Operasional*: `/workspace/finance/expenses` (Pencairan kas/bank untuk beban operasional umum tunai/akrual).
+     - *Terima Pembayaran Penjualan*: `/workspace/sales-receipts` (Penerimaan kas pelunasan piutang pelanggan).
+   - **Tujuan Operasional**: Eksekusi pergerakan kas keluar dan kas masuk harian yang langsung memperbarui buku pembantu kas (*subledger*) dan jurnal umum akuntansi.
+
+7. **Keuangan (Finance, Accounting & Financial Reports)**:
+   - **Rute Menu**:
+     - *Buku Besar & Jurnal*: `/workspace/finance/journals` (Jurnal Memorial & Pembalik), `/workspace/reports/general-ledger` (Buku Besar Akun), `/workspace/reports/trial-balance` (Neraca Saldo).
+     - *Laporan Finansial Standar*: `/workspace/reports/profit-loss` (Laba Rugi Periodik), `/workspace/reports/balance-sheet` (Neraca Keuangan Kumulatif), `/workspace/reports/cash-flow` (Arus Kas Metode Langsung).
+     - *Analitik Pabrikasi & Audit*: `/workspace/reports/hpp` (Laporan HPP Pabrikasi 3 Unsur), `/workspace/reports/reconciliation` (Audit Integritas 6 Pos Subledger vs GL).
+     - *Aset Tetap*: `/workspace/assets` (Register Fisik Aset), `/workspace/depreciation` (Penyusutan Bulanan), `/workspace/asset-disposals` (Pelepasan & Laba/Rugi Aset).
+   - **Tujuan Operasional**: Penyelenggaraan pembukuan PSAK berpasangan (*Double-Entry Bookkeeping*), pelaporan HPP pabrikasi riil, tata kelola depresiasi aset modal, dan verifikasi kontrol internal.
+
+8. **Pengaturan (Settings & Administration)**:
+   - **Rute Menu**:
+     - *Konveksi (Multi Tenant)*: `/workspace/companies` (Pendaftaran entitas pabrik, alihan tenant aktif, dan bootstrap data awal).
+     - *Pengguna & Akses*: `/workspace/users-access` (Penugasan pengguna dan konfigurasi matriks izin akses per peran).
+     - *Profil Pengguna*: `/workspace/profile` (Pengaturan identitas akun pengguna, rekening bank pembayaran upah, dan keamanan sandi).
+   - **Tujuan Operasional**: Tata kelola isolasi data multi-perusahaan, administrasi akun pengguna, dan penegakan matriks otorisasi sistem.
+
+*(Catatan: Menu tambahan **Master Data** (`/workspace/customers`, `/workspace/suppliers`, `/workspace/materials`, `/workspace/bom`, `/workspace/products`, `/workspace/materials/uom`, `/workspace/employees`, `/workspace/wage-rates`) serta **Dashboard Utama** (`/`) melengkapi navigasi sistem secara menyeluruh).*
+
+---
+
 ## Modul Master Data & Bill of Materials (BOM)
 
 Modul Master Data mengelola seluruh entitas pondasi proses manufaktur:
@@ -256,9 +333,9 @@ Modul Master Data mengelola seluruh entitas pondasi proses manufaktur:
 
 ---
 
-## Modul Pengadaan (Purchasing) & Buku Besar Inventaris (Inventory Ledger)
+## Modul Pengadaan (Purchasing)
 
-Modul ini mengelola siklus lengkap pengadaan barang operasional dan pencatatan buku besar inventaris perpetual yang terintegrasi secara ACID:
+Modul ini mengelola siklus lengkap pengadaan barang operasional pabrik yang terintegrasi secara ACID dengan pencatatan hutang usaha dan mutasi persediaan:
 
 1. **Pengadaan Bahan Baku (`purchase_material`)** (`/workspace/purchase-materials`):
    - Pengadaan kain dan material utama tekstil dengan penomoran otomatis `BL-YYMMDD-###`.
@@ -286,10 +363,55 @@ Modul ini mengelola siklus lengkap pengadaan barang operasional dan pencatatan b
      - Mengupdate buku pembantu hutang pemasok (`subledger_entry`) dan membukukan jurnal debet hutang dagang vs kredit kas/bank.
    - Menyediakan tab riwayat pembayaran kas keluar lengkap beserta detail bukti transaksi.
 
-5. **Buku Besar Inventaris & Pelacakan Roll (`inventory`)** (`/workspace/inventory`):
-   - **Ringkasan Valuasi Stok (`get_inventory_summary`)**: Menampilkan posisi stok terkini, kuantitas masuk, kuantitas keluar, harga rata-rata bergerak (*Moving Average Cost*), dan estimasi total valuasi aset gudang per item.
-   - **Buku Besar Kartu Mutasi (`inventory_movement`)**: Jejak transaksi mutasi persediaan perpetual berurutan waktu lengkap dengan referensi dokumen acuan.
-   - **Pelacakan Unit Fisik Roll Kain (`production_material_unit`)**: Pemantauan fisik unit kemasan roll kain, kuantitas awal, sisa kuantitas dasar, satuan stok, dan status fisik (`available`, `allocated`, `consumed`, `voided`).
+---
+
+## Modul Stok & Inventori Gudang (Warehouse Inventory & Stock Management)
+
+Modul Stok dan Inventori Gudang (`/workspace/inventory`) menyediakan kontrol persediaan perpetual berbasis waktu nyata (*real-time perpetual inventory*) dengan pemisahan 5 tampilan tab stok spesifik, integrasi filter URL query parameter, kartu ringkasan metrik KPI terpadu, dan pelacakan audit trail unit fisik:
+
+### 1. Pemisahan 5 Tampilan Tab Stok Utama
+
+1. **Stok Bahan (`stok-bahan`)** (`/workspace/inventory?tab=stok-bahan`):
+   - Menyajikan daftar inventori bahan baku tekstil dan material produksi aktif (`item_kind = 'material'`).
+   - Menampilkan nama material, unit pengukuran standar (UOM), kuantitas stok fisik saat ini (*Current Stock*), harga rata-rata bergerak (*Moving Average Cost*), dan estimasi total valuasi aset bahan baku.
+2. **Stok Masuk (`stok-masuk`)** (`/workspace/inventory?tab=stok-masuk`):
+   - Melacak seluruh pergerakan persediaan masuk dari pengadaan (*Purchase Receipts* bertipe `purchase_receipt` atau mutasi kuantitas positif).
+   - Menampilkan nomor dokumen pengadaan acuan (`BL-YYMMDD-###` / `BP-YYMMDD-###`), nama material/item, tanggal transaksi, tanggal bisnis, dan kuantitas masuk.
+3. **Stok Keluar (`stok-keluar`)** (`/workspace/inventory?tab=stok-keluar`):
+   - Merekam seluruh jejak pengurangan persediaan baik untuk konsumsi produksi (*Production Issue*), pengiriman penjualan (*Sales Issue*), komponen afkir (*Production Reject*), maupun limbah kain (*Waste*).
+   - Menampilkan nomor dokumen referensi pemotongan/penjualan, jenis mutasi persediaan, tanggal pencatatan, dan kuantitas keluar.
+4. **Stok Produksi (WIP) (`stok-produksi`)** (`/workspace/inventory?tab=stok-produksi`):
+   - Memantau komponen ikatan (*production bundles*) yang sedang aktif dalam pengerjaan pabrikasi (*Work in Process* / WIP) sebelum tahap akhir packing selesai.
+   - Menyajikan kode ikatan unik (*bundle code*), nama dan SKU produk jadi, kode lot pemotongan (*lot code*), stasiun kerja aktif (Cutting, Printing, Sewing), kondisi kerja (`available`, `repair_hold`), dan sisa kuantitas aktif.
+5. **Stok Produk Jadi (`stok-produk-jadi`)** (`/workspace/inventory?tab=stok-produk-jadi`):
+   - Menggabungkan posisi stok produk jadi di gudang (berdasarkan ringkasan inventori produk SKU) serta ikatan komponen yang telah tuntas melalui proses pengemasan (*completed bundles* dari SPK Packing).
+   - Menampilkan SKU produk, nama artikel, satuan unit (`pcs`), status siap distribusi, dan kuantitas siap jual.
+
+### 2. Integrasi URL Query Parameter & Deep Linking
+
+- Komponen `InventoryComponent` mengikat status tab aktif secara reaktif ke URL query parameter `?tab=`:
+  - `?tab=stok-bahan`
+  - `?tab=stok-masuk`
+  - `?tab=stok-keluar`
+  - `?tab=stok-produksi`
+  - `?tab=stok-produk-jadi`
+- Pengguna dapat melakukan bookmark, membagikan tautan langsung ke tab tertentu, atau bernavigasi langsung dari sub-menu sidebar tanpa kehilangan konteks visual.
+
+### 3. Kartu Metrik KPI Terintegrasi
+
+Di bagian atas modul stok, tersedia 5 kartu metrik analitik ringkasan yang dikalkulasi secara reaktif melalui Angular Signals:
+- **Total Valuasi Bahan**: Akumulasi nilai moneter persediaan bahan baku aktif di gudang (kalkulasi $\sum (\text{stok} \times \text{moving\_avg\_cost})$).
+- **Total Barang Masuk**: Akumulasi kuantitas fisik persediaan yang telah diterima ke gudang dari seluruh transaksi pembelian.
+- **Total Barang Keluar & Waste**: Akumulasi kuantitas stok yang telah dikonsumsi produksi, dikirim ke pelanggan, atau dialokasikan sebagai reject/waste.
+- **Total WIP Ikatan**: Akumulasi kuantitas komponen setengah jadi yang sedang beredar di stasiun kerja pabrik.
+- **Total Produk Jadi Siap Jual**: Total kuantitas pakaian jadi yang siap dipenuhi untuk pesanan pelanggan.
+
+### 4. Fitur Audit Trail & Pelacakan Unit Fisik Roll
+
+Selain 5 tab operasional utama, modul inventori menyediakan alat audit mendalam:
+- **Pencarian Reaktif Cepat**: Kolom pencarian teks terpadu untuk menyaring data seketika berdasarkan nama item, nomor dokumen, kode lot, maupun SKU produk.
+- **Buku Besar Kartu Mutasi (`inventory_movement`)**: Jejak transaksi mutasi persediaan perpetual berurutan waktu lengkap dengan referensi dokumen acuan dan waktu posting.
+- **Pelacakan Unit Fisik Roll Kain (`production_material_unit`)**: Pemantauan fisik unit kemasan roll kain, kuantitas awal, sisa kuantitas dasar, satuan stok, dan status fisik (`available`, `allocated`, `consumed`, `voided`).
 
 ---
 
@@ -328,7 +450,27 @@ Modul ini mengelola alur manufaktur end-to-end dari penetapan target produksi hi
    - Membukukan kewajiban upah borongan sablon (`wage_liability`) berdasarkan kuantitas yang diproses dan melepaskan reservasi bundle.
    - Mengubah status SPK Sablon menjadi `completed` jika seluruh bundle terkait telah selesai dikonfirmasi.
 
-5. **Kasus Perbaikan & Penugasan SPK Repair (`repair_case`)** (`/workspace/production-repairs`):
+5. **Catat Hasil Jahit Operator (`sewing_output`)** (`/workspace/operator-sewing`):
+   - Konfirmasi hasil pengerjaan jahit per ikatan komponen (*bundle*) via RPC atomik `confirm_operator_sewing`.
+   - Validasi invariant kuantitas: total alokasi kuantitas hasil jahit wajib tepat sama dengan kuantitas aktif ikatan (`success_quantity + repair_quantity + reject_quantity = active_quantity`).
+   - Alokasi hasil pengerjaan ke dalam 3 kategori kuantitas:
+     - **Kuantitas Sukses**: Komponen lolos jahit yang dipindahkan ke pembukuan mutasi inventori `sewn_components` (tercatat sebagai state `sewn_wip` pada `inventory_movement` tipe `production_wip_transfer`) dan siap diproses pada SPK Packing.
+     - **Kuantitas Butuh Perbaikan (Repair)**: Komponen jahitan bermasalah/cacat yang otomatis membentuk Kasus Perbaikan (`production_repair_case`) berstatus `pending_assignment`, serta menandai kondisi kerja ikatan bundle menjadi tertahan (`repair_hold`).
+     - **Kuantitas Reject**: Komponen rusak permanen yang dialokasikan ke `final_rejected_quantity` dan dicatat ke mutasi persediaan limbah (`inventory_movement` state `waste`, tipe `production_reject`).
+   - Melepaskan reservasi ikatan dari tabel `production_bundle_reservation`.
+   - Menghitung dan membukukan kewajiban upah borongan jahit (`wage_liability`) bagi operator jahit berdasarkan kuantitas yang dikerjakan penuh dikalikan tarif upah master `wage_rate` (default tarif standar Rp 15.000 / pcs jika belum dikonfigurasi).
+   - Penomoran otomatis dokumen aktual `ACT-JAH-YYMMDD-###` dan pembaruan status SPK Jahit menjadi `completed` jika seluruh bundle terdaftar telah tuntas diproses.
+
+6. **Catat Hasil Kemas & Packing Operator (`packing_output`)** (`/workspace/operator-packing`):
+   - Konfirmasi hasil kemas dan penyelesaian akhir pakaian jadi per ikatan komponen (*bundle*) via RPC atomik `confirm_operator_packing`.
+   - Validasi kesesuaian kuantitas hasil packing: kuantitas berhasil wajib tepat sama dengan kuantitas aktif ikatan bundle (`success_quantity = active_quantity`).
+   - Pemindahan ke stok barang jadi siap jual: mencatat mutasi inventori `packed_finished_goods` (`inventory_movement` tipe `production_receipt` berstatus posted).
+   - Penandaan status ikatan komponen (*bundle*) menjadi selesai penuh (`stage = 'packing'`, `work_condition = 'completed'`).
+   - Melepaskan reservasi ikatan dari tabel `production_bundle_reservation`.
+   - Menghitung dan membukukan kewajiban upah borongan packing (`wage_liability`) bagi operator kemas berdasarkan kuantitas yang diproses dikalikan tarif upah master `wage_rate` (default tarif standar Rp 1.000 / pcs jika belum dikonfigurasi).
+   - Penomoran otomatis dokumen aktual `ACT-PCK-YYMMDD-###` dan pembaruan status SPK Packing menjadi `completed` jika seluruh bundle terdaftar telah selesai dikemas.
+
+7. **Kasus Perbaikan & Penugasan SPK Repair (`repair_case`)** (`/workspace/production-repairs`):
    - Manajemen pemantauan komponen cacat produksi dengan alur status: `open` -> `assigned` -> `in_progress` -> `completed` / `scrapped`.
    - Penugasan penanganan kasus perbaikan kepada operator via RPC `assign_repair_spk`:
      - Menerbitkan SPK Perbaikan khusus `SPK-REP-YYMMDD-###`.
@@ -337,7 +479,7 @@ Modul ini mengelola alur manufaktur end-to-end dari penetapan target produksi hi
        - `reference`: Mengadopsi tarif standar layanan asli dari tabel `wage_rate`.
        - `custom` / `special_rate`: Menetapkan tarif upah khusus yang disepakati secara manual.
 
-6. **Pipeline Progres Produksi & Visualisasi Metrik (`production_progress`)** (`/workspace/production-progress`):
+8. **Pipeline Progres Produksi & Visualisasi Metrik (`production_progress`)** (`/workspace/production-progress`):
    - Pemantauan kemajuan terintegrasi seluruh Perintah Produksi melalui fungsi analitik `get_production_progress_summary`.
    - Visualisasi pipeline kuantitas per tahapan: **Target PP** -> **Potong (Cut)** -> **Sablon (Print)** -> **Jahit (Sew)** -> **Kemas (Pack)**.
    - Menghitung persentase penyelesaian pesanan (`completionPercentage`), jumlah ikatan aktif yang sedang beredar di lantai pabrik (*active bundles*), dan kasus perbaikan yang belum selesai (*active repairs*).

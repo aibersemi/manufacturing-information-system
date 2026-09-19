@@ -72,12 +72,30 @@ Database PostgreSQL 17 pada stack Supabase mengelola 40 tabel inti yang mencakup
   - 273 Matriks Izin Akses (*Access Permissions*) untuk 6 peran pengguna (*owner*, *kepala_konveksi*, *finance*, *operator_potong*, *operator_jahit*, *operator_finishing*).
   - 13 Urutan Nomor Dokumen (*Document Sequence*) dengan format penomoran standar.
 
-### Eksekusi Migrasi & Type Generator
+### Eksekusi Migrasi & Database Schema
 
-- File migrasi SQL tersimpan di `supabase/migrations/20260913000001_foundation_schema.sql`.
+Daftar file migrasi skema database PostgreSQL Supabase yang diterapkan pada sistem:
+
+| File Migrasi | Cakupan & Keterangan |
+| :--- | :--- |
+| `supabase/migrations/20260913000001_foundation_schema.sql` | Skema fondasi 40 tabel inti, enum, RLS policies, trigger audit, dan fungsi isolasi multi-company. |
+| `supabase/migrations/20260913000002_settings_functions.sql` | Stored procedures bootstrap company, manajemen penugasan pengguna, dan matriks hak akses. |
+| `supabase/migrations/20260913000003_purchasing_inventory_functions.sql` | Stored procedures siklus pengadaan (materials, supplies, non-production, payments) & mutasi inventori. |
+| `supabase/migrations/20260913000004_production_spk_functions.sql` | Stored procedures manajemen PP, SPK 4 tahap, potong kain, sablon, reservasi bundle, dan repair cases. |
+| `supabase/migrations/20260913000005_sales_receivables_functions.sql` | Stored procedures pesanan penjualan (SO), faktur penjualan, penerimaan kas piutang, dan pemenuhan. |
+| `supabase/migrations/20260913000006_finance_accounting_functions.sql` | Stored procedures buku besar, transfer kas, biaya operasional, pembayaran upah, amortisasi prepaid, SA, & penutupan periode. |
+| `supabase/migrations/20260913000007_fixed_assets_functions.sql` | Stored procedures pengadaan aset CapEx, register fisik, depresiasi periodik garis lurus/saldo menurun, & pelepasan aset. |
+| `supabase/migrations/20260913000008_reporting_reconciliation_functions.sql` | Stored procedures laporan keuangan (Neraca, Laba Rugi, Arus Kas, Neraca Saldo, Buku Besar, HPP) & rekonsiliasi 6 pos subledger-GL. |
+| `supabase/migrations/20260920000001_company_management_rpc.sql` | RPC backend pengelolaan profil perusahaan, edit fasilitas, toggle status aktif, dan statistik tenant. |
+| `supabase/migrations/20260920000002_public_active_companies_rpc.sql` | RPC publik keamanan tinggi untuk pemilihan tenant aktif pada form login. |
+| `supabase/migrations/20260920000003_fix_settings_functions_ambiguity.sql` | Perbaikan ambiguitas kolom query settings dan audit log tenant. |
+| `supabase/migrations/20260920000004_production_sewing_packing_rpc.sql` | Menambahkan RPC atomik `confirm_operator_sewing` dan `confirm_operator_packing` untuk alur produksi jahit & kemas konveksi: konfirmasi hasil pengerjaan bundle, alokasi sukses/perbaikan/reject, pembentukan repair case, mutasi persediaan `sewn_wip` dan `packed_finished_goods`, serta pembukuan upah borongan operator (`wage_liability`). |
+
 - Script eksekusi migrasi mandiri:
   ```bash
   node scripts/apply-migration.mjs
+  # Atau jalankan migrasi file tertentu secara spesifik:
+  node scripts/apply-migration.mjs supabase/migrations/20260920000004_production_sewing_packing_rpc.sql
   ```
 - Generate ulang kontrak tipe TypeScript skema database ke `src/types/database.types.ts`:
   ```bash
