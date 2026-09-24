@@ -41,7 +41,7 @@ Panduan wajib bagi agen AI saat bekerja di repositori ini.
 - Seluruh pengujian interaktif, verifikasi browser, atau visual testing wajib dilakukan langsung ke domain produksi nyata `https://${APP_DOMAIN}`, bukan ke `localhost`.
 - Jika diminta backup simpan di `/data/backups/manufacturing-information-system/<jenis-backup>/<YYYYMMDD-HHMMSS>/`.
 - Logging mengikuti mekanisme native Ubuntu.
-- Untuk Playwright E2E atau Browser gunakan `APP_DOMAIN` dan credential pada `.env` bagian `# Super User`. Untuk screenshot QA simpan di `tmp/browser-qa/<YYYYMMDD-HHMMSS>/`.
+- Untuk validasi browser manual gunakan global `agent-browser` langsung ke `https://${APP_DOMAIN}` dan credential pada `.env` bagian `# Super User`. Periksa `snapshot`, `console`, `errors`, serta `a11y` sesuai kebutuhan; simpan screenshot QA di `tmp/browser-qa/<YYYYMMDD-HHMMSS>/` dan selalu tutup session setelah selesai.
 
 ## Dummy Konveksi Test Data
 

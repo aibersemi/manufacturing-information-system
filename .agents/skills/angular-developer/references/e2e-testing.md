@@ -1,39 +1,17 @@
-# End-to-End (E2E) Testing
+# Manual Browser Validation
 
-> [!IMPORTANT]
-> Only use the setup guidelines in this file if there is no existing E2E testing framework configured in the workspace, or if the user has explicitly requested to change or set up E2E testing.
-
-## Setting Up and Running E2E Tests
-
-Add supported E2E frameworks to the project using `ng add`:
-
-- **Playwright:**
-  ```shell
-  ng add playwright-ng-schematics
-  ```
-- **Cypress:**
-  ```shell
-  ng add @cypress/schematic
-  ```
-- **Nightwatch:**
-  ```shell
-  ng add @nightwatch/schematics
-  ```
-- **WebdriverIO:**
-  ```shell
-  ng add @wdio/schematics
-  ```
-- **Puppeteer:**
-  ```shell
-  ng add @puppeteer/ng-schematics
-  ```
-
-Run E2E tests:
+Workspace ini tidak memasang E2E framework dan browser QA bukan automated test gate. Gunakan global `agent-browser` langsung ke domain production yang ditetapkan `APP_DOMAIN`.
 
 ```shell
-ng e2e [project] [options]
+SESSION="$(agent-browser session id --scope worktree --prefix manufacturing-information-system)"
+agent-browser --session "$SESSION" open "https://${APP_DOMAIN}"
+agent-browser --session "$SESSION" wait --load networkidle
+agent-browser --session "$SESSION" snapshot -i
+agent-browser --session "$SESSION" console
+agent-browser --session "$SESSION" errors
+agent-browser --session "$SESSION" a11y --json
+agent-browser --session "$SESSION" screenshot --full tmp/browser-qa/smoke.png
+agent-browser --session "$SESSION" close
 ```
 
-## Custom & Enterprise Testing Tools
-
-For custom enterprise runners (e.g., Katalon Studio, TestCafe, Selenium), define execution commands in `package.json` scripts.
+Gunakan credential `.env` bagian `# Super User` hanya untuk flow yang diizinkan, jangan simpan auth state di repo, dan selalu tutup session setelah selesai.

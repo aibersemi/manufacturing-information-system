@@ -142,7 +142,6 @@ coverage/
 coverage.xml
 .nyc_output/
 test-results/
-playwright-report/
 blob-report/
 
 # =========================
@@ -191,5 +190,4 @@ tmp/
 plan/
 .plan/
 .discuss/
-.playwright-mcp/
 sdk/

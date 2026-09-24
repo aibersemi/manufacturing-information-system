@@ -82,7 +82,7 @@ describe('LoginComponent', () => {
     emailControl.setValue('ab');
     expect(emailControl.hasError('minlength')).toBe(true);
 
-    emailControl.setValue('e2e_playwright');
+    emailControl.setValue('e2e_browser');
     expect(emailControl.valid).toBe(true);
 
     emailControl.setValue('valid@aibersemi.com');
@@ -133,7 +133,7 @@ describe('LoginComponent', () => {
   it('should normalize plain username to domain when submitted', async () => {
     const expectedDomain =
       environment.appDomain || (typeof window !== 'undefined' ? window.location.hostname : 'localhost');
-    const expectedEmail = `e2e_playwright@${expectedDomain}`;
+    const expectedEmail = `e2e_browser@${expectedDomain}`;
 
     mockAuthService.signInWithPassword.mockResolvedValue({
       user: { id: 'u1', email: expectedEmail },
@@ -142,7 +142,7 @@ describe('LoginComponent', () => {
     vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
 
     component.form.setValue({
-      email: 'e2e_playwright',
+      email: 'e2e_browser',
       password: 'validpassword',
     });
 

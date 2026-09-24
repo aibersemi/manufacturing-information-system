@@ -73,7 +73,7 @@ ng build
 ## 5. Testing
 
 - **Unit Tests**: Run `ng test` to execute unit tests via the configured test runner (e.g., Karma or Vitest).
-- **End-to-End (E2E)**: Run `ng e2e`. If no E2E framework is configured, the CLI will prompt to install one (Cypress, Playwright, Puppeteer, etc.).
+- **Browser QA**: Workspace ini tidak memasang E2E framework. Gunakan global `agent-browser` secara manual ke domain production sesuai root `AGENTS.md`.
 
 ## 6. Deployment
 

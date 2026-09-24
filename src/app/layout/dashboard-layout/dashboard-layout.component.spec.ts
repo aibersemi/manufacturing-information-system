@@ -50,7 +50,7 @@ describe('DashboardLayoutComponent', () => {
     mockAuthService = {
       currentUser: signal({
         id: 'u-1',
-        email: 'e2e_playwright@example.com',
+        email: 'e2e_browser@example.com',
         app_metadata: { role: 'head' },
         user_metadata: { role: 'head' },
       } as unknown),
@@ -87,7 +87,7 @@ describe('DashboardLayoutComponent', () => {
   });
 
   it('should compute user properties accurately', () => {
-    expect(component.userEmail()).toBe('e2e_playwright@example.com');
+    expect(component.userEmail()).toBe('e2e_browser@example.com');
     expect(component.userRole()).toBe('head');
     expect(component.userRoleLabel()).toBe('Head of Operations');
     expect(component.userInitials()).toBe('E2');

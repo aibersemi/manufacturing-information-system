@@ -84,7 +84,7 @@ describe('DashboardComponent', () => {
     mockAuthService = {
       currentUser: signal({
         id: 'u-1',
-        email: 'e2e_playwright@example.com',
+        email: 'e2e_browser@example.com',
         app_metadata: { role: 'head' },
         user_metadata: { role: 'head' },
       } as any),
@@ -130,7 +130,7 @@ describe('DashboardComponent', () => {
   });
 
   it('should display the current user email and role', () => {
-    expect(component.userEmail()).toBe('e2e_playwright@example.com');
+    expect(component.userEmail()).toBe('e2e_browser@example.com');
     expect(component.userRole()).toBe('head');
   });
 
