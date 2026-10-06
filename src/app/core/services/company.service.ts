@@ -175,18 +175,6 @@ export class CompanyService {
     }
   }
 
-  /**
-   * Mengambil daftar seluruh perusahaan aktif publik (dapat diakses sebelum login)
-   */
-  async getPublicActiveCompanies(): Promise<{ id: string; code: string; name: string }[]> {
-    const { data, error } = await this.supabase.client.rpc('get_public_active_companies');
-    if (error) {
-      console.warn('Gagal memuat daftar entitas publik:', error.message);
-      return [];
-    }
-    return (data || []) as { id: string; code: string; name: string }[];
-  }
-
   getStoredCompanyId(): string | null {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {

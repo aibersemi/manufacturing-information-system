@@ -2,8 +2,6 @@
 
 Dokumen standar baku UI/UX bagi tim pengembang dan agen AI saat merancang atau menambahkan antarmuka pengguna pada proyek Manufacturing Information System (MIS). Seluruh halaman, fitur, dan komponen baru **wajib** mengikuti standar ini agar tampilan konsisten, serasi, dan identik dengan desain referensi (`/opt/services/konveksi`).
 
----
-
 ## 1. Prinsip Tipografi & Ukuran Font
 
 ### Hirarki Font Wajib
@@ -25,8 +23,6 @@ Dokumen standar baku UI/UX bagi tim pengembang dan agen AI saat merancang atau m
 > [!CAUTION]
 > **DILARANG** menggunakan kelas font terlalu kecil seperti `text-[10px]` atau `text-[11px]`. Seluruh elemen UI yang membutuhkan font kompak wajib menggunakan minimal `text-xs` (12px), dan teks utama/navigasi/input wajib menggunakan `text-sm` (14px).
 
----
-
 ## 2. Ikonografi & Komponen UI
 
 - Gunakan **Phosphor Icons** dari paket `@ng-icons/phosphor-icons` (gaya Regular). Hindari mencampuradukkan library ikon lain.
@@ -36,8 +32,6 @@ Dokumen standar baku UI/UX bagi tim pengembang dan agen AI saat merancang atau m
   - `hlmBadge` dengan varian `default`, `secondary`, `outline`, `destructive`
   - `hlmInput` untuk form fields
   - `hlmDropdownMenu` untuk menu popover dan filter
-
----
 
 ## 3. Atmosfer, Radius & Desain Visual
 
@@ -53,8 +47,6 @@ Dokumen standar baku UI/UX bagi tim pengembang dan agen AI saat merancang atau m
   - Shadow tombol pill & search: `shadow-2xs`
 - **Background Halaman**:
   - Diatur otomatis di `src/styles.css` dengan multi-layer radial gradient bernuansa teal-sage dan dot-grid mask halus.
-
----
 
 ## 4. Pola Struktur Halaman Baru (Standard Page Blueprint)
 
@@ -260,8 +252,6 @@ export class FiturContohComponent {
   </div>
 </main>
 ```
-
----
 
 ## 5. Integrasi Routing & Shell Navigasi
 

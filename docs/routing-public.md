@@ -2,8 +2,6 @@
 
 Dokumen ini menjelaskan alur routing publik dan reverse proxy edge server untuk Manufacturing Information System (MIS).
 
----
-
 ## Architecture Overview
 
 - **Domain Aplikasi**: `${APP_DOMAIN}`
@@ -17,8 +15,6 @@ Dokumen ini menjelaskan alur routing publik dan reverse proxy edge server untuk 
                    -> WireGuard Tunnel (${TUNNEL_VPS_WIREGUARD_IP} -> ${APP_WIREGUARD_IP}:${APP_PORT})
                    -> Manufacturing Information System
   ```
-
----
 
 ## Configuration & Management
 

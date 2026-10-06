@@ -5,7 +5,11 @@ Dokumen ini menetapkan arsitektur keamanan, standar *defense-in-depth*, dan pand
 > [!IMPORTANT]
 > Seluruh nilai rahasia, kredensial, token, user, password, parameter koneksi (URL/port/IP), dan API key sensitif hanya disimpan di dalam file `.env` dan dilarang keras dicantumkan secara langsung pada dokumentasi maupun kode publik. Dokumen ini hanya merujuk nama variabel lingkungan.
 
----
+## Workspace Boundary
+
+Supabase digunakan bersama beberapa aplikasi. Registry `tenant_private.workspace_memberships` dikelola admin platform; akun MIS memerlukan membership aktif sebelum dapat mengakses schema MIS atau bucket media. Keanggotaan perusahaan tetap diperiksa melalui RLS `company_id`. Pengguna yang login tanpa membership tidak memperoleh akses data.
+
+Daftar perusahaan tidak tersedia sebelum login. Setelah autentikasi, pilihan perusahaan berasal dari penugasan pengguna. Daftar identitas pada pengaturan hanya mencakup anggota MIS, dan pemilik perusahaan tidak boleh menugaskan akun dari workspace aplikasi lain. Secret administratif tetap berada pada `.env` dan tidak dibagikan kepada pengguna workspace.
 
 ## Prinsip Utama Keamanan
 
@@ -18,8 +22,6 @@ Sistem manufaktur multi-company ini menerapkan model keamanan berlapis (*Defense
    * Setiap modul dan pengguna hanya memiliki akses minimum yang dibutuhkan untuk menjalankan perannya.
 3. **Isolasi Lingkungan Ketat (Strict Credential Isolation)**:
    * Pemisahan absolut antara kredensial publik yang boleh dikirim ke browser dengan kredensial rahasia server.
-
----
 
 ## Frontend Security (Standar Resmi Angular v22)
 
@@ -51,8 +53,6 @@ Header CSP dikonfigurasi pada Caddy edge server untuk membatasi asal sumber daya
 - **PKCE (Proof Key for Code Exchange) Flow**: Client Supabase diinisialisasi secara eksplisit dengan `auth.flowType: 'pkce'` untuk mencegah serangan intersepsi token pada arsitektur Single Page Application (SPA).
 - **Sanitasi `returnUrl` (Proteksi Open Redirect)**: Seluruh pengalihan kembali pasca-login wajib melewati validasi ketat `getSafeReturnUrl()`. Fungsi ini melarang skema eksternal (`http:`, `https:`, `javascript:`, `data:`), protocol-relative URL (`//`), dan karakter backslash (`\`), sehingga rute kembali selalu terbatas pada internal path aplikasi (`/`).
 - **Penanganan Inisialisasi Sesi Deterministik**: Route guards (`authGuard` dan `guestGuard`) bersifat asinkron dan selalu menunggu `authService.waitForAuthReady()` sebelum mengambil keputusan navigasi, mencegah *race condition* atau *false redirect* saat halaman terlindungi di-refresh oleh pengguna yang telah login.
-
----
 
 ## Database & Backend Security (Standar Resmi Supabase & PostgreSQL)
 
@@ -110,8 +110,6 @@ Fungsi yang dieksekusi dengan hak akses pembuat (*elevated privileges*):
   revoke execute on function public.perform_sensitive_action() from public, anon;
   ```
 
----
-
 ## Network & Infrastructure Security
 
 ```text
@@ -132,8 +130,6 @@ Fungsi yang dieksekusi dengan hak akses pembuat (*elevated privileges*):
    * Komunikasi antara VPS Edge dan Host Server MIS berjalan melalui antarmuka WireGuard internal privat (`10.50.0.x`). Port aplikasi tidak diekspos langsung ke alamat IP publik host.
 3. **Penyimpanan Kredensial**:
    * Kredensial murni berada di `.env`. Template publik [.env.example](file:///.env.example) hanya memuat nama variabel kosong tanpa data sensitif.
-
----
 
 ## Security Verification Checklist
 

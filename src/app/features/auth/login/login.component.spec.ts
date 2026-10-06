@@ -1,7 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
-import { CompanyService } from '../../../core/services/company.service';
 import { environment } from '../../../../environments/environment';
 import { LoginComponent } from './login.component';
 
@@ -9,11 +8,6 @@ describe('LoginComponent', () => {
   let component: LoginComponent;
   let fixture: ComponentFixture<LoginComponent>;
   let mockAuthService: { signInWithPassword: ReturnType<typeof vi.fn> };
-  let mockCompanyService: {
-    getPublicActiveCompanies: ReturnType<typeof vi.fn>;
-    getStoredCompanyId: ReturnType<typeof vi.fn>;
-    storeCompanyId: ReturnType<typeof vi.fn>;
-  };
   let router: Router;
   let currentReturnUrl: string | null = null;
 
@@ -22,20 +16,10 @@ describe('LoginComponent', () => {
     mockAuthService = {
       signInWithPassword: vi.fn(),
     };
-    mockCompanyService = {
-      getPublicActiveCompanies: vi.fn().mockResolvedValue([
-        { id: 'c1', code: 'AIBER001', name: 'PT Aiber Semikonduktor Indonesia' },
-        { id: 'c2', code: 'DUMMY_KONVEKSI', name: 'Dummy Konveksi' },
-      ]),
-      getStoredCompanyId: vi.fn().mockReturnValue('c1'),
-      storeCompanyId: vi.fn(),
-    };
-
     await TestBed.configureTestingModule({
       imports: [LoginComponent],
       providers: [
         { provide: AuthService, useValue: mockAuthService },
-        { provide: CompanyService, useValue: mockCompanyService },
         provideRouter([]),
         {
           provide: ActivatedRoute,
@@ -53,24 +37,14 @@ describe('LoginComponent', () => {
     fixture = TestBed.createComponent(LoginComponent);
     component = fixture.componentInstance;
     router = TestBed.inject(Router);
-    fixture.detectChanges();
+    await fixture.whenStable();
   });
 
-  it('should create the login component and load public facilities', async () => {
+  it('tidak menampilkan pemilihan perusahaan sebelum autentikasi', () => {
     expect(component).toBeTruthy();
-    await Promise.resolve();
-
-    expect(mockCompanyService.getPublicActiveCompanies).toHaveBeenCalled();
-    expect(component.availableFacilities().length).toBe(2);
-    expect(component.selectedFacilityId()).toBe('c1');
-    expect(component.selectedFacility()?.name).toBe('PT Aiber Semikonduktor Indonesia');
-  });
-
-  it('should update selected facility and store in localStorage on facility change', () => {
-    component.onFacilityChange('c2');
-
-    expect(component.selectedFacilityId()).toBe('c2');
-    expect(mockCompanyService.storeCompanyId).toHaveBeenCalledWith('c2');
+    expect(fixture.nativeElement.querySelector('select')).toBeNull();
+    expect(fixture.nativeElement.querySelector('input[formControlName="email"]')).not.toBeNull();
+    expect(mockAuthService.signInWithPassword).not.toHaveBeenCalled();
   });
 
   it('should validate email and password fields', () => {
@@ -105,14 +79,13 @@ describe('LoginComponent', () => {
     expect(component.showPassword()).toBe(false);
   });
 
-  it('should call authService.signInWithPassword, store company ID, and navigate on valid submit', async () => {
+  it('should authenticate and navigate before loading assigned companies', async () => {
     mockAuthService.signInWithPassword.mockResolvedValue({
       user: { id: 'u1', email: 'valid@aibersemi.com' },
       session: { access_token: 'token' },
     });
     const navigateSpy = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
 
-    component.selectedFacilityId.set('c1');
     component.form.setValue({
       email: 'valid@aibersemi.com',
       password: 'validpassword',
@@ -120,7 +93,6 @@ describe('LoginComponent', () => {
 
     await component.onSubmit();
 
-    expect(mockCompanyService.storeCompanyId).toHaveBeenCalledWith('c1');
     expect(mockAuthService.signInWithPassword).toHaveBeenCalledWith({
       email: 'valid@aibersemi.com',
       password: 'validpassword',

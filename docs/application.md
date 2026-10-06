@@ -2,8 +2,6 @@
 
 Dokumen ini menjelaskan arsitektur aplikasi Manufacturing Information System (MIS) yang dibangun menggunakan Angular v22+, integrasi reaktif dengan Supabase, pengelolaan environment, dan perintah operasional.
 
----
-
 ## Technical Stack
 
 - **Framework**: Angular v22 (Standalone components, Zoneless change detection)
@@ -15,8 +13,6 @@ Dokumen ini menjelaskan arsitektur aplikasi Manufacturing Information System (MI
 - **Icons**: `@ng-icons/core` & `@ng-icons/phosphor-icons` (Phosphor Regular)
 - **Notifications**: `@spartan-ng/brain/sonner` & `@spartan-ng/helm/sonner`
 - **Backend SDK**: `@supabase/supabase-js` dengan schema types otomatis dari PostgreSQL
-
----
 
 ## Directory Structure
 
@@ -116,15 +112,11 @@ src/
 └── styles.css                          # Global CSS design tokens & utilities
 ```
 
----
-
 ## Environment & Security Management
 
 - Frontend hanya mengakses variabel publik: `SUPABASE_URL` dan `SUPABASE_ANON_KEY`.
 - Variabel rahasia seperti `SERVICE_ROLE_KEY` dilarang keras masuk ke dalam bundle klien.
 - File konfigurasi `src/environments/environment.ts` dibuat secara otomatis sebelum build atau start menggunakan script `scripts/generate-env.mjs` yang membaca nilai langsung dari `.env` lokal tanpa meng-commit file environment ke repositori.
-
----
 
 ## Operational Commands
 
@@ -139,8 +131,6 @@ src/
 | `sudo systemctl status manufacturing-information-system` | Memeriksa status unit systemd service produksi |
 | `sudo journalctl -u manufacturing-information-system -f` | Memantau log realtime service |
 
----
-
 ## AI Pair Programming & MCP Tools
 
 Proyek ini telah dikonfigurasi dengan:
@@ -148,8 +138,6 @@ Proyek ini telah dikonfigurasi dengan:
 - **Local MCP Servers**: [.agents/mcp_config.json](../.agents/mcp_config.json) yang mencakup **Angular CLI MCP** (`get_best_practices`, `run_target`, `devserver`), **Spartan MCP** (`spartan_components_get`, `spartan_blocks_get`, `spartan_accessibility_check`, dokumentasi UI), dan **Supabase DB MCP** (`query`, `execute`, `list_tables`, `describe_table`).
 - **Frontend Guidelines**: [.agents/rules/angular.md](../.agents/rules/angular.md) untuk memastikan penulisan kode modern bebas dari pola legacy.
 - **UI/UX Design System Standards**: [docs/ui-ux-standards.md](ui-ux-standards.md) sebagai acuan baku tata letak, ukuran font, palet, dan blueprint halaman baru.
-
----
 
 ## Examples
 
@@ -233,8 +221,6 @@ export class QcUploadComponent {
 }
 ```
 
----
-
 ## Layout & Navigasi Aplikasi (Dashboard Shell & Core Business Modules)
 
 Antarmuka utama Manufacturing Information System (MIS) dibungkus oleh komponen shell `DashboardLayoutComponent` (`src/app/layout/dashboard-layout/`) yang menyatukan header profil/tenant switcher dan sidebar navigasi collapsible. Navigasi aplikasi dikelompokkan ke dalam 8 modul bisnis utama berbasis alur operasional konveksi:
@@ -308,8 +294,6 @@ Antarmuka utama Manufacturing Information System (MIS) dibungkus oleh komponen s
 
 *(Catatan: Menu tambahan **Master Data** (`/workspace/customers`, `/workspace/suppliers`, `/workspace/materials`, `/workspace/bom`, `/workspace/products`, `/workspace/materials/uom`, `/workspace/employees`, `/workspace/wage-rates`) serta **Dashboard Utama** (`/`) melengkapi navigasi sistem secara menyeluruh).*
 
----
-
 ## Modul Master Data & Bill of Materials (BOM)
 
 Modul Master Data mengelola seluruh entitas pondasi proses manufaktur:
@@ -330,8 +314,6 @@ Modul Master Data mengelola seluruh entitas pondasi proses manufaktur:
    - Master operator/karyawan dan stasiun kerja utama (Cutting, Sewing, Finishing, QC, Packing).
 8. **Matriks Tarif Upah (`wage_rate`)** (`/workspace/wage-rates`):
    - Tarif upah borongan per produk dan tahap pengerjaan (`cutting`, `sewing`, `finishing`, dll) dengan format kode `WR-${SKU}-${service_kind}`.
-
----
 
 ## Modul Pengadaan (Purchasing)
 
@@ -362,8 +344,6 @@ Modul ini mengelola siklus lengkap pengadaan barang operasional pabrik yang teri
      - Mencatat pergerakan kas keluar (`cash_movement` jenis `expense`) terhadap akun kas/bank yang dipilih.
      - Mengupdate buku pembantu hutang pemasok (`subledger_entry`) dan membukukan jurnal debet hutang dagang vs kredit kas/bank.
    - Menyediakan tab riwayat pembayaran kas keluar lengkap beserta detail bukti transaksi.
-
----
 
 ## Modul Stok & Inventori Gudang (Warehouse Inventory & Stock Management)
 
@@ -412,8 +392,6 @@ Selain 5 tab operasional utama, modul inventori menyediakan alat audit mendalam:
 - **Pencarian Reaktif Cepat**: Kolom pencarian teks terpadu untuk menyaring data seketika berdasarkan nama item, nomor dokumen, kode lot, maupun SKU produk.
 - **Buku Besar Kartu Mutasi (`inventory_movement`)**: Jejak transaksi mutasi persediaan perpetual berurutan waktu lengkap dengan referensi dokumen acuan dan waktu posting.
 - **Pelacakan Unit Fisik Roll Kain (`production_material_unit`)**: Pemantauan fisik unit kemasan roll kain, kuantitas awal, sisa kuantitas dasar, satuan stok, dan status fisik (`available`, `allocated`, `consumed`, `voided`).
-
----
 
 ## Modul Operasional Pabrik & Produksi (Production & SPK Workflows)
 
@@ -485,8 +463,6 @@ Modul ini mengelola alur manufaktur end-to-end dari penetapan target produksi hi
    - Menghitung persentase penyelesaian pesanan (`completionPercentage`), jumlah ikatan aktif yang sedang beredar di lantai pabrik (*active bundles*), dan kasus perbaikan yang belum selesai (*active repairs*).
    - Pemantauan status dokumen, target tanggal penyelesaian, dan indikator penguncian spesifikasi teknis (*code locked*).
 
----
-
 ## Modul Penjualan & Piutang Dagang (Sales & Accounts Receivable)
 
 Modul ini mengelola siklus pesanan penjualan dari pelanggan, pembuatan faktur penjualan, penerimaan piutang dagang, dan pemenuhan pengiriman produk jadi:
@@ -510,8 +486,6 @@ Modul ini mengelola siklus pesanan penjualan dari pelanggan, pembuatan faktur pe
 4. **Pengiriman & Pemenuhan Pesanan (`sales_fulfillment`)** (`/workspace/sales-fulfillment`):
    - Pencatatan Surat Jalan Pengiriman (`SJ-YYMMDD-###`) dan pelacakan status ekspedisi logistik.
    - Konfirmasi serah terima barang kepada pelanggan dan pemenuhan status SO.
-
----
 
 ## Modul Keuangan, Akuntansi & Buku Besar (Finance, Accounting & General Ledger)
 
@@ -564,8 +538,6 @@ Modul Keuangan & Akuntansi (Fase 7) mengimplementasikan sistem buku besar berpas
      4. *Konsistensi Subledger*: Buku pembantu piutang, hutang, dan upah sinkron dengan saldo buku besar.
    - Penutupan via `close_accounting_period` mengunci periode dari penambahan, pengubahan, atau pembatalan transaksi dengan tanggal pada periode tersebut.
    - Pembukaan kembali (*Reopen*) via `reopen_accounting_period` dibatasi secara ketat hanya dapat dieksekusi oleh peran **Owner** dengan menyertakan alasan resmi untuk audit trail.
-
----
 
 ## Modul Aset Tetap & Penyusutan (Fixed Assets & Depreciation)
 
@@ -628,8 +600,6 @@ Modul Aset Tetap & Penyusutan (Fase 8) mengimplementasikan tata kelola siklus hi
      - **Kredit**: Aset Tetap (`1-2.0.04`) sebesar harga perolehan historis unit aset.
      - **Kredit**: Laba Pelepasan Aset (`4-2.0.03`) (jika menghasilkan laba).
    - Membukukan mutasi kas masuk pada `cash_movement` jenis `asset_sale` dan mengubah status aset menjadi `disposed`.
-
----
 
 ## Modul Laporan Keuangan, HPP & Rekonsiliasi Akuntansi (Fase 9)
 
@@ -720,8 +690,6 @@ Modul **Financial Reporting, HPP & Reconciliation (Fase 9)** mengimplementasikan
   6. **Akumulasi Penyusutan**: Akumulasi depresiasi terhitung di modul aset vs Saldo Kredit Akun Akumulasi Penyusutan (`1-2.1.xx`).
 - **Uji Integritas Real-time**: Tombol *Uji Rekonsiliasi Real-time* mengevaluasi ke-6 pos secara serentak. Jika ada selisih, sistem memberikan peringatan anomali beserta navigasi cepat ke modul terkait untuk investigasi jurnal koreksi.
 
----
-
 ## Modul Manajemen Perusahaan & Multi-Tenant (`/workspace/companies`)
 
 Modul ini bertanggung jawab atas pengelolaan struktur multi-tenant, identitas fasilitas manufaktur, status operasional, serta inisialisasi master data otomatis (*bootstrapping*).
@@ -756,3 +724,6 @@ Modul ini bertanggung jawab atas pengelolaan struktur multi-tenant, identitas fa
 ### 3. Pengalihan Sesi Kerja Cepat (*Quick Tenant Switch*)
 - Pengguna dapat langsung menekan tombol **Gunakan** pada baris tabel perusahaan untuk mengalihkan konteks tenant yang aktif tanpa harus membuka dropdown navigasi atas. Sesi aktif langsung diperbarui secara reaktif ke seluruh komponen aplikasi.
 
+## Login and Workspace Selection
+
+Halaman login tidak memuat daftar perusahaan. Setelah autentikasi, `CompanyService.loadUserCompanies()` membaca penugasan dan perusahaan yang diizinkan oleh RLS. Pemilihan perusahaan menggunakan kontrol pada dashboard; pilihan tersimpan hanya dipakai jika masih ada dalam daftar perusahaan yang diizinkan. Pendaftaran akses aplikasi baru dilakukan admin platform melalui registry workspace, terpisah dari pembuatan akun Auth.

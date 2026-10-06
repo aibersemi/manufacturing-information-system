@@ -2,8 +2,6 @@
 
 Dokumen ini adalah panduan operasional (*canonical runbook*) untuk Manufacturing Information System (MIS) yang mencakup manajemen layanan *systemd*, prosedur *deployment & build*, pemantauan *logging*, *health check*, sinkronisasi tipe database, prosedur *backup & disaster recovery*, serta panduan penanganan insiden (*troubleshooting*).
 
----
-
 ## Runtime Overview
 
 | Parameter | Konfigurasi / Nilai Referensi |
@@ -23,8 +21,6 @@ Dokumen ini adalah panduan operasional (*canonical runbook*) untuk Manufacturing
 
 Layanan berjalan di atas host Ubuntu native secara terkelola melalui *systemd*, menyajikan berkas build statis Angular dengan kompresi gzip serta fallback SPA (`index.html`) untuk routing sisi klien. Layanan dikonfigurasi untuk menyala otomatis saat server *boot/reboot* dan melakukan *auto-restart* jika terjadi *failure*.
 
----
-
 ## Operational Rules
 
 1. **Hak Akses File & Direktori**:
@@ -38,8 +34,6 @@ Layanan berjalan di atas host Ubuntu native secara terkelola melalui *systemd*, 
 5. **Standar Direktori Backup**:
    - Setiap backup yang dibuat wajib disimpan di bawah direktori:
      `/data/backups/manufacturing-information-system/<jenis-backup>/<YYYYMMDD-HHMMSS>/`
-
----
 
 ## Environment Configuration
 
@@ -66,8 +60,6 @@ Aplikasi menggunakan file `.env` sebagai sumber kebenaran tunggal untuk seluruh 
 ### Injeksi Environment ke Frontend
 
 Sebelum proses *build* atau *serve*, script `scripts/generate-env.mjs` dijalankan secara otomatis melalui hook `prebuild` dan `prestart` di `package.json`. Script ini membaca nilai `SUPABASE_URL` dan `SUPABASE_ANON_KEY` dari `.env` lokal dan menuliskannya ke `src/environments/environment.ts` serta `src/environments/environment.development.ts`. Berkas tersebut telah didaftarkan di `.gitignore` untuk mencegah kebocoran konfigurasi.
-
----
 
 ## Service Management (systemd)
 
@@ -106,8 +98,6 @@ Layanan produksi dikelola melalui systemd unit `manufacturing-information-system
   sudo systemctl restart manufacturing-information-system.service
   ```
 
----
-
 ## Deployment and Build Workflow
 
 Berikut adalah alur standar untuk melakukan kompilasi dan rilis pembaruan ke lingkungan produksi:
@@ -145,8 +135,6 @@ sudo systemctl restart manufacturing-information-system.service
 ### 5. Verifikasi Deployment
 Lakukan *smoke test* untuk memastikan aplikasi merespons dengan benar (lihat bagian [Health Check and Smoke Testing](#health-check-and-smoke-testing)).
 
----
-
 ## Logging and Observability
 
 Layanan menulis log operasional langsung ke `stdout`/`stderr`, yang ditangkap secara terpusat oleh *systemd journal*.
@@ -173,8 +161,6 @@ Layanan menulis log operasional langsung ke `stdout`/`stderr`, yang ditangkap se
   ```bash
   journalctl -u manufacturing-information-system.service --since "1 hour ago" --no-pager
   ```
-
----
 
 ## Health Check and Smoke Testing
 
@@ -211,8 +197,6 @@ curl -H "Accept-Encoding: gzip" -I "http://${APP_BIND_HOST:-127.0.0.1}:${APP_POR
 ```
 Ekspektasi respons: `Content-Encoding: gzip`.
 
----
-
 ## Database Operations and Type Generation
 
 Frontend menggunakan schema types yang dihasilkan langsung dari skema database PostgreSQL Supabase untuk menjamin *end-to-end type safety*.
@@ -229,8 +213,6 @@ Setiap kali ada migrasi atau perubahan skema tabel di Supabase:
    ```
 3. Script akan menghubungkan CLI Supabase ke skema `public` PostgreSQL dan memperbarui berkas `src/types/database.types.ts`.
 4. Jalankan `npm run lint` dan `npm test -- --watch=false` untuk memastikan integritas tipe pada komponen frontend.
-
----
 
 ## Backup and Disaster Recovery
 
@@ -322,8 +304,6 @@ Jika server perlu dipulihkan secara penuh pada instance baru:
    ```
 6. **Verifikasi Operasional**:
    Lakukan pengujian health check pada endpoint lokal dan publik.
-
----
 
 ## Troubleshooting and Incident Response
 

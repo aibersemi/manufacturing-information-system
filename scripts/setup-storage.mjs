@@ -95,41 +95,7 @@ async function setupStorage() {
   console.log('\n2. Mengonfigurasi Row Level Security (RLS) policies di PostgreSQL...');
 
   const sqlStatements = `
--- 1. Kebijakan SELECT pada storage.buckets agar pengguna terautentikasi dapat membaca metadata bucket
-DROP POLICY IF EXISTS "Authenticated users can select buckets" ON storage.buckets;
-CREATE POLICY "Authenticated users can select buckets"
-ON storage.buckets FOR SELECT
-TO authenticated
-USING (true);
-
--- 2. Kebijakan SELECT pada storage.objects untuk bucket manufacturing-media
-DROP POLICY IF EXISTS "Authenticated users can select manufacturing-media objects" ON storage.objects;
-CREATE POLICY "Authenticated users can select manufacturing-media objects"
-ON storage.objects FOR SELECT
-TO authenticated
-USING (bucket_id = '${BUCKET_NAME}');
-
--- 3. Kebijakan INSERT pada storage.objects untuk bucket manufacturing-media
-DROP POLICY IF EXISTS "Authenticated users can insert manufacturing-media objects" ON storage.objects;
-CREATE POLICY "Authenticated users can insert manufacturing-media objects"
-ON storage.objects FOR INSERT
-TO authenticated
-WITH CHECK (bucket_id = '${BUCKET_NAME}');
-
--- 4. Kebijakan UPDATE pada storage.objects (diperlukan untuk fitur replace/upsert file)
-DROP POLICY IF EXISTS "Authenticated users can update manufacturing-media objects" ON storage.objects;
-CREATE POLICY "Authenticated users can update manufacturing-media objects"
-ON storage.objects FOR UPDATE
-TO authenticated
-USING (bucket_id = '${BUCKET_NAME}')
-WITH CHECK (bucket_id = '${BUCKET_NAME}');
-
--- 5. Kebijakan DELETE pada storage.objects untuk bucket manufacturing-media
-DROP POLICY IF EXISTS "Authenticated users can delete manufacturing-media objects" ON storage.objects;
-CREATE POLICY "Authenticated users can delete manufacturing-media objects"
-ON storage.objects FOR DELETE
-TO authenticated
-USING (bucket_id = '${BUCKET_NAME}');
+SELECT tenant_private.configure_storage_policies();
 `;
 
   try {

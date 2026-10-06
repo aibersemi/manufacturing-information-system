@@ -15,6 +15,7 @@ Panduan wajib bagi agen AI saat bekerja di repositori ini.
 
 ## Documentation
 
+- Pada `AGENTS.md`, `README.md`, dan seluruh Markdown di `docs/`, tulis setiap paragraf dan teks item list pada satu baris tanpa hard wrapping. Hindari trailing whitespace dan baris kosong berulang; pertahankan line break serta indentasi yang diperlukan oleh struktur Markdown dan code block.
 - Update dokumentasi hanya jika perilaku, command, arsitektur, operasi, atau kontrak data berubah; perubahan kosmetik tidak memerlukan update dokumentasi.
 - Update root `README.md` jika terjadi perubahan pada gambaran umum, struktur, modul dan navigasi dokumentasi.
 - Buat atau update dokumen terkait di `[docs/](docs/<topik>.md)` agar menggambarkan kondisi sistem saat ini secara langsung tanpa mencatat changelog, riwayat perubahan atau migrasi masa lalu.
@@ -36,6 +37,7 @@ Panduan wajib bagi agen AI saat bekerja di repositori ini.
 
 ## Runtime And Operations
 
+- Ikuti izin workspace kolaboratif: group ownership `mrmads-group` dan umask `0002` (group-writable). 
 - Gunakan `sudo` jika terjadi kendala izin.
 - Setelah perubahan source code atau konfigurasi runtime, jalankan: `npm run lint` (perbaiki seluruh error hingga bersih), `npm run build`, lalu `sudo systemctl restart manufacturing-information-system.service`.
 - Seluruh pengujian interaktif, verifikasi browser, atau visual testing wajib dilakukan langsung ke domain produksi nyata `https://${APP_DOMAIN}`, bukan ke `localhost`.

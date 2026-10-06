@@ -2,8 +2,6 @@
 
 Dokumen ini menjelaskan status arsitektur, verifikasi endpoint, konfigurasi variabel lingkungan (*environment variables*), dan operasional stack Supabase *self-hosted* yang digunakan oleh Manufacturing Information System (MIS).
 
----
-
 ## Container Status & Services
 
 Layanan Supabase berjalan menggunakan Docker Compose pada unit systemd `supabase.service` di direktori host `/opt/services/supabase`. Seluruh kontainer berada dalam status sehat (*healthy*):
@@ -22,8 +20,6 @@ Layanan Supabase berjalan menggunakan Docker Compose pada unit systemd `supabase
 | `supabase-meta` | Postgres Metadata Manager | Manajemen metadata database untuk Studio (via Envoy Gateway) |
 | `supabase-imgproxy` | Image Resizer | Optimasi dan resizing file gambar (via Envoy Gateway) |
 
----
-
 ## Supabase Storage & Media Management
 
 Sistem manufaktur menggunakan Supabase Storage terintegrasi untuk menyimpan file biner operasional (foto QC, rekaman SOP proses perakitan semikonduktor, diagram skematik, dan laporan kerja PDF).
@@ -39,26 +35,21 @@ Sistem manufaktur menggunakan Supabase Storage terintegrasi untuk menyimpan file
 
 ### Kebijakan Row Level Security (RLS) Storage
 
-Row Level Security diaktifkan secara ketat pada tabel `storage.objects` dan `storage.buckets`:
+Akses bucket dan object memerlukan membership aktif workspace MIS pada registry platform. Login saja tidak memberikan akses. Akun dari workspace lain tidak dapat membaca daftar bucket MIS, mengunduh, mengunggah, mengganti, atau menghapus object MIS.
 
-1. **SELECT**: Hanya pengguna terautentikasi (`authenticated`) yang dapat membaca atau mengunduh file dari bucket `manufacturing-media`.
-2. **INSERT**: Hanya pengguna terautentikasi (`authenticated`) yang diizinkan mengunggah file baru.
-3. **UPDATE**: Diizinkan untuk pengguna terautentikasi guna mendukung fitur penimpaan file (*upsert*).
-4. **DELETE**: Diizinkan untuk pengguna terautentikasi untuk pembersihan atau penggantian file usang.
-5. **Akses Anonim**: Seluruh permintaan tanpa token ditolak otomatis oleh RLS (`new row violates row-level security policy`).
+Script berikut mengonfigurasi bucket dan memanggil `tenant_private.configure_storage_policies()` milik platform. Migration workspace platform harus sudah diterapkan; script tidak membuat policy `authenticated` yang berlaku tanpa batas workspace.
 
-Inisialisasi bucket dan penegakan kebijakan RLS dilakukan secara terotomatisasi melalui script:
 ```bash
 node scripts/setup-storage.mjs
 ```
-
----
 
 ## Database Schema & Multi-Company Isolation
 
 Database PostgreSQL 17 pada stack Supabase mengelola 40 tabel inti yang mencakup modul Administrasi, Akuntansi & Keuangan, Manufaktur & Produksi Semikonduktor, Logistik & Inventaris, serta Notifikasi & Audit.
 
 ### Struktur Skema & Row Level Security (RLS)
+
+Registry privat platform memberikan akses aplikasi MIS, kemudian RLS `company_id` menentukan perusahaan yang dapat diakses pengguna. Policy aplikasi bersifat restrictive agar policy perusahaan tidak dapat membuka akses lintas aplikasi. `list_available_system_users()` hanya menampilkan identitas anggota MIS; assignment menolak target dari workspace lain. Helper `bootstrap_company_data` hanya dapat dijalankan oleh wrapper backend yang berwenang.
 
 - **Isolasi Multi-Company**: Seluruh data operasional diisolasi berbasis kolom `company_id` dengan Row Level Security (`FORCE ROW LEVEL SECURITY`) aktif pada setiap tabel.
 - **Kebijakan Akses Pengguna**: Hak akses pengguna terhadap data suatu entitas diverifikasi melalui relasi tabel `user_company_assignment` yang dioptimalkan dengan fungsi `SECURITY DEFINER` (`public.get_user_company_ids()` dan `public.is_company_owner()`) guna mencegah rekursi kebijakan RLS.
@@ -87,7 +78,7 @@ Daftar file migrasi skema database PostgreSQL Supabase yang diterapkan pada sist
 | `supabase/migrations/20260913000007_fixed_assets_functions.sql` | Stored procedures pengadaan aset CapEx, register fisik, depresiasi periodik garis lurus/saldo menurun, & pelepasan aset. |
 | `supabase/migrations/20260913000008_reporting_reconciliation_functions.sql` | Stored procedures laporan keuangan (Neraca, Laba Rugi, Arus Kas, Neraca Saldo, Buku Besar, HPP) & rekonsiliasi 6 pos subledger-GL. |
 | `supabase/migrations/20260920000001_company_management_rpc.sql` | RPC backend pengelolaan profil perusahaan, edit fasilitas, toggle status aktif, dan statistik tenant. |
-| `supabase/migrations/20260920000002_public_active_companies_rpc.sql` | RPC publik keamanan tinggi untuk pemilihan tenant aktif pada form login. |
+| `supabase/migrations/20260920000002_public_active_companies_rpc.sql` | Kontrak RPC daftar perusahaan; akses aktifnya dibatasi pada perusahaan yang ditugaskan setelah autentikasi. |
 | `supabase/migrations/20260920000003_fix_settings_functions_ambiguity.sql` | Perbaikan ambiguitas kolom query settings dan audit log tenant. |
 | `supabase/migrations/20260920000004_production_sewing_packing_rpc.sql` | Menambahkan RPC atomik `confirm_operator_sewing` dan `confirm_operator_packing` untuk alur produksi jahit & kemas konveksi: konfirmasi hasil pengerjaan bundle, alokasi sukses/perbaikan/reject, pembentukan repair case, mutasi persediaan `sewn_wip` dan `packed_finished_goods`, serta pembukuan upah borongan operator (`wage_liability`). |
 
@@ -101,8 +92,6 @@ Daftar file migrasi skema database PostgreSQL Supabase yang diterapkan pada sist
   ```bash
   npm run types:db
   ```
-
----
 
 ## Endpoint & Network Verification
 
@@ -122,8 +111,6 @@ Hasil pengujian konektivitas endpoint dan jaringan:
    - Status: `HTTP/2 200 OK` (Swagger OpenAPI schema responsif menggunakan key autentikasi yang valid).
 4. **Auto-Start Server**:
    - Systemd Service: Unit systemd Supabase telah diaktifkan (`enabled`), sehingga seluruh stack Supabase otomatis menyala saat host reboot.
-
----
 
 ## Configuration & Environment Variables
 
@@ -158,8 +145,6 @@ Kredensial dan konfigurasi koneksi didefinisikan di dalam file `.env`. Gunakan v
 | `SUPABASE_JWT_ANON_KEY` | Client / Frontend | Token JWT format legasi untuk kompatibilitas client tertentu *(disimpan di `.env`)* |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server-Side Only | Secret key dengan hak akses penuh (*bypass RLS*). **Dilarang keras mengekspos variabel ini ke client-side/browser.** *(disimpan di `.env`)* |
 
----
-
 ## Application Integration Examples
 
 ### Supabase Client SDK (JavaScript / TypeScript)
@@ -181,8 +166,6 @@ Gunakan variabel `DATABASE_URL` yang tersusun dari variabel database:
 # Format Connection String
 DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
 ```
-
----
 
 ## Operational Commands
 
