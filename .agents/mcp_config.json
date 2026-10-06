@@ -10,7 +10,7 @@
     },
     "supabase-db": {
       "command": "bash",
-      "args": ["/opt/services/manufacturing-information-system/.agents/run-supabase-mcp.sh"]
+      "args": [".agents/run-supabase-mcp.sh"]
     }
   }
 }

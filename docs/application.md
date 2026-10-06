@@ -139,6 +139,8 @@ Proyek ini telah dikonfigurasi dengan:
 - **Frontend Guidelines**: [.agents/rules/angular.md](../.agents/rules/angular.md) untuk memastikan penulisan kode modern bebas dari pola legacy.
 - **UI/UX Design System Standards**: [docs/ui-ux-standards.md](ui-ux-standards.md) sebagai acuan baku tata letak, ukuran font, palet, dan blueprint halaman baru.
 
+Client MCP harus menjalankan server dengan working directory pada root proyek karena launcher Supabase menggunakan path relatif `.agents/run-supabase-mcp.sh`.
+
 ## Examples
 
 Contoh modern standalone component Angular v22+ dengan signals dan native control flow:
