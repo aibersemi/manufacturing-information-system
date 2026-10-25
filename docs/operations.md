@@ -28,7 +28,7 @@ Layanan berjalan di atas host Ubuntu native secara terkelola melalui *systemd*, 
 2. **Zero Hardcoded Secrets**:
    - Dilarang keras menuliskan nilai rahasia, port mentah, IP mentah, atau token ke dalam kode sumber, git history, maupun dokumentasi.
 3. **Isolasi Bundle Klien**:
-   - Bundle frontend hanya boleh memuat `SUPABASE_URL` dan `SUPABASE_ANON_KEY`. Kredensial administratif seperti `SUPABASE_SERVICE_ROLE_KEY` dan password database dilarang keras dimasukkan ke dalam frontend.
+   - Bundle frontend hanya boleh memuat `SUPABASE_URL` dan `SUPABASE_PUBLISHABLE_KEY` (fallback `SUPABASE_ANON_KEY`). Kredensial administratif seperti `SUPABASE_SERVICE_ROLE_KEY` dan password database dilarang keras dimasukkan ke dalam frontend.
 4. **Non-Breaking Deployment**:
    - Proses build (`npm run build`) dapat dijalankan langsung di server selagi layanan aktif. Jangan menghentikan *service* sebelum build selesai agar tidak menimbulkan *downtime* yang tidak perlu.
 5. **Standar Direktori Backup**:
@@ -48,18 +48,15 @@ Aplikasi menggunakan file `.env` sebagai sumber kebenaran tunggal untuk seluruh 
 | `APP_PORT` | Runtime | Port internal aplikasi untuk melayani request HTTP |
 | `APP_BIND_HOST` | Runtime | IP host listen (`0.0.0.0` atau `127.0.0.1`) |
 | `SUPABASE_URL` | Frontend / Client | URL root endpoint API Supabase Gateway |
-| `SUPABASE_ANON_KEY` | Frontend / Client | Public API Key Supabase yang tunduk pada RLS |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server-Side Only | Secret key Supabase untuk bypass RLS (dilarang di frontend) |
-| `POSTGRES_HOST` | Database | Host database PostgreSQL / Supavisor |
-| `POSTGRES_PORT` | Database | Port session pooler PostgreSQL Supabase |
-| `POSTGRES_DB` | Database | Nama database PostgreSQL |
-| `POSTGRES_USER` | Database | User autentikasi PostgreSQL |
-| `POSTGRES_PASSWORD` | Database | Password autentikasi PostgreSQL |
-| `DATABASE_URL` | Database | Format URI koneksi lengkap database PostgreSQL |
+| `SUPABASE_PUBLISHABLE_KEY` | Frontend / Client | Public API Key Supabase yang tunduk pada RLS |
+| `SUPABASE_ANON_KEY` | Frontend / Client | Fallback kompatibilitas untuk konfigurasi client lama |
+| `SUPABASE_USER_EMAIL` / `SUPABASE_USER_PASSWORD` | Development only | Login akun teknis dari paket; tidak masuk bundle frontend |
+| `SUPABASE_COMPANY_ID` | Development only | Scope perusahaan uji untuk mutasi dan cleanup |
+| `SUPABASE_STORAGE_PREFIX` | Development only | Prefix file uji yang ditetapkan admin |
 
 ### Injeksi Environment ke Frontend
 
-Sebelum proses *build* atau *serve*, script `scripts/generate-env.mjs` dijalankan secara otomatis melalui hook `prebuild` dan `prestart` di `package.json`. Script ini membaca nilai `SUPABASE_URL` dan `SUPABASE_ANON_KEY` dari `.env` lokal dan menuliskannya ke `src/environments/environment.ts` serta `src/environments/environment.development.ts`. Berkas tersebut telah didaftarkan di `.gitignore` untuk mencegah kebocoran konfigurasi.
+Sebelum proses *build* atau *serve*, script `scripts/generate-env.mjs` dijalankan secara otomatis melalui hook `prebuild` dan `prestart` di `package.json`. Script ini membaca nilai `SUPABASE_URL` dan `SUPABASE_PUBLISHABLE_KEY` (fallback `SUPABASE_ANON_KEY`) dari `.env` lokal dan menuliskannya ke `src/environments/environment.ts` serta `src/environments/environment.development.ts`. Berkas tersebut telah didaftarkan di `.gitignore` untuk mencegah kebocoran konfigurasi.
 
 ## Service Management (systemd)
 
@@ -199,20 +196,13 @@ Ekspektasi respons: `Content-Encoding: gzip`.
 
 ## Database Operations and Type Generation
 
-Frontend menggunakan schema types yang dihasilkan langsung dari skema database PostgreSQL Supabase untuk menjamin *end-to-end type safety*.
+Frontend menggunakan kontrak tipe schema `public` dari artifact admin platform. Setelah migration diterapkan oleh admin, impor artifact tanpa koneksi database administratif:
 
-### Sinkronisasi Tipe Skema Database
-Setiap kali ada migrasi atau perubahan skema tabel di Supabase:
-1. Pastikan stack Supabase dalam kondisi aktif:
-   ```bash
-   sudo systemctl status supabase
-   ```
-2. Jalankan script sinkronisasi tipe:
-   ```bash
-   npm run types:db
-   ```
-3. Script akan menghubungkan CLI Supabase ke skema `public` PostgreSQL dan memperbarui berkas `src/types/database.types.ts`.
-4. Jalankan `npm run lint` dan `npm test -- --watch=false` untuk memastikan integritas tipe pada komponen frontend.
+```bash
+npm run types:db -- --from <artifact-database.types.ts>
+```
+
+Command admin untuk menghasilkan artifact adalah `python3 scripts/mis-admin.py export-types`, dijalankan dari repository platform. Artifact hanya berisi kontrak tipe; source MIS tetap memiliki `src/types/database.types.ts` untuk build lokal atau Windows.
 
 ## Backup and Disaster Recovery
 
@@ -247,22 +237,14 @@ sudo chmod 600 "${BACKUP_DIR}/.env"
 ```
 
 ### 3. Backup Database PostgreSQL Supabase
-Pencadangan database dilakukan menggunakan `pg_dump` melalui port pooler PostgreSQL Supabase:
+
+Backup database dijalankan operator dari repository platform Supabase:
 
 ```bash
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-BACKUP_DIR="/data/backups/manufacturing-information-system/database/${TIMESTAMP}"
-sudo mkdir -p "${BACKUP_DIR}"
-
-PGPASSWORD="${POSTGRES_PASSWORD}" pg_dump \
-  -h "${POSTGRES_HOST}" \
-  -p "${POSTGRES_PORT}" \
-  -U "${POSTGRES_USER}" \
-  -d "${POSTGRES_DB}" \
-  -F c \
-  -f "${BACKUP_DIR}/mis-db-${TIMESTAMP}.dump"
-
+python3 scripts/mis-admin.py backup
 ```
+
+Proyek MIS tidak menyimpan password database. Backup database dan pemulihan merupakan operasi platform; operator menyimpan hasil pada direktori backup Supabase sesuai SOP.
 
 ### 4. Prosedur Disaster Recovery (Restore)
 
@@ -286,24 +268,7 @@ Jika server perlu dipulihkan secara penuh pada instance baru:
    npm ci
    npm run build
    ```
-4. **Pemulihan Database Supabase**:
-   ```bash
-   PGPASSWORD="${POSTGRES_PASSWORD}" pg_restore \
-     -h "${POSTGRES_HOST}" \
-     -p "${POSTGRES_PORT}" \
-     -U "${POSTGRES_USER}" \
-     -d "${POSTGRES_DB}" \
-     --clean --if-exists \
-     "/data/backups/manufacturing-information-system/database/<TIMESTAMP>/mis-db-<TIMESTAMP>.dump"
-   ```
-5. **Pemasangan & Pengaktifan Unit systemd**:
-   ```bash
-   sudo cp /opt/services/manufacturing-information-system/scripts/systemd/manufacturing-information-system.service /etc/systemd/system/
-   sudo systemctl daemon-reload
-   sudo systemctl enable --now manufacturing-information-system.service
-   ```
-6. **Verifikasi Operasional**:
-   Lakukan pengujian health check pada endpoint lokal dan publik.
+4. **Pemulihan Database Supabase**: Minta operator platform memulihkan perubahan yang diperlukan dari backup administratif. Jangan memasukkan password database ke proyek MIS atau menimpa seluruh database bersama untuk memulihkan satu perubahan aplikasi.
 
 ## Troubleshooting and Incident Response
 
@@ -352,7 +317,7 @@ Jika server perlu dipulihkan secara penuh pada instance baru:
 
 ### 4. Autentikasi / API Supabase Gagal (Network Error / 401 Unauthorized)
 - **Gejala**: Login gagal dengan pesan koneksi terputus atau autentikasi ditolak.
-- **Penyebab**: Layanan Supabase belum menyala, atau nilai `SUPABASE_ANON_KEY` / `SUPABASE_URL` pada `.env` belum diinjeksikan ke bundle frontend.
+- **Penyebab**: Layanan Supabase belum menyala, atau nilai `SUPABASE_PUBLISHABLE_KEY` / `SUPABASE_URL` pada `.env` belum diinjeksikan ke bundle frontend.
 - **Solusi**:
   1. Periksa kesehatan layanan Supabase:
      ```bash
@@ -364,3 +329,7 @@ Jika server perlu dipulihkan secara penuh pada instance baru:
      npm run build
      sudo systemctl restart manufacturing-information-system.service
      ```
+
+## Scoped Test Cleanup
+
+`node scripts/test-production-cleanup-live.mjs` menguji cleanup melalui sesi akun teknis dengan fixture baru pada perusahaan uji. Fixture membentuk relasi bundle, work order, dokumen aktual, dan roll yang saling merujuk. Cleanup pada pengujian produksi menghapus child sebelum parent, memakai filter perusahaan serta identifier run, dan mempertahankan record kontrol di luar run.

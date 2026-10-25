@@ -1,10 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { StorageService, DEFAULT_STORAGE_BUCKET } from './storage.service';
 import { SupabaseService } from './supabase.service';
+import { CompanyService } from './company.service';
 
 describe('StorageService', () => {
   let service: StorageService;
   let supabaseService: SupabaseService;
+  const companyId = '00000000-0000-4000-8000-000000000001';
+  const mockCompanyService = { waitForActiveCompany: vi.fn() };
 
   const mockStorageFrom = {
     upload: vi.fn(),
@@ -16,8 +19,9 @@ describe('StorageService', () => {
   };
 
   beforeEach(() => {
+    mockCompanyService.waitForActiveCompany.mockResolvedValue(companyId);
     TestBed.configureTestingModule({
-      providers: [StorageService, SupabaseService],
+      providers: [StorageService, SupabaseService, { provide: CompanyService, useValue: mockCompanyService }],
     });
     service = TestBed.inject(StorageService);
     supabaseService = TestBed.inject(SupabaseService);
@@ -45,7 +49,7 @@ describe('StorageService', () => {
 
       expect(supabaseService.client.storage.from).toHaveBeenCalledWith(DEFAULT_STORAGE_BUCKET);
       expect(mockStorageFrom.upload).toHaveBeenCalledWith(
-        expect.stringMatching(/^qc\/\d+-sample_file__v1_\.png$/),
+        expect.stringMatching(new RegExp(`^${companyId}/qc/\\d+-sample_file__v1_\\.png$`)),
         mockFile,
         { upsert: false, contentType: 'image/png' }
       );
@@ -68,7 +72,7 @@ describe('StorageService', () => {
       });
 
       expect(supabaseService.client.storage.from).toHaveBeenCalledWith('custom-bucket');
-      expect(mockStorageFrom.upload).toHaveBeenCalledWith('manuals/sop-01.pdf', mockBlob, {
+      expect(mockStorageFrom.upload).toHaveBeenCalledWith(`${companyId}/manuals/sop-01.pdf`, mockBlob, {
         upsert: true,
         contentType: 'application/pdf',
       });
@@ -83,6 +87,25 @@ describe('StorageService', () => {
       });
 
       await expect(service.uploadFile(mockFile)).rejects.toThrow('Upload file gagal: Entity too large');
+    });
+
+    it('menolak upload sebelum perusahaan aktif tersedia', async () => {
+      mockCompanyService.waitForActiveCompany.mockResolvedValue(null);
+      await expect(service.uploadFile(new Blob(['test']))).rejects.toThrow('Pilih perusahaan aktif');
+      expect(mockStorageFrom.upload).not.toHaveBeenCalled();
+    });
+
+    it('menolak traversal dan prefix perusahaan lain sebelum mengirim request', async () => {
+      for (const filePath of ['../other.png', '/absolute.png', 'folder\\other.png', '00000000-0000-4000-8000-000000000002/file.png']) {
+        await expect(service.uploadFile(new Blob(['test']), 'file.png', { path: filePath })).rejects.toThrow();
+      }
+      expect(mockStorageFrom.upload).not.toHaveBeenCalled();
+    });
+
+    it('tidak menggandakan prefix perusahaan yang sudah sesuai', async () => {
+      mockStorageFrom.upload.mockResolvedValue({ data: { path: `${companyId}/file.png` }, error: null });
+      await service.uploadFile(new Blob(['test']), 'file.png', { path: `${companyId}/file.png` });
+      expect(mockStorageFrom.upload).toHaveBeenCalledWith(`${companyId}/file.png`, expect.any(Blob), expect.any(Object));
     });
   });
 

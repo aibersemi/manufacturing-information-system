@@ -29,7 +29,10 @@ function parseEnv(filePath) {
 
 const env = parseEnv(envPath);
 const supabaseUrl = env.SUPABASE_URL || '';
-const supabaseAnonKey = env.SUPABASE_ANON_KEY || '';
+const supabaseAnonKey = env.SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_ANON_KEY || '';
+if (env.SUPABASE_SCHEMA && env.SUPABASE_SCHEMA !== 'public') {
+  throw new Error('MIS menggunakan schema public; periksa konfigurasi paket.');
+}
 const appDomain = env.APP_DOMAIN || '';
 
 if (!fs.existsSync(environmentsDir)) {

@@ -1,3 +1,4 @@
+import { loadMisConfig } from './mis-package.mjs';
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -24,11 +25,11 @@ function parseEnv(filePath) {
   return env;
 }
 
-const env = parseEnv(envPath);
+const env = loadMisConfig();
 const appDomain = env.APP_DOMAIN || 'localhost';
 const baseUrl = `https://${appDomain}`;
-const superUser = env.SUPER_USER_USERNAME;
-const superPass = env.SUPER_USER_PASSWORD;
+const superUser = env.SUPABASE_USER_EMAIL;
+const superPass = env.SUPABASE_USER_PASSWORD;
 const email = superUser.includes('@') ? superUser : `${superUser}@${appDomain}`;
 
 console.log(`--- VERIFIKASI LIVE BROWSER FASE 2: ${baseUrl} ---`);
@@ -157,7 +158,7 @@ async function main() {
         (() => {
           const body = document.body.innerText;
           const hasTitle = body.includes('Perusahaan');
-          const hasAiber = body.includes('PT Aiber Semikonduktor Indonesia') || body.includes('AIBER001');
+          const hasAiber = body.includes('Dummy Konveksi Semikonduktor Indonesia') || body.includes('DUMMY_KONVEKSI');
           const addBtn = !!document.getElementById('btn-add-company');
           return { hasTitle, hasAiber, addBtn, url: window.location.pathname };
         })()
@@ -167,9 +168,9 @@ async function main() {
     console.log('Hasil inspeksi halaman Perusahaan (/workspace/companies):', companiesDom.result.value);
 
     if (!companiesDom.result.value.hasTitle || !companiesDom.result.value.hasAiber) {
-      throw new Error('Halaman Perusahaan tidak memuat judul atau data perusahaan AIBER001');
+      throw new Error('Halaman Perusahaan tidak memuat judul atau data perusahaan DUMMY_KONVEKSI');
     }
-    console.log('✓ Halaman Perusahaan (/workspace/companies) terverifikasi dengan data AIBER001.');
+    console.log('✓ Halaman Perusahaan (/workspace/companies) terverifikasi dengan data DUMMY_KONVEKSI.');
 
     // 3. Verifikasi Navigasi ke /workspace/users-access
     console.log(`4. Menavigasi ke ${baseUrl}/workspace/users-access ...`);

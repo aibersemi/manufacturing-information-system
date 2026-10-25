@@ -45,7 +45,7 @@ Header CSP dikonfigurasi pada Caddy edge server untuk membatasi asal sumber daya
 - `frame-ancestors 'self'` & `X-Frame-Options: SAMEORIGIN`: Mencegah serangan *Clickjacking* (pembungkusan iframe oleh situs asing).
 
 ### Isolasi Kredensial Client
-- **Hanya Dua Variabel Publik**: Bundle frontend hanya diizinkan mengakses `SUPABASE_URL` dan `SUPABASE_ANON_KEY`.
+- **Hanya Dua Variabel Publik**: Bundle frontend hanya diizinkan mengakses `SUPABASE_URL` dan `SUPABASE_PUBLISHABLE_KEY` (fallback `SUPABASE_ANON_KEY`).
 - **Kunci Rahasia Terlarang**: Variabel `SUPABASE_SERVICE_ROLE_KEY`, `POSTGRES_PASSWORD`, dan kredensial administratif lainnya **dilarang keras** diimpor atau dibungkus ke dalam file TypeScript frontend (seperti `src/environments/`).
 - File `src/environments/environment.ts` otomatis di-generate saat build dari `.env` lokal dan diabaikan oleh Git (`.gitignore`).
 
@@ -75,7 +75,7 @@ Karena MIS beroperasi dalam lingkungan multi-company:
     for all
     to authenticated
     using (
-      company_id = (select auth.jwt() -> 'app_metadata' ->> 'active_company_id')::uuid
+      company_id in (select public.get_user_company_ids((select auth.uid())))
     );
   ```
 
@@ -142,3 +142,9 @@ Sebelum kode fitur atau tabel baru digabungkan ke cabang utama:
 - [ ] **Secrets Check**: Tidak ada hardcoded secret di file `.ts`, `.html`, `.json`, maupun `.md`.
 - [ ] **Auditing**: `npm audit` dijalankan dengan 0 kerentanan kritis.
 - [ ] **Build Check**: `npm run build` dan `npm test` lulus tanpa error.
+
+## Application Credentials and Development Account
+
+File `.env` MIS hanya memuat konfigurasi aplikasi dan akun teknis dari paket workspace. Service-role key, password database, login Studio, serta password akun produksi dikelola operator di platform Supabase. MCP database administratif dan fallback pembacaan secret platform tidak tersedia dalam konfigurasi agent MIS.
+
+Akun teknis memakai membership MIS, assignment perusahaan uji, dan registry pengembangan yang dikelola admin. Pembatasan diterapkan pada RLS, RPC berdasarkan actor `auth.uid()`, dan prefix object Storage. Peran owner pada perusahaan uji tidak memberi hak membuat perusahaan baru, menambahkan identitas luar ke directory perusahaan uji, atau mengakses perusahaan produksi. Pengguna MIS lama tetap menggunakan akun serta assignment masing-masing.

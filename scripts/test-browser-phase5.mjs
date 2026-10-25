@@ -1,40 +1,16 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { createClient } from '@supabase/supabase-js';
+import { createMisTestClient, loadMisConfig } from './mis-package.mjs';
+import { cleanupProductionTest } from './cleanup-production-test.mjs';
 
-const projectRoot = process.cwd();
-const envPath = path.join(projectRoot, '.env');
-
-function parseEnv(filePath) {
-  if (!fs.existsSync(filePath)) throw new Error('.env not found');
-  const content = fs.readFileSync(filePath, 'utf-8');
-  const env = {};
-  for (const line of content.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eqIdx = trimmed.indexOf('=');
-    if (eqIdx === -1) continue;
-    const key = trimmed.slice(0, eqIdx).trim();
-    let val = trimmed.slice(eqIdx + 1).trim();
-    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-      val = val.slice(1, -1);
-    }
-    env[key] = val;
-  }
-  return env;
-}
-
-const env = parseEnv(envPath);
-const appDomain = env.APP_DOMAIN || 'localhost';
+const env = loadMisConfig();
+const testRunTag = crypto.randomUUID();
+const appDomain = env.APP_DOMAIN;
 const baseUrl = `https://${appDomain}`;
-const superUser = env.SUPER_USER_USERNAME;
-const superPass = env.SUPER_USER_PASSWORD;
-const email = superUser.includes('@') ? superUser : `${superUser}@${appDomain}`;
-
-const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { persistSession: false },
-});
+const email = env.SUPABASE_USER_EMAIL;
+const superPass = env.SUPABASE_USER_PASSWORD;
+const { client: supabase, user: currentTestUser } = await createMisTestClient(env);
 
 console.log('--- VERIFIKASI LIVE BROWSER FASE 5: PRODUCTION & SPK WORKFLOWS ---');
 console.log(`Target URL: ${baseUrl}`);
@@ -86,6 +62,8 @@ async function main() {
   let createdRepairSpkId = null;
   let createdBundleId = null;
   let createdRepairCaseId = null;
+  let createdSourceDocumentId = null;
+  const createdMasterIds = [];
 
   try {
     const wsUrl = await getDebuggerUrl();
@@ -131,20 +109,16 @@ async function main() {
     }
 
     // 1. Ambil data company dan user aktif
-    const { data: userAuth, error: uErr } = await supabase.auth.admin.listUsers();
-    if (uErr) throw new Error(`Gagal list user: ${uErr.message}`);
-    const superUserObj = userAuth.users.find((u) => u.email === email);
-    if (!superUserObj) throw new Error(`Superuser ${email} tidak ditemukan.`);
-    testUserId = superUserObj.id;
+    testUserId = currentTestUser.id;
 
     const { data: companies, error: compErr } = await supabase
       .from('company')
       .select('id, name')
-      .eq('code', 'AIBER001')
+      .eq('id', env.SUPABASE_COMPANY_ID)
       .limit(1);
-    if (compErr || !companies || companies.length === 0) throw new Error('Company AIBER001 not found');
+    if (compErr || !companies || companies.length === 0) throw new Error('Perusahaan uji paket MIS tidak ditemukan');
     testCompanyId = companies[0].id;
-    console.log(`✓ Active Company ID: ${testCompanyId} (${companies[0].name}), User ID: ${testUserId}`);
+    console.log('✓ Identitas akun teknis dan perusahaan uji tervalidasi.');
 
     // Siapkan data master pengujian
     // Product
@@ -154,6 +128,7 @@ async function main() {
       .eq('company_id', testCompanyId)
       .eq('record_kind', 'product')
       .eq('is_active', true)
+      .eq('id', crypto.randomUUID())
       .limit(1)
       .maybeSingle();
 
@@ -163,8 +138,8 @@ async function main() {
         .insert({
           company_id: testCompanyId,
           record_kind: 'product',
-          name: 'Kaos Polos Uji E2E',
-          sku: `KP-TEST-${Date.now().toString().slice(-4)}`,
+          name: `Kaos Polos Uji E2E ${testRunTag}`,
+          sku: `KP-TEST-${testRunTag.slice(0, 8)}`,
           is_active: true,
           data: { standard_cutting_rate: 1000, standard_printing_rate: 1500 },
         })
@@ -172,6 +147,7 @@ async function main() {
         .single();
       if (pErr) throw new Error(`Gagal buat master product uji: ${pErr.message}`);
       testProductId = newProd.id;
+      createdMasterIds.push(newProd.id);
     } else {
       testProductId = existingProd.id;
     }
@@ -184,6 +160,7 @@ async function main() {
       .eq('company_id', testCompanyId)
       .eq('record_kind', 'material')
       .eq('is_active', true)
+      .eq('id', crypto.randomUUID())
       .limit(1)
       .maybeSingle();
 
@@ -193,7 +170,7 @@ async function main() {
         .insert({
           company_id: testCompanyId,
           record_kind: 'material',
-          name: 'Kain Cotton Combed 30s Uji',
+          name: `Kain Cotton Combed 30s Uji ${testRunTag}`,
           is_active: true,
           data: { material_type: 'fabric', unit_measure: 'KG', baseUnit: 'KG' },
           created_by_user_id: testUserId,
@@ -202,6 +179,7 @@ async function main() {
         .single();
       if (mErr) throw new Error(`Gagal buat master material uji: ${mErr.message}`);
       testMaterialId = newMat.id;
+      createdMasterIds.push(newMat.id);
     } else {
       testMaterialId = existingMat.id;
     }
@@ -212,6 +190,7 @@ async function main() {
       .select('id, physical_code, material_id')
       .eq('company_id', testCompanyId)
       .eq('status', 'available')
+      .eq('id', crypto.randomUUID())
       .limit(1)
       .maybeSingle();
 
@@ -224,7 +203,8 @@ async function main() {
         .from('business_document')
         .select('id, lines:business_document_line(id)')
         .eq('company_id', testCompanyId)
-        .limit(1)
+        .eq('id', crypto.randomUUID())
+      .limit(1)
         .maybeSingle();
 
       let sourceDocId = existingDoc?.id;
@@ -236,7 +216,7 @@ async function main() {
           .insert({
             company_id: testCompanyId,
             document_kind: 'purchase_material',
-            document_number: `BL-TEST-${Date.now().toString().slice(-5)}`,
+            document_number: `BL-TEST-${testRunTag.slice(0, 8)}`,
             status: 'draft',
             transaction_date: new Date().toISOString().slice(0, 10),
             total_amount: 1000000,
@@ -249,6 +229,7 @@ async function main() {
           .single();
         if (dErr) throw new Error(`Insert test purchase doc error: ${dErr.message}`);
         sourceDocId = newDoc.id;
+        createdSourceDocumentId = newDoc.id;
 
         const { data: newLine } = await supabase
           .from('business_document_line')
@@ -281,7 +262,7 @@ async function main() {
           source_document_id: sourceDocId,
           source_line_id: sourceLineId,
           receipt_cycle: 1,
-          physical_code: `ROLL-TEST-${Date.now().toString().slice(-5)}`,
+          physical_code: `ROLL-TEST-${testRunTag.slice(0, 8)}`,
           packaging_unit_code: 'roll',
           stock_unit_code: 'KG',
           initial_base_quantity: 25.0,
@@ -334,7 +315,7 @@ async function main() {
         .insert({
           company_id: testCompanyId,
           record_kind: 'bom',
-          name: `BOM Kaos Uji ${Date.now().toString().slice(-4)}`,
+          name: `BOM Kaos Uji ${testRunTag.slice(0, 8)}`,
           is_active: true,
           data: {
             productId: testProductId,
@@ -366,12 +347,12 @@ async function main() {
     }
     console.log('✓ Master wage rate disiapkan untuk uji.');
 
-    // Operator Profile (sync dulu jika belum ada)
-    await supabase.rpc('sync_production_operator_profiles', { p_company_id: testCompanyId });
+    // Gunakan profil akun teknis; jangan menyinkronkan ulang seluruh employee perusahaan uji.
     const { data: cutOps } = await supabase
       .from('production_operator_profile')
       .select('id, employee_id, operator_role')
       .eq('company_id', testCompanyId)
+      .eq('user_id', testUserId)
       .eq('operator_role', 'operator_potong')
       .eq('is_active', true)
       .limit(1);
@@ -380,6 +361,7 @@ async function main() {
       .from('production_operator_profile')
       .select('id, employee_id, operator_role')
       .eq('company_id', testCompanyId)
+      .eq('user_id', testUserId)
       .eq('operator_role', 'operator_sablon')
       .eq('is_active', true)
       .limit(1);
@@ -394,12 +376,14 @@ async function main() {
         .insert({
           company_id: testCompanyId,
           record_kind: 'employee',
-          name: 'Budi Operator E2E',
+          name: `Budi Operator E2E ${testRunTag}`,
           is_active: true,
           data: { department: 'Produksi', role: 'Operator' },
         })
         .select('id')
         .single();
+      if (!newEmp) throw new Error('Fixture employee gagal dibuat.');
+      createdMasterIds.push(newEmp.id);
 
       if (!cuttingOperatorId) {
         const { data: pCut } = await supabase
@@ -407,6 +391,7 @@ async function main() {
           .insert({
             company_id: testCompanyId,
             employee_id: newEmp.id,
+            user_id: testUserId,
             operator_role: 'operator_potong',
             is_active: true,
           })
@@ -420,6 +405,7 @@ async function main() {
           .insert({
             company_id: testCompanyId,
             employee_id: newEmp.id,
+            user_id: testUserId,
             operator_role: 'operator_sablon',
             is_active: true,
           })
@@ -444,7 +430,7 @@ async function main() {
     // Lakukan login jika form login muncul
     const isLoginPage = await evaluate(`window.location.pathname.includes('/login')`);
     if (isLoginPage) {
-      console.log('Mengisi kredensial superuser di form login...');
+      console.log('Login menggunakan akun teknis paket MIS...');
       await evaluate(`
         (function() {
           const emailInput = document.querySelector('input[type="email"], input[name="email"], input[id*="email"]');
@@ -685,58 +671,24 @@ async function main() {
     // Cleanup / Rollback data pengujian secara menyeluruh
     console.log('\n--- CLEANUP DATA PENGUJIAN (ROLLBACK) ---');
     try {
-      // 1. Hapus repair cases
-      if (createdRepairCaseId) {
-        await supabase.from('production_repair_case').delete().eq('id', createdRepairCaseId);
-      }
-      if (createdPpId) {
-        await supabase.from('production_repair_case').delete().eq('company_id', testCompanyId).like('notes', '%sablon%');
-      }
-
-      // 2. Hapus bundle
-      if (createdBundleId) {
-        await supabase.from('production_bundle').delete().eq('id', createdBundleId);
-      }
-      if (createdPpId) {
-        await supabase.from('production_bundle').delete().eq('production_order_id', createdPpId);
-      }
-
-      // 3. Hapus wage liabilities dan inventory movements untuk produk uji
-      await supabase.from('wage_liability').delete().eq('company_id', testCompanyId).eq('item_id', testProductId);
-      await supabase.from('inventory_movement').delete().eq('company_id', testCompanyId).eq('item_id', testProductId);
-
-      // 4. Hapus cutting lot
-      if (createdPpId) {
-        await supabase.from('production_cutting_lot').delete().eq('company_id', testCompanyId).eq('production_order_id', createdPpId);
-      }
-
-      // 5. Hapus SPK Work Orders, Dokumen Aktual, dan Business Documents yang terkait
-      const testDocIds = [createdPpId, createdCuttingSpkId, createdPrintingSpkId, createdRepairSpkId].filter(Boolean);
-      for (const docId of testDocIds) {
-        // Hapus work order
-        await supabase.from('production_work_order').delete().eq('document_id', docId);
-        // Hapus actual documents yang merujuk ke SPK ini
-        const { data: actDocs } = await supabase.from('business_document').select('id').eq('source_document_id', docId);
-        for (const act of actDocs || []) {
-          await supabase.from('business_document_line').delete().eq('document_id', act.id);
-          await supabase.from('business_document').delete().eq('id', act.id);
-        }
-        // Hapus lines
-        await supabase.from('business_document_line').delete().eq('document_id', docId);
-        // Hapus business document
-        await supabase.from('business_document').delete().eq('id', docId);
-      }
-
-      // 6. Hapus roll unit kain uji jika dibuat baru
-      if (testRollId) {
-        await supabase.from('production_material_unit').delete().eq('id', testRollId);
-      }
+      await cleanupProductionTest(supabase, {
+        companyId: env.SUPABASE_COMPANY_ID,
+        productionOrderId: createdPpId,
+        spkIds: [createdCuttingSpkId, createdPrintingSpkId, createdRepairSpkId],
+        rollId: testRollId,
+        sourceDocumentId: createdSourceDocumentId,
+        productId: testProductId,
+        materialId: testMaterialId,
+        masterIds: createdMasterIds,
+      });
 
       console.log('✓ Cleanup data pengujian selesai. Integritas database terjaga utuh.');
     } catch (cleanErr) {
-      console.error('Peringatan saat cleanup data:', cleanErr);
+      console.error('Pembersihan data uji gagal:', cleanErr.message);
+      process.exitCode = 1;
     }
 
+    await supabase.auth.signOut({ scope: 'local' });
     if (ws) ws.close();
     chromeProcess.kill();
     await delay(1000);

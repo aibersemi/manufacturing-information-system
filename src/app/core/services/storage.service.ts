@@ -1,5 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
+import { CompanyService } from './company.service';
 
 export interface StorageUploadOptions {
   path?: string;
@@ -35,6 +36,7 @@ export const DEFAULT_STORAGE_BUCKET = 'manufacturing-media';
 })
 export class StorageService {
   private readonly supabase = inject(SupabaseService);
+  private readonly companyService = inject(CompanyService);
 
   /**
    * Mengunggah file ke Supabase Storage.
@@ -49,6 +51,8 @@ export class StorageService {
     const bucket = options?.bucket || DEFAULT_STORAGE_BUCKET;
     const resolvedName = fileName || (file instanceof File ? file.name : 'upload.bin');
     const sanitizedName = resolvedName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const companyId = await this.companyService.waitForActiveCompany();
+    if (!companyId) throw new Error('Pilih perusahaan aktif sebelum mengunggah file.');
 
     let filePath: string;
     if (options?.path) {
@@ -58,6 +62,14 @@ export class StorageService {
       const uniqueTimestamp = Date.now();
       filePath = `${folderPrefix}${uniqueTimestamp}-${sanitizedName}`;
     }
+    const segments = filePath.split('/');
+    if (filePath.includes('\\') || filePath.includes('\0') || segments.some((part) => !part || part === '.' || part === '..')) {
+      throw new Error('Path unggahan harus berupa path relatif yang valid.');
+    }
+    if (/^[0-9a-f-]{36}$/i.test(segments[0]) && segments[0] !== companyId) {
+      throw new Error('Path unggahan tidak sesuai perusahaan aktif.');
+    }
+    if (segments[0] !== companyId) filePath = `${companyId}/${filePath}`;
 
     const { data, error } = await this.supabase.client.storage
       .from(bucket)

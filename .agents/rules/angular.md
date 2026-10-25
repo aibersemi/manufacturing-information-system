@@ -51,7 +51,7 @@ Pedoman dan batasan wajib untuk pengembangan frontend Angular (v22+) dan integra
 ### Core Security & Credentials Isolation
 - Bundle frontend **HANYA** boleh memuat atau mengakses variabel lingkungan publik:
   - `SUPABASE_URL`
-  - `SUPABASE_ANON_KEY`
+  - `SUPABASE_PUBLISHABLE_KEY` (fallback `SUPABASE_ANON_KEY`)
 - **Dilarang keras** memasukkan `SERVICE_ROLE_KEY`, password database, webhook secrets, atau credential administratif ke dalam kode klien atau file bundle frontend.
 - Seluruh credential tetap tersimpan di `.env` dan tidak boleh di-hardcode.
 

@@ -1,3 +1,4 @@
+import { loadMisConfig } from './mis-package.mjs';
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -24,11 +25,11 @@ function parseEnv(filePath) {
   return env;
 }
 
-const env = parseEnv(envPath);
+const env = loadMisConfig();
 const appDomain = env.APP_DOMAIN || 'localhost';
 const baseUrl = `https://${appDomain}`;
-const superUser = env.SUPER_USER_USERNAME;
-const superPass = env.SUPER_USER_PASSWORD;
+const superUser = env.SUPABASE_USER_EMAIL;
+const superPass = env.SUPABASE_USER_PASSWORD;
 const email = superUser.includes('@') ? superUser : `${superUser}@${appDomain}`;
 
 console.log(`--- TEST LIVE BROWSER: ${baseUrl} ---`);
@@ -165,13 +166,13 @@ async function main() {
     const inspectScript = `
       (() => {
         const bodyText = document.body.innerText;
-        const hasAiber = bodyText.includes('PT Aiber Semikonduktor Indonesia') || bodyText.includes('AIBER001');
+        const hasAiber = bodyText.includes('Dummy Konveksi Semikonduktor Indonesia') || bodyText.includes('DUMMY_KONVEKSI');
         const hasOwnerRole = bodyText.includes('Owner / Direksi') || bodyText.includes('Owner');
         
         // Cari tombol dropdown switcher company
         const switcherBtn = document.querySelector('button[aria-haspopup="listbox"]') || 
                             document.querySelector('button[title="Ganti Perusahaan"]') ||
-                            Array.from(document.querySelectorAll('button')).find(b => b.innerText.includes('PT Aiber') || b.innerText.includes('AIBER001'));
+                            Array.from(document.querySelectorAll('button')).find(b => b.innerText.includes('Dummy Konveksi') || b.innerText.includes('DUMMY_KONVEKSI'));
 
         return {
           hasAiber,
@@ -192,7 +193,7 @@ async function main() {
     console.log(JSON.stringify(inspectRes.result.value, null, 2));
 
     if (!inspectRes.result.value.hasAiber) {
-      throw new Error('Nama company "PT Aiber Semikonduktor Indonesia" / "AIBER001" tidak ditemukan di UI!');
+      throw new Error('Nama company "Dummy Konveksi Semikonduktor Indonesia" / "DUMMY_KONVEKSI" tidak ditemukan di UI!');
     }
 
     if (!inspectRes.result.value.hasOwnerRole) {

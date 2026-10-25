@@ -29,9 +29,10 @@ Panduan wajib bagi agen AI saat bekerja di repositori ini.
 ## Application Guidance
 
 - Ikuti standar modern Angular v22+ (Signals, Standalone, Zoneless, Signal Forms, native control flow `@if`/`@for`, fungsi `input()`/`output()`, dan `inject()`). Aturan rinci tercantum pada [.agents/rules/angular.md](.agents/rules/angular.md).
-- Frontend dilarang keras memuat credential administratif seperti `SERVICE_ROLE_KEY`. Hanya `SUPABASE_URL` dan `SUPABASE_ANON_KEY` yang diizinkan untuk bundle client.
+- Sebelum pekerjaan Supabase, baca [paket dan kontrak akses MIS](docs/supabase.md). Frontend hanya memakai `SUPABASE_URL` dan `SUPABASE_PUBLISHABLE_KEY` (fallback `SUPABASE_ANON_KEY`). Password akun teknis, service-role key, dan password database tidak boleh masuk bundle client.
+- Migration dan operasi administratif dijalankan operator platform. Jangan membuka fallback ke `.env` Supabase, menjalankan MCP PostgreSQL administratif, atau membuat bridge privileged dari repository MIS. Gunakan `npm run types:db -- --from <artifact>` untuk impor tipe dari admin.
 - Gunakan skill lokal `.agents/skills/` (`angular-developer`, `angular-new-app`, `spartan`, `supabase`, `supabase-postgres-best-practices`) untuk panduan implementasi.
-- Gunakan MCP Server lokal ([.agents/mcp_config.json](.agents/mcp_config.json) - Angular CLI, Spartan, & Supabase DB MCP) untuk analisis proyek, dokumentasi komponen Spartan, eksekusi target, inspeksi database Supabase lokal, dan verifikasi build.
+- Gunakan MCP Server lokal ([.agents/mcp_config.json](.agents/mcp_config.json) - Angular CLI dan Spartan) untuk analisis proyek, dokumentasi komponen Spartan, eksekusi target, verifikasi build, serta analisis frontend.
 - Prioritaskan performa tinggi secara konsisten dengan mengoptimalkan change detection dan user experience melalui paradigma Angular modern.
 - Utamakan penulisan kode yang bersih, efisien, dan mudah dipelihara dengan senantiasa menerapkan API terbaru serta best practices mutakhir Angular v22+.
 
@@ -43,11 +44,11 @@ Panduan wajib bagi agen AI saat bekerja di repositori ini.
 - Seluruh pengujian interaktif, verifikasi browser, atau visual testing wajib dilakukan langsung ke domain produksi nyata `https://${APP_DOMAIN}`, bukan ke `localhost`.
 - Jika diminta backup simpan di `/data/backups/manufacturing-information-system/<jenis-backup>/<YYYYMMDD-HHMMSS>/`.
 - Logging mengikuti mekanisme native Ubuntu.
-- Untuk validasi browser manual gunakan global `agent-browser` langsung ke `https://${APP_DOMAIN}` dan credential pada `.env` bagian `# Super User`. Periksa `snapshot`, `console`, `errors`, serta `a11y` sesuai kebutuhan; simpan artefak QA di `tmp/browser-qa/<YYYYMMDD-HHMMSS>/` dan selalu tutup session setelah selesai.
+- Untuk validasi browser manual gunakan global `agent-browser` langsung ke `https://${APP_DOMAIN}` dan akun teknis paket pada `.env` (`SUPABASE_USER_EMAIL` dan `SUPABASE_USER_PASSWORD`). Periksa `snapshot`, `console`, `errors`, serta `a11y` sesuai kebutuhan; simpan artefak QA di `tmp/browser-qa/<YYYYMMDD-HHMMSS>/` dan selalu tutup session setelah selesai.
 
 ## Dummy Konveksi Test Data
 
 - Data bisnis milik tenant/workspace **Dummy Konveksi** merupakan data uji yang boleh dibuat, dibaca, dimutasi, atau dihapus tanpa konfirmasi tambahan untuk keperluan development, debugging, testing, atau E2E.
-- Seluruh mutasi dan penghapusan (termasuk *bulk delete*) wajib dibatasi dalam filter scope tenant **Dummy Konveksi** menggunakan identifier/credential dari environment variable (bukan nama tampilan).
+- Seluruh mutasi dan penghapusan (termasuk *bulk delete*) wajib dibatasi dalam filter scope tenant **Dummy Konveksi** menggunakan `SUPABASE_COMPANY_ID` dan akun teknis dari `.env` (bukan nama tampilan). File uji menggunakan prefix `SUPABASE_STORAGE_PREFIX` dan cleanup hanya menghapus record/path yang dibuat pada run terkait.
 - Izin ini murni berlaku untuk record data bisnis Dummy Konveksi; dilarang menyentuh tenant lain, user non-dummy, schema/migrasi database, konfigurasi runtime, secret/`.env`, maupun infrastruktur.
 - Pertahankan integritas referensial database dan jaga kerahasiaan credential Dummy Konveksi (jangan tuliskan di source code, dokumentasi, test output, atau commit message).

@@ -1,40 +1,14 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { createClient } from '@supabase/supabase-js';
+import { createMisTestClient, loadMisConfig } from './mis-package.mjs';
 
-const projectRoot = process.cwd();
-const envPath = path.join(projectRoot, '.env');
-
-function parseEnv(filePath) {
-  if (!fs.existsSync(filePath)) throw new Error('.env not found');
-  const content = fs.readFileSync(filePath, 'utf-8');
-  const env = {};
-  for (const line of content.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eqIdx = trimmed.indexOf('=');
-    if (eqIdx === -1) continue;
-    const key = trimmed.slice(0, eqIdx).trim();
-    let val = trimmed.slice(eqIdx + 1).trim();
-    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-      val = val.slice(1, -1);
-    }
-    env[key] = val;
-  }
-  return env;
-}
-
-const env = parseEnv(envPath);
-const appDomain = env.APP_DOMAIN || 'localhost';
+const env = loadMisConfig();
+const appDomain = env.APP_DOMAIN;
 const baseUrl = `https://${appDomain}`;
-const superUser = env.SUPER_USER_USERNAME;
-const superPass = env.SUPER_USER_PASSWORD;
-const email = superUser.includes('@') ? superUser : `${superUser}@${appDomain}`;
-
-const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { persistSession: false },
-});
+const email = env.SUPABASE_USER_EMAIL;
+const superPass = env.SUPABASE_USER_PASSWORD;
+const { client: supabase, user: currentTestUser } = await createMisTestClient(env);
 
 console.log('--- VERIFIKASI LIVE BROWSER FASE 4: PURCHASING & INVENTORY ---');
 console.log(`Target URL: ${baseUrl}`);
@@ -214,15 +188,12 @@ async function main() {
     const { data: companies, error: compErr } = await supabase
       .from('company')
       .select('id, name')
-      .eq('code', 'AIBER001')
+      .eq('id', env.SUPABASE_COMPANY_ID)
       .limit(1);
-    if (compErr || !companies || companies.length === 0) throw new Error('Company AIBER001 not found');
+    if (compErr || !companies || companies.length === 0) throw new Error('Perusahaan uji paket MIS tidak ditemukan');
     const companyId = companies[0].id;
 
-    const { data: usersData, error: userErr } = await supabase.auth.admin.listUsers();
-    if (userErr || !usersData || !usersData.users) throw new Error('Failed to list auth users');
-    const currentUser = usersData.users.find(u => u.email === email) || usersData.users[0];
-    const userId = currentUser.id;
+    const userId = currentTestUser.id;
 
     const { data: cashAccounts, error: cashErr } = await supabase
       .from('master_record')
@@ -465,39 +436,42 @@ async function main() {
         const { data: jEntries } = await supabase
           .from('journal_entry')
           .select('id')
+          .eq('company_id', env.SUPABASE_COMPANY_ID)
           .in('source_document_id', docIds);
         const jIds = (jEntries || []).map(j => j.id);
         if (jIds.length > 0) {
-          await supabase.from('journal_line').delete().in('journal_entry_id', jIds);
-          await supabase.from('journal_entry').delete().in('id', jIds);
+          await supabase.from('journal_line').delete().eq('company_id', env.SUPABASE_COMPANY_ID).in('journal_entry_id', jIds).throwOnError();
+          await supabase.from('journal_entry').delete().eq('company_id', env.SUPABASE_COMPANY_ID).in('id', jIds).throwOnError();
         }
 
-        await supabase.from('cash_movement').delete().in('source_document_id', docIds);
-        await supabase.from('subledger_entry').delete().in('source_document_id', docIds);
-        await supabase.from('inventory_movement').delete().in('source_document_id', docIds);
-        await supabase.from('production_material_unit').delete().in('source_document_id', docIds);
-        await supabase.from('business_document_line').delete().in('document_id', docIds);
-        await supabase.from('audit_log').delete().in('target_id', docIds);
+        await supabase.from('cash_movement').delete().eq('company_id', env.SUPABASE_COMPANY_ID).in('source_document_id', docIds).throwOnError();
+        await supabase.from('subledger_entry').delete().eq('company_id', env.SUPABASE_COMPANY_ID).in('source_document_id', docIds).throwOnError();
+        await supabase.from('inventory_movement').delete().eq('company_id', env.SUPABASE_COMPANY_ID).in('source_document_id', docIds).throwOnError();
+        await supabase.from('production_material_unit').delete().eq('company_id', env.SUPABASE_COMPANY_ID).in('source_document_id', docIds).throwOnError();
+        await supabase.from('business_document_line').delete().eq('company_id', env.SUPABASE_COMPANY_ID).in('document_id', docIds).throwOnError();
+        await supabase.from('audit_log').delete().eq('company_id', env.SUPABASE_COMPANY_ID).in('target_id', docIds).throwOnError();
 
         // Hapus payment document lebih dulu (merujuk purchase via source_document_id)
         if (createdPaymentId) {
-          await supabase.from('business_document').delete().eq('id', createdPaymentId);
+          await supabase.from('business_document').delete().eq('company_id', env.SUPABASE_COMPANY_ID).eq('id', createdPaymentId).throwOnError();
         }
         if (createdDocId) {
-          await supabase.from('business_document').delete().eq('id', createdDocId);
+          await supabase.from('business_document').delete().eq('company_id', env.SUPABASE_COMPANY_ID).eq('id', createdDocId).throwOnError();
         }
       }
 
       const masterIds = [createdSupplierId, createdMaterialId].filter(Boolean);
       if (masterIds.length > 0) {
-        await supabase.from('master_record').delete().in('id', masterIds);
+        await supabase.from('master_record').delete().eq('company_id', env.SUPABASE_COMPANY_ID).in('id', masterIds).throwOnError();
       }
 
       console.log('✓ Seluruh data uji berhasil dibersihkan! Database kembali 100% utuh.');
     } catch (cleanupErr) {
-      console.error('Peringatan: Gagal membersihkan data uji:', cleanupErr);
+      console.error('Pembersihan data uji gagal:', cleanupErr.message);
+      process.exitCode = 1;
     }
 
+    await supabase.auth.signOut({ scope: 'local' });
     if (ws) ws.close();
     chromeProcess.kill('SIGKILL');
   }

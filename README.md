@@ -2,6 +2,8 @@
 
 Manufacturing Information System (MIS) adalah aplikasi web internal multi-company untuk mengelola operasional manufaktur dan produksi dalam satu alur data: Master Data, Purchasing, Inventory, Production, Sales, Receivables, Finance, Accounting, Assets, dan Financial Reporting. Setiap transaksi bekerja dalam active company dan dilindungi oleh session, permission, role, tenant scope, serta object-state authorization pada server.
 
+MIS memakai paket koneksi workspace dengan akun teknis yang dibatasi pada perusahaan uji. Operasi administratif Supabase berada pada platform; proyek ini hanya menyimpan konfigurasi aplikasi dan kredensial pengguna yang terbatas.
+
 ## Documentation
 
 Login hanya meminta identitas dan password. Perusahaan dipilih setelah autentikasi dari penugasan pengguna; registry workspace platform membatasi akses MIS dari aplikasi lain yang memakai Supabase yang sama.

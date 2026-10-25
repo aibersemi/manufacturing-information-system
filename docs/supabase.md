@@ -1,197 +1,91 @@
-# Supabase Infrastructure and Integration
+# MIS Supabase Package
 
-Dokumen ini menjelaskan status arsitektur, verifikasi endpoint, konfigurasi variabel lingkungan (*environment variables*), dan operasional stack Supabase *self-hosted* yang digunakan oleh Manufacturing Information System (MIS).
+Paket ini menghubungkan aplikasi MIS ke workspace yang sudah ada pada Supabase bersama. Schema bisnisnya `public`; tabel dan RPC MIS sudah tersedia. Akun teknis hanya menjadi owner pada perusahaan uji yang ditetapkan admin. Pengguna produksi tetap login dengan akun masing-masing. Akun teknis tidak dapat menambahkan pengguna luar ke perusahaan uji; penambahan anggota diajukan kepada admin.
 
-## Container Status & Services
+## Configuration
 
-Layanan Supabase berjalan menggunakan Docker Compose pada unit systemd `supabase.service` di direktori host `/opt/services/supabase`. Seluruh kontainer berada dalam status sehat (*healthy*):
+Semua nilai berada di `.env`. URL dan publishable key boleh digunakan frontend. Password akun teknis, sesi, dan token tidak boleh masuk frontend, log, atau Git. Paket tidak menyediakan service-role key, password database, URI PostgreSQL administratif, atau login Studio.
 
-| Kontainer | Layanan | Keterangan |
-| :--- | :--- | :--- |
-| `supabase-envoy` | API Gateway & Ingress | Gateway utama rute API & Studio via reverse proxy |
-| `supabase-pooler` | Supavisor (Connection Pooler) | Connection pooler untuk PostgreSQL |
-| `supabase-db` | PostgreSQL 17 Engine | Database engine PostgreSQL 17 |
-| `supabase-studio` | Web Dashboard UI | Dashboard administrasi web (via Envoy Gateway) |
-| `supabase-auth` | GoTrue Auth Server | Layanan autentikasi & manajemen token JWT (via Envoy Gateway) |
-| `supabase-rest` | PostgREST API | RESTful API otomatis berbasis skema database (via Envoy Gateway) |
-| `supabase-realtime` | WebSocket Realtime Server | Sinkronisasi data real-time via WebSocket (via Envoy Gateway) |
-| `supabase-storage` | Storage & S3 API | Penyimpanan file objek & S3-compatible API (via Envoy Gateway) |
-| `supabase-edge-functions` | Deno Edge Runtime | Runtime untuk serverless Edge Functions (via Envoy Gateway) |
-| `supabase-meta` | Postgres Metadata Manager | Manajemen metadata database untuk Studio (via Envoy Gateway) |
-| `supabase-imgproxy` | Image Resizer | Optimasi dan resizing file gambar (via Envoy Gateway) |
+| Variabel | Kegunaan |
+| --- | --- |
+| `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` | Koneksi SDK publik |
+| `SUPABASE_SCHEMA` | Schema bisnis MIS |
+| `SUPABASE_WORKSPACE_ID`, `SUPABASE_WORKSPACE_SLUG` | Identitas workspace |
+| `SUPABASE_USER_ID`, `SUPABASE_USER_EMAIL`, `SUPABASE_USER_PASSWORD` | Akun teknis pengembangan |
+| `SUPABASE_COMPANY_ID` | Perusahaan uji yang diizinkan |
+| `SUPABASE_STORAGE_BUCKET`, `SUPABASE_STORAGE_PREFIX` | Bucket dan prefix file uji |
 
-## Supabase Storage & Media Management
+## Windows Connection
 
-Sistem manufaktur menggunakan Supabase Storage terintegrasi untuk menyimpan file biner operasional (foto QC, rekaman SOP proses perakitan semikonduktor, diagram skematik, dan laporan kerja PDF).
+Gunakan Node.js 22 atau lebih baru. Salin paket ke folder pengembangan dan pasang SDK dengan versi terkunci:
 
-### Bucket Konfigurasi
-
-| Parameter | Nilai / Konfigurasi | Keterangan |
-| :--- | :--- | :--- |
-| **Bucket ID** | `manufacturing-media` | Bucket privat utama sistem |
-| **Akses Publik** | `false` (Private) | Wajib autentikasi & token JWT / Signed URL |
-| **Batas Ukuran File** | `52428800` bytes (50 MB) | Mencegah beban kapasitas berlebih |
-| **Allowed MIME Types** | `image/png`, `image/jpeg`, `image/webp`, `image/svg+xml`, `video/mp4`, `video/webm`, `application/pdf` | Dibatasi hanya file media dan dokumen teknis yang sah |
-
-### Kebijakan Row Level Security (RLS) Storage
-
-Akses bucket dan object memerlukan membership aktif workspace MIS pada registry platform. Login saja tidak memberikan akses. Akun dari workspace lain tidak dapat membaca daftar bucket MIS, mengunduh, mengunggah, mengganti, atau menghapus object MIS.
-
-Script berikut mengonfigurasi bucket dan memanggil `tenant_private.configure_storage_policies()` milik platform. Migration workspace platform harus sudah diterapkan; script tidak membuat policy `authenticated` yang berlaku tanpa batas workspace.
-
-```bash
-node scripts/setup-storage.mjs
+```powershell
+npm install --save-exact @supabase/supabase-js@2.116.0
 ```
 
-## Database Schema & Multi-Company Isolation
+Simpan contoh berikut sebagai `check-supabase.mjs`:
 
-Database PostgreSQL 17 pada stack Supabase mengelola 40 tabel inti yang mencakup modul Administrasi, Akuntansi & Keuangan, Manufaktur & Produksi Semikonduktor, Logistik & Inventaris, serta Notifikasi & Audit.
-
-### Struktur Skema & Row Level Security (RLS)
-
-Registry privat platform memberikan akses aplikasi MIS, kemudian RLS `company_id` menentukan perusahaan yang dapat diakses pengguna. Policy aplikasi bersifat restrictive agar policy perusahaan tidak dapat membuka akses lintas aplikasi. `list_available_system_users()` hanya menampilkan identitas anggota MIS; assignment menolak target dari workspace lain. Helper `bootstrap_company_data` hanya dapat dijalankan oleh wrapper backend yang berwenang.
-
-- **Isolasi Multi-Company**: Seluruh data operasional diisolasi berbasis kolom `company_id` dengan Row Level Security (`FORCE ROW LEVEL SECURITY`) aktif pada setiap tabel.
-- **Kebijakan Akses Pengguna**: Hak akses pengguna terhadap data suatu entitas diverifikasi melalui relasi tabel `user_company_assignment` yang dioptimalkan dengan fungsi `SECURITY DEFINER` (`public.get_user_company_ids()` dan `public.is_company_owner()`) guna mencegah rekursi kebijakan RLS.
-- **Prosedur Bootstrap Otomatis**: Prosedur tersimpan `bootstrap_company_data(p_company_id uuid, p_creator_user_id uuid)` secara otomatis mengisi data awal (*seed*) saat entitas perusahaan baru dibentuk, meliputi:
-  - 11 Unit Pengukuran (*Unit of Measure* / UOM).
-  - 9 Kategori Konfigurasi (*Configuration Category*).
-  - 106 Akun Buku Besar (*Chart of Accounts* / COA) dengan struktur hierarki 3 level.
-  - 21 Pemetaan Akun Akuntansi (*Accounting Mapping*) untuk integrasi otomatis jurnal transaksi.
-  - 53 Pemetaan Laporan Keuangan (*Financial Report Mapping*) untuk Neraca & Laba Rugi.
-  - 1 Periode Akuntansi Awal (*Accounting Period*).
-  - 273 Matriks Izin Akses (*Access Permissions*) untuk 6 peran pengguna (*owner*, *kepala_konveksi*, *finance*, *operator_potong*, *operator_jahit*, *operator_finishing*).
-  - 13 Urutan Nomor Dokumen (*Document Sequence*) dengan format penomoran standar.
-
-### Eksekusi Migrasi & Database Schema
-
-Daftar file migrasi skema database PostgreSQL Supabase yang diterapkan pada sistem:
-
-| File Migrasi | Cakupan & Keterangan |
-| :--- | :--- |
-| `supabase/migrations/20260913000001_foundation_schema.sql` | Skema fondasi 40 tabel inti, enum, RLS policies, trigger audit, dan fungsi isolasi multi-company. |
-| `supabase/migrations/20260913000002_settings_functions.sql` | Stored procedures bootstrap company, manajemen penugasan pengguna, dan matriks hak akses. |
-| `supabase/migrations/20260913000003_purchasing_inventory_functions.sql` | Stored procedures siklus pengadaan (materials, supplies, non-production, payments) & mutasi inventori. |
-| `supabase/migrations/20260913000004_production_spk_functions.sql` | Stored procedures manajemen PP, SPK 4 tahap, potong kain, sablon, reservasi bundle, dan repair cases. |
-| `supabase/migrations/20260913000005_sales_receivables_functions.sql` | Stored procedures pesanan penjualan (SO), faktur penjualan, penerimaan kas piutang, dan pemenuhan. |
-| `supabase/migrations/20260913000006_finance_accounting_functions.sql` | Stored procedures buku besar, transfer kas, biaya operasional, pembayaran upah, amortisasi prepaid, SA, & penutupan periode. |
-| `supabase/migrations/20260913000007_fixed_assets_functions.sql` | Stored procedures pengadaan aset CapEx, register fisik, depresiasi periodik garis lurus/saldo menurun, & pelepasan aset. |
-| `supabase/migrations/20260913000008_reporting_reconciliation_functions.sql` | Stored procedures laporan keuangan (Neraca, Laba Rugi, Arus Kas, Neraca Saldo, Buku Besar, HPP) & rekonsiliasi 6 pos subledger-GL. |
-| `supabase/migrations/20260920000001_company_management_rpc.sql` | RPC backend pengelolaan profil perusahaan, edit fasilitas, toggle status aktif, dan statistik tenant. |
-| `supabase/migrations/20260920000002_public_active_companies_rpc.sql` | Kontrak RPC daftar perusahaan; akses aktifnya dibatasi pada perusahaan yang ditugaskan setelah autentikasi. |
-| `supabase/migrations/20260920000003_fix_settings_functions_ambiguity.sql` | Perbaikan ambiguitas kolom query settings dan audit log tenant. |
-| `supabase/migrations/20260920000004_production_sewing_packing_rpc.sql` | Menambahkan RPC atomik `confirm_operator_sewing` dan `confirm_operator_packing` untuk alur produksi jahit & kemas konveksi: konfirmasi hasil pengerjaan bundle, alokasi sukses/perbaikan/reject, pembentukan repair case, mutasi persediaan `sewn_wip` dan `packed_finished_goods`, serta pembukuan upah borongan operator (`wage_liability`). |
-
-- Script eksekusi migrasi mandiri:
-  ```bash
-  node scripts/apply-migration.mjs
-  # Atau jalankan migrasi file tertentu secara spesifik:
-  node scripts/apply-migration.mjs supabase/migrations/20260920000004_production_sewing_packing_rpc.sql
-  ```
-- Generate ulang kontrak tipe TypeScript skema database ke `src/types/database.types.ts`:
-  ```bash
-  npm run types:db
-  ```
-
-## Endpoint & Network Verification
-
-Hasil pengujian konektivitas endpoint dan jaringan:
-
-1. **Database PostgreSQL**:
-   - Perintah pengujian:
-     ```bash
-     pg_isready -h "${POSTGRES_HOST}" -p "${POSTGRES_PORT}"
-     ```
-   - Status: Koneksi berhasil diterima (`accepting connections`) melalui port connection pooler tanpa konflik dengan PostgreSQL lokal server.
-2. **Dashboard Studio Web**:
-   - Endpoint: `${SUPABASE_DASHBOARD_URL}`
-   - Status: `HTTP/2 200 OK` (Web Dashboard termuat dengan baik).
-3. **REST API Gateway**:
-   - Endpoint: `${SUPABASE_URL}/rest/v1/`
-   - Status: `HTTP/2 200 OK` (Swagger OpenAPI schema responsif menggunakan key autentikasi yang valid).
-4. **Auto-Start Server**:
-   - Systemd Service: Unit systemd Supabase telah diaktifkan (`enabled`), sehingga seluruh stack Supabase otomatis menyala saat host reboot.
-
-## Configuration & Environment Variables
-
-Kredensial dan konfigurasi koneksi didefinisikan di dalam file `.env`. Gunakan variabel-variabel berikut untuk menghubungkan modul aplikasi, backend ORM, migrasi skema, atau client SDK:
-
-### Dashboard Web Studio
-
-| Nama Variabel | Keterangan |
-| :--- | :--- |
-| `SUPABASE_DASHBOARD_URL` | URL akses Web Studio Dashboard *(disimpan di `.env`)* |
-| `SUPABASE_DASHBOARD_USERNAME` | Username login Dashboard *(disimpan di `.env`)* |
-| `SUPABASE_DASHBOARD_PASSWORD` | Password login Dashboard *(disimpan di `.env`)* |
-
-### Koneksi Database Langsung (PostgreSQL / ORM / DBeaver)
-
-| Nama Variabel | Keterangan |
-| :--- | :--- |
-| `POSTGRES_HOST` | Host database *(disimpan di `.env`)* |
-| `POSTGRES_PORT` | Port host untuk session mode via Supavisor *(disimpan di `.env`)* |
-| `POSTGRES_PORT_TRANSACTION` | Port host untuk transaction mode via Supavisor *(disimpan di `.env`)* |
-| `POSTGRES_DB` | Nama database utama *(disimpan di `.env`)* |
-| `POSTGRES_USER` | Username database *(disimpan di `.env`)* |
-| `POSTGRES_PASSWORD` | Password database *(disimpan di `.env`)* |
-| `DATABASE_URL` | Format URI koneksi lengkap database: `postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}` |
-
-### API Keys untuk Client / Frontend & Backend Services
-
-| Nama Variabel | Scope Akses | Keterangan |
-| :--- | :--- | :--- |
-| `SUPABASE_URL` | Publik / Backend | URL root endpoint API Supabase Gateway *(disimpan di `.env`)* |
-| `SUPABASE_ANON_KEY` | Client / Frontend | Publishable API key publik dengan pembatasan hak akses berbasis RLS (*Row Level Security*) *(disimpan di `.env`)* |
-| `SUPABASE_JWT_ANON_KEY` | Client / Frontend | Token JWT format legasi untuk kompatibilitas client tertentu *(disimpan di `.env`)* |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server-Side Only | Secret key dengan hak akses penuh (*bypass RLS*). **Dilarang keras mengekspos variabel ini ke client-side/browser.** *(disimpan di `.env`)* |
-
-## Application Integration Examples
-
-### Supabase Client SDK (JavaScript / TypeScript)
-
-```typescript
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+```js
+import { createClient } from '@supabase/supabase-js'
+const env = process.env
+const client = createClient(env.SUPABASE_URL, env.SUPABASE_PUBLISHABLE_KEY, {
+  db: { schema: 'public' },
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+})
+const { error: loginError } = await client.auth.signInWithPassword({
+  email: env.SUPABASE_USER_EMAIL, password: env.SUPABASE_USER_PASSWORD,
+})
+if (loginError) throw new Error('Login MIS gagal; hubungi admin tanpa membagikan password.')
+try {
+  const { data, error } = await client.from('company').select('id, code, name')
+    .eq('id', env.SUPABASE_COMPANY_ID)
+  if (error || data.length !== 1) throw new Error('Perusahaan uji tidak dapat diakses.')
+  console.log('Koneksi MIS dan akses perusahaan uji berhasil.')
+} finally {
+  await client.auth.signOut({ scope: 'local' })
+}
 ```
 
-### Database ORM / Driver (Prisma / Drizzle / Node-Postgres)
-
-Gunakan variabel `DATABASE_URL` yang tersusun dari variabel database:
-
-```bash
-# Format Connection String
-DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
+```powershell
+node --env-file=.env check-supabase.mjs
 ```
 
-## Operational Commands
+Filter pada client hanya memilih data. RLS, guard RPC, dan registry perusahaan di server tetap menentukan hak akses ketika filter atau ID lokal diubah.
 
-Stack Supabase dikelola dari direktori `/opt/services/supabase`. Perintah operasional sehari-hari dapat dijalankan menggunakan script pembantu `run.sh` di folder tersebut atau melalui `systemctl`:
+## Storage
 
-- **Cek Status Layanan**:
-  ```bash
-  sudo systemctl status supabase
-  # atau
-  cd /opt/services/supabase && sh run.sh status
-  ```
-- **Melihat Log Kontainer**:
-  ```bash
-  cd /opt/services/supabase && sh run.sh logs
-  # Contoh melihat log service tertentu (misal auth):
-  cd /opt/services/supabase && sh run.sh logs auth
-  ```
-- **Restart Stack**:
-  ```bash
-  sudo systemctl restart supabase
-  # atau
-  cd /opt/services/supabase && sh run.sh restart
-  ```
-- **Menghentikan Stack**:
-  ```bash
-  sudo systemctl stop supabase
-  # atau
-  cd /opt/services/supabase && sh run.sh stop
-  ```
+Gunakan SDK sesudah login dengan bucket dari konfigurasi. Path file harus berbentuk `${SUPABASE_STORAGE_PREFIX}/<folder>/<nama-file>`. Bucket MIS membatasi MIME type; gunakan PNG/JPEG/WebP/SVG, PDF, atau format video yang diizinkan admin, bukan file text/plain untuk pemeriksaan upload.
+
+```js
+const path = `${env.SUPABASE_STORAGE_PREFIX}/checks/${crypto.randomUUID()}.png`
+const bucket = client.storage.from(env.SUPABASE_STORAGE_BUCKET)
+// pngBytes berisi file PNG valid milik pengujian.
+const { error } = await bucket.upload(path, pngBytes, { contentType: 'image/png' })
+if (error) throw new Error('Upload file uji gagal.')
+// Setelah selesai, hapus hanya path yang dibuat pada run ini.
+await bucket.remove([path])
+```
+
+Listing, download, update, delete, serta pembuatan signed URL untuk prefix lain ditolak. Signed URL yang sudah diterbitkan berlaku sampai expiry; jangan membagikannya kepada pihak yang tidak berhak.
+
+## Database Changes and Types
+
+Developer menulis usulan migration di repository MIS. Admin meninjau dan menerapkan file tersebut dari platform, lalu menyediakan artifact `database.types.ts`. Untuk mengimpor artifact ke source MIS:
+
+```powershell
+npm run types:db -- --from .\database.types.ts
+```
+
+Command aplikasi tidak menjalankan migration, membuat pengguna Auth, mengatur bucket, atau membuka koneksi PostgreSQL administratif. Minta operasi tersebut kepada admin platform.
+
+## Troubleshooting
+
+- Login gagal: verifikasi konfigurasi bersama admin; alamat akun teknis adalah identitas login, bukan mailbox.
+- `403` atau kode `42501`: operasi berada di luar workspace, perusahaan, atau actor yang diizinkan. Jangan mencoba service-role key sebagai pengganti.
+- Hasil kosong pada perusahaan lain atau Storage `404`: data dapat tersembunyi oleh RLS; kondisi ini tidak membuktikan object tersebut tidak ada.
+- `SUPABASE_ANON_KEY` masih diterima aplikasi sebagai fallback konfigurasi lama; paket menggunakan `SUPABASE_PUBLISHABLE_KEY`.
+- Paket menyediakan pembatas aplikasi dan kredensial; administrator OS/server tetap berada di luar batas tersebut.
+
+## Platform Administration
+
+Migration database, provisioning akun Auth, konfigurasi bucket, ekspor tipe, dan backup database dijalankan operator dari repository platform Supabase menggunakan `python3 scripts/mis-admin.py`. Kredensial administratif tidak disimpan dalam proyek MIS. Entry point administratif lama hanya memberikan petunjuk command pengganti dan keluar tanpa operasi privileged.

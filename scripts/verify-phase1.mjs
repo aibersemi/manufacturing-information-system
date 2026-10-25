@@ -1,3 +1,4 @@
+import { loadMisConfig } from './mis-package.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
@@ -24,9 +25,9 @@ function parseEnv(filePath) {
   return env;
 }
 
-const env = parseEnv(envPath);
+const env = loadMisConfig();
 const supabaseUrl = env.SUPABASE_URL;
-const anonKey = env.SUPABASE_ANON_KEY;
+const anonKey = env.SUPABASE_PUBLISHABLE_KEY;
 
 console.log('--- VERIFIKASI FASE 1: AUTH, RLS & DATA POSTGRESQL ---');
 console.log('Supabase URL:', supabaseUrl);
@@ -35,8 +36,8 @@ const supabase = createClient(supabaseUrl, anonKey);
 
 async function runVerification() {
   const appDomain = env.APP_DOMAIN || 'localhost';
-  const superUser = env.SUPER_USER_USERNAME;
-  const superPass = env.SUPER_USER_PASSWORD;
+  const superUser = env.SUPABASE_USER_EMAIL;
+  const superPass = env.SUPABASE_USER_PASSWORD;
   const email = superUser.includes('@') ? superUser : `${superUser}@${appDomain}`;
 
   console.log(`1. Melakukan login sebagai ${email}...`);
@@ -49,7 +50,7 @@ async function runVerification() {
     throw new Error(`Auth login gagal: ${authError.message}`);
   }
 
-  console.log(`✓ Login berhasil. User ID: ${authData.user.id}`);
+  console.log('✓ Login akun teknis berhasil.');
 
   console.log('2. Menguji query tabel public.company via RLS client terautentikasi...');
   const { data: companies, error: compError } = await supabase
@@ -122,11 +123,11 @@ async function runVerification() {
   console.log(`✓ Berhasil membaca matriks izin (sample 5):`, permissions.map(p => p.menu_key));
 
   console.log('8. Sign out...');
-  await supabase.auth.signOut();
+  await supabase.auth.signOut({ scope: 'local' });
 
   console.log('9. Menguji login sebagai E2E user...');
-  const e2eUser = env.E2E_USER_USERNAME;
-  const e2ePass = env.E2E_USER_PASSWORD;
+  const e2eUser = env.SUPABASE_USER_EMAIL;
+  const e2ePass = env.SUPABASE_USER_PASSWORD;
   const e2eEmail = e2eUser.includes('@') ? e2eUser : `${e2eUser}@${appDomain}`;
 
   const { data: e2eAuth, error: e2eError } = await supabase.auth.signInWithPassword({
@@ -136,12 +137,12 @@ async function runVerification() {
   if (e2eError) {
     throw new Error(`e2e login gagal: ${e2eError.message}`);
   }
-  console.log(`✓ Login e2e berhasil. User ID: ${e2eAuth.user.id}`);
+  console.log('✓ Login e2e akun teknis berhasil.');
 
   const { data: e2eCompanies } = await supabase.from('company').select('*');
   console.log(`✓ e2e user dapat mengakses ${e2eCompanies?.length} company.`);
 
-  await supabase.auth.signOut();
+  await supabase.auth.signOut({ scope: 'local' });
   console.log('✓ Seluruh verifikasi fungsional Fase 1 Sukses 100%!');
 }
 

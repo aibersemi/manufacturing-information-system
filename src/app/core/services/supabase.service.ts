@@ -14,6 +14,7 @@ export class SupabaseService {
       environment.supabaseUrl,
       environment.supabaseAnonKey,
       {
+        db: { schema: 'public' },
         auth: {
           flowType: 'pkce',
           autoRefreshToken: true,
