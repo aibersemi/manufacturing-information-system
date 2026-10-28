@@ -1,13 +1,18 @@
 [Unit]
 Description=Manufacturing Information System (MIS) Frontend (Production)
 Documentation=file:/opt/services/manufacturing-information-system/README.md
-After=network-online.target
+Requires=wg-quick@wg0.service
+After=network-online.target wg-quick@wg0.service
 Wants=network-online.target
 
 [Service]
 Type=simple
+User=mis-web
+Group=mis-web
 WorkingDirectory=/opt/services/manufacturing-information-system
-EnvironmentFile=/opt/services/manufacturing-information-system/.env
+Environment=NODE_ENV=production
+Environment=APP_BIND_HOST=10.50.0.2
+Environment=APP_PORT=8015
 ExecStart=/usr/bin/node scripts/serve-prod.mjs
 Restart=on-failure
 RestartSec=5s
@@ -16,6 +21,31 @@ TimeoutStopSec=30s
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=mis-frontend
+
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+ReadOnlyPaths=/opt/services/manufacturing-information-system/dist /opt/services/manufacturing-information-system/scripts/serve-prod.mjs
+InaccessiblePaths=/run/docker.sock /opt/services/manufacturing-information-system/.env
+UMask=0027
+MemoryHigh=128M
+MemoryMax=256M
 
 [Install]
 WantedBy=multi-user.target

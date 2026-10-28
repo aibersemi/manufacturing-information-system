@@ -13,13 +13,13 @@ Dokumen ini adalah panduan operasional (*canonical runbook*) untuk Manufacturing
 | **Production Server Script** | `scripts/serve-prod.mjs` (Node.js Native HTTP Server, SPA fallback, Gzip) |
 | **Production Build Directory** | `dist/manufacturing-information-system/browser` |
 | **Syslog Identifier** | `mis-frontend` |
-| **Internal Listen Host & Port** | `${APP_BIND_HOST}`:`${APP_PORT}` |
-| **WireGuard Private Endpoint** | `${APP_WIREGUARD_IP}`:`${APP_PORT}` |
+| **Internal Listen Host & Port** | `10.50.0.2:8015` |
+| **Runtime Identity** | `mis-web:mis-web` tanpa login, group operator, Docker, atau sudo |
 | **Public Origin** | `https://${APP_DOMAIN}` |
 | **Edge Reverse Proxy** | Caddy di VPS `${TUNNEL_VPS_HOST}` (lihat [Public Routing and Edge Proxy](routing-public.md)) |
 | **Backend & Database** | Supabase Self-Hosted di `/opt/services/supabase` (unit `supabase.service`) |
 
-Layanan berjalan di atas host Ubuntu native secara terkelola melalui *systemd*, menyajikan berkas build statis Angular dengan kompresi gzip serta fallback SPA (`index.html`) untuk routing sisi klien. Layanan dikonfigurasi untuk menyala otomatis saat server *boot/reboot* dan melakukan *auto-restart* jika terjadi *failure*.
+Layanan berjalan di atas host Ubuntu native melalui *systemd*, menyajikan berkas build statis Angular dengan kompresi gzip serta fallback SPA (`index.html`). Runtime menunggu WireGuard, hanya bind ke `10.50.0.2:8015`, tidak memuat `.env`, tidak memiliki akses tulis, dan dijalankan dengan systemd hardening serta batas memori.
 
 ## Operational Rules
 
@@ -37,7 +37,7 @@ Layanan berjalan di atas host Ubuntu native secara terkelola melalui *systemd*, 
 
 ## Environment Configuration
 
-Aplikasi menggunakan file `.env` sebagai sumber kebenaran tunggal untuk seluruh variabel lingkungan. File `.env` bersifat privat dan diabaikan oleh Git (*untracked*).
+Aplikasi menggunakan file `.env` sebagai sumber build dan tooling operator. File `.env` bersifat privat dan diabaikan oleh Git (*untracked*); service runtime tidak memuat file ini karena server static hanya memerlukan bind host dan port yang ditetapkan langsung pada unit systemd.
 
 ### Variabel Lingkungan Utama
 
@@ -46,7 +46,7 @@ Aplikasi menggunakan file `.env` sebagai sumber kebenaran tunggal untuk seluruh 
 | `APP_DOMAIN` | Routing | Domain publik aplikasi (diarahkan via Caddy VPS) |
 | `APP_WIREGUARD_IP` | Network | IP interface WireGuard server aplikasi |
 | `APP_PORT` | Runtime | Port internal aplikasi untuk melayani request HTTP |
-| `APP_BIND_HOST` | Runtime | IP host listen (`0.0.0.0` atau `127.0.0.1`) |
+| `APP_BIND_HOST` | Build/tooling | Referensi host untuk tooling; production runtime menetapkan `10.50.0.2` pada unit systemd |
 | `SUPABASE_URL` | Frontend / Client | URL root endpoint API Supabase Gateway |
 | `SUPABASE_PUBLISHABLE_KEY` | Frontend / Client | Public API Key Supabase yang tunduk pada RLS |
 | `SUPABASE_ANON_KEY` | Frontend / Client | Fallback kompatibilitas untuk konfigurasi client lama |
@@ -164,9 +164,9 @@ Layanan menulis log operasional langsung ke `stdout`/`stderr`, yang ditangkap se
 Untuk memastikan aplikasi aktif, dapat diakses, dan menyajikan berkas dengan aman, lakukan pengujian bertingkat:
 
 ### 1. Health Check Lokal / Internal Host
-Uji apakah server Node.js lokal merespons pada port internal `${APP_PORT}`:
+Uji apakah server Node.js merespons pada endpoint WireGuard production:
 ```bash
-curl -I "http://${APP_BIND_HOST:-127.0.0.1}:${APP_PORT}/login"
+curl -I "http://10.50.0.2:8015/login"
 ```
 Ekspektasi respons:
 - Status `HTTP/1.1 200 OK`

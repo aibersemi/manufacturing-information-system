@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "packageManager": "npm@11.17.0",
+  "engines": {
+    "node": ">=24.22.1 <25",
+    "npm": ">=11.17.0 <12"
+  },
   "scripts": {
     "ng": "ng",
     "prestart": "node scripts/generate-env.mjs",
