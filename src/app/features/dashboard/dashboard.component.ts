@@ -78,10 +78,11 @@ export class DashboardComponent implements OnInit {
   });
 
   readonly userRole = computed(() => {
+    const assignedRole = this.companyService.userRoles?.()?.[0];
+    if (assignedRole) return assignedRole;
     const user = this.currentUser();
     const appRole = user?.app_metadata?.['role'] as string | undefined;
-    const userRole = user?.user_metadata?.['role'] as string | undefined;
-    return appRole || userRole || 'operator';
+    return appRole || 'operator';
   });
 
   readonly companyName = computed(() => {

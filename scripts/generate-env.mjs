@@ -61,6 +61,6 @@ export const environment = {
 };
 `;
 
-fs.writeFileSync(path.join(environmentsDir, 'environment.ts'), envContent);
+fs.writeFileSync(path.join(environmentsDir, 'environment.ts'), envProdContent);
 fs.writeFileSync(path.join(environmentsDir, 'environment.development.ts'), envContent);
 console.log('Environment files generated successfully from .env.');

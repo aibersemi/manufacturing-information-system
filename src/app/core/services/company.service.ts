@@ -159,12 +159,12 @@ export class CompanyService {
     if (companyId) {
       this.storeCompanyId(companyId);
       const assignment = assignments.find((a) => a.company_id === companyId);
-      const roles = assignment?.roles ?? [];
+      const roles = [...(assignment?.roles ?? [])];
 
-      // Fallback jika user adalah owner sistem di metadata
+      // Fallback hanya dari app_metadata yang dikontrol server (bukan user_metadata yang dapat diubah klien)
       const user = this.authService.currentUser();
-      const metaRole = (user?.app_metadata?.['role'] || user?.user_metadata?.['role']) as string | undefined;
-      if (metaRole === 'owner' && !roles.includes('owner')) {
+      const appRole = user?.app_metadata?.['role'] as string | undefined;
+      if (appRole === 'owner' && !roles.includes('owner')) {
         roles.push('owner');
       }
 

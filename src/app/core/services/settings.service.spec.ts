@@ -192,6 +192,21 @@ describe('SettingsService', () => {
       );
     });
 
+    it('should reject password change without combination of letters and digits', async () => {
+      await expect(service.changePassword('old-password', 'onlyletters')).rejects.toThrow(
+        'Kata sandi baru harus mengandung kombinasi huruf dan angka.',
+      );
+      await expect(service.changePassword('old-password', '1234567890')).rejects.toThrow(
+        'Kata sandi baru harus mengandung kombinasi huruf dan angka.',
+      );
+    });
+
+    it('should reject password change when new password equals current password', async () => {
+      await expect(service.changePassword('SamePass123', 'SamePass123')).rejects.toThrow(
+        'Kata sandi baru tidak boleh sama dengan kata sandi saat ini.',
+      );
+    });
+
     it('should verify old password before updating password', async () => {
       mockSupabase.client.auth.signInWithPassword.mockResolvedValue({ error: { message: 'Invalid login' } });
 

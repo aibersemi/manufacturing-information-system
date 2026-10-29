@@ -143,6 +143,16 @@ export class ProfileComponent implements OnInit {
       return;
     }
 
+    if (!/[a-zA-Z]/.test(next) || !/[0-9]/.test(next)) {
+      this.passwordError.set('Kata sandi baru harus mengandung kombinasi huruf dan angka.');
+      return;
+    }
+
+    if (next === curr) {
+      this.passwordError.set('Kata sandi baru tidak boleh sama dengan kata sandi saat ini.');
+      return;
+    }
+
     if (next !== conf) {
       this.passwordError.set('Konfirmasi kata sandi baru tidak cocok.');
       return;

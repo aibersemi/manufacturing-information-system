@@ -156,4 +156,20 @@ describe('CompanyService', () => {
     expect(service.activeCompanyId()).toBe('c-2');
     expect(service.activeCompany()?.code).toBe('WAFER002');
   });
+
+  it('should not trust user_metadata.role for owner privilege escalation', async () => {
+    mockCurrentUser.set({
+      id: 'u-1',
+      email: 'operator@example.com',
+      app_metadata: {},
+      user_metadata: { role: 'owner' },
+    } as unknown);
+
+    await service.loadUserCompanies();
+    service.setActiveCompany('c-2');
+
+    expect(service.activeCompanyId()).toBe('c-2');
+    expect(service.userRoles()).toEqual(['head']);
+    expect(service.isOwner()).toBe(false);
+  });
 });

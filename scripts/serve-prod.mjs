@@ -1,6 +1,7 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import { pipeline } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 import zlib from 'node:zlib';
 
@@ -42,16 +43,29 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-  let pathname = decodeURIComponent(url.pathname);
+  let pathname;
+  try {
+    const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+    pathname = decodeURIComponent(url.pathname);
+  } catch {
+    res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Bad Request');
+    return;
+  }
+
+  if (pathname.includes('\0')) {
+    res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Bad Request');
+    return;
+  }
 
   // Security: prevent path traversal
   const safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, '');
-  let filePath = path.join(DIST_DIR, safePath);
+  let filePath = path.resolve(DIST_DIR, `.${path.sep}${safePath}`);
 
   // Verify within DIST_DIR
-  if (!filePath.startsWith(DIST_DIR)) {
-    res.writeHead(403, { 'Content-Type': 'text/plain' });
+  if (filePath !== DIST_DIR && !filePath.startsWith(DIST_DIR + path.sep)) {
+    res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('Forbidden');
     return;
   }
@@ -87,6 +101,9 @@ const server = http.createServer((req, res) => {
     'Content-Type': contentType,
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
+    'Cross-Origin-Opener-Policy': 'same-origin',
   };
 
   if (isSpaFallback || ext === '.html') {
@@ -106,14 +123,25 @@ const server = http.createServer((req, res) => {
   }
 
   const rawStream = fs.createReadStream(filePath);
+  const handleStreamError = (err) => {
+    if (err && err.code !== 'ERR_STREAM_PREMATURE_CLOSE') {
+      console.error('[MIS Production Server] Stream error:', err.message);
+    }
+    if (!res.headersSent) {
+      res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+    }
+    if (!res.writableEnded) {
+      res.end();
+    }
+  };
 
   if (canGzip) {
     headers['Content-Encoding'] = 'gzip';
     res.writeHead(200, headers);
-    rawStream.pipe(zlib.createGzip()).pipe(res);
+    pipeline(rawStream, zlib.createGzip(), res, handleStreamError);
   } else {
     res.writeHead(200, headers);
-    rawStream.pipe(res);
+    pipeline(rawStream, res, handleStreamError);
   }
 });
 

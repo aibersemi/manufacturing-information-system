@@ -10,18 +10,20 @@ describe('ManualJournalsComponent', () => {
   let mockFinanceService: any;
 
   beforeEach(async () => {
+    const currentMonth = new Date().toISOString().slice(0, 7);
+
     mockFinanceService = {
       manualJournals: signal([
         {
           id: 'j-1',
           entryNumber: 'JU-202609-0001',
-          transactionDate: '2026-09-13',
+          transactionDate: `${currentMonth}-13`,
           entryType: 'manual',
           memo: 'Penyesuaian persediaan',
           description: 'Penyesuaian persediaan kain rusak',
           status: 'posted',
           reversalOfId: null,
-          postedAt: '2026-09-13T10:00:00Z',
+          postedAt: `${currentMonth}-13T10:00:00Z`,
           lines: [
             {
               id: 'l-1',
@@ -46,13 +48,13 @@ describe('ManualJournalsComponent', () => {
         {
           id: 'j-2',
           entryNumber: 'JU-202609-0002',
-          transactionDate: '2026-09-12',
+          transactionDate: `${currentMonth}-12`,
           entryType: 'manual',
           memo: 'Jurnal koreksi',
           description: 'Koreksi salah catat',
           status: 'reversed',
           reversalOfId: null,
-          postedAt: '2026-09-12T10:00:00Z',
+          postedAt: `${currentMonth}-12T10:00:00Z`,
           lines: [
             {
               id: 'l-3',

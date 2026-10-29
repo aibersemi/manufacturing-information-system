@@ -89,6 +89,32 @@ describe('ProfileComponent', () => {
     expect(mockSettingsService.changePassword).not.toHaveBeenCalled();
   });
 
+  it('should require combination of letters and digits for new password in changePassword', async () => {
+    component.currentPassword.set('old-password');
+    component.newPassword.set('onlyletterspass');
+    component.confirmPassword.set('onlyletterspass');
+
+    await component.changePassword();
+
+    expect(component.passwordError()).toBe(
+      'Kata sandi baru harus mengandung kombinasi huruf dan angka.',
+    );
+    expect(mockSettingsService.changePassword).not.toHaveBeenCalled();
+  });
+
+  it('should reject new password identical to current password in changePassword', async () => {
+    component.currentPassword.set('SameSecret123');
+    component.newPassword.set('SameSecret123');
+    component.confirmPassword.set('SameSecret123');
+
+    await component.changePassword();
+
+    expect(component.passwordError()).toBe(
+      'Kata sandi baru tidak boleh sama dengan kata sandi saat ini.',
+    );
+    expect(mockSettingsService.changePassword).not.toHaveBeenCalled();
+  });
+
   it('should call changePassword when credentials and confirmation match', async () => {
     component.currentPassword.set('current-secret-123');
     component.newPassword.set('new-secret-123');

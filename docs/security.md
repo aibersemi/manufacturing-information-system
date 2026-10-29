@@ -53,6 +53,8 @@ Header CSP dikonfigurasi pada Caddy edge server untuk membatasi asal sumber daya
 - **PKCE (Proof Key for Code Exchange) Flow**: Client Supabase diinisialisasi secara eksplisit dengan `auth.flowType: 'pkce'` untuk mencegah serangan intersepsi token pada arsitektur Single Page Application (SPA).
 - **Sanitasi `returnUrl` (Proteksi Open Redirect)**: Seluruh pengalihan kembali pasca-login wajib melewati validasi ketat `getSafeReturnUrl()`. Fungsi ini melarang skema eksternal (`http:`, `https:`, `javascript:`, `data:`), protocol-relative URL (`//`), dan karakter backslash (`\`), sehingga rute kembali selalu terbatas pada internal path aplikasi (`/`).
 - **Penanganan Inisialisasi Sesi Deterministik**: Route guards (`authGuard` dan `guestGuard`) bersifat asinkron dan selalu menunggu `authService.waitForAuthReady()` sebelum mengambil keputusan navigasi, mencegah *race condition* atau *false redirect* saat halaman terlindungi di-refresh oleh pengguna yang telah login.
+- **Integritas Klaim Peran (Role Claim Integrity)**: Resolusi peran pengguna dan status pemilik perusahaan (`userRoles` dan `isOwner`) hanya bersumber dari tabel otoritatif `public.user_company_assignment` serta klaim `app_metadata` yang dikendalikan server; atribut `user_metadata` yang dapat diubah oleh klien tidak pernah dipercaya untuk keputusan otorisasi.
+- **Kebijakan Kompleksitas Kata Sandi**: Pergantian kata sandi mewajibkan autentikasi ulang kata sandi saat ini, panjang minimal 8 karakter dengan kombinasi huruf dan angka, serta larangan penggunaan kata sandi baru yang identik dengan kata sandi lama.
 
 ## Database & Backend Security (Standar Resmi Supabase & PostgreSQL)
 
@@ -109,6 +111,11 @@ Fungsi yang dieksekusi dengan hak akses pembuat (*elevated privileges*):
   ```sql
   revoke execute on function public.perform_sensitive_action() from public, anon;
   ```
+
+### Integritas Jejak Audit, Matriks Izin & Tabel Buku Besar
+- **Proteksi Append-Only `audit_log`**: Izin `UPDATE`, `DELETE`, dan `TRUNCATE` pada `public.audit_log` dicabut dari role klien (`authenticated`, `anon`, `PUBLIC`), serta kebijakan RLS `INSERT` memvalidasi bahwa `actor_user_id` dan `user_id` cocok dengan `(SELECT auth.uid())::text`.
+- **Otorisasi RBAC Tabel Konfigurasi & Master**: Mutasi pada `public.access_permission` dibatasi khusus untuk *company owner* melalui `public.is_company_owner()`, sedangkan mutasi pada tabel master (`unit_definition`, `configuration_category`, `master_record`, `production_product_routing`, `wage_rate`) dibatasi untuk peran `owner` dan `kepala_konveksi` melalui `public.has_company_role()`.
+- **Enkapsulasi Mutasi Akuntansi**: Izin `INSERT`, `UPDATE`, `DELETE`, dan `TRUNCATE` langsung dari PostgREST dicabut pada tabel buku besar, jurnal, subledger, kas, pergerakan persediaan, kewajiban upah, aset tetap, dan penomoran dokumen sehingga seluruh mutasi transaksi wajib melewati validasi bisnis di dalam stored procedure `SECURITY DEFINER`.
 
 ## Network & Infrastructure Security
 

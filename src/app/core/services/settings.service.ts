@@ -528,7 +528,10 @@ export class SettingsService {
       address: (meta['address'] as string) || '',
       bankAccount: (meta['bank_account'] as string) || (meta['bank_account_number'] as string) || '',
       bankAccountName: (meta['bank_account_name'] as string) || (meta['bank_account_holder'] as string) || '',
-      role: this.companyService.userRoles()[0] || (meta['role'] as string) || 'operator',
+      role:
+        this.companyService.userRoles()[0] ||
+        (user.app_metadata?.['role'] as string) ||
+        'operator',
     };
   }
 
@@ -548,10 +551,10 @@ export class SettingsService {
     }
 
     const existingMeta = (user.user_metadata || {}) as Record<string, unknown>;
-
     const updatedMeta: Record<string, unknown> = {
       ...existingMeta,
     };
+    delete updatedMeta['role'];
 
     if (data.fullName !== undefined) {
       updatedMeta['full_name'] = data.fullName.trim();
@@ -607,6 +610,14 @@ export class SettingsService {
 
     if (!newPassword || newPassword.length < 8) {
       throw new Error('Kata sandi baru minimal harus 8 karakter.');
+    }
+
+    if (!/[a-zA-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      throw new Error('Kata sandi baru harus mengandung kombinasi huruf dan angka.');
+    }
+
+    if (newPassword === currentPassword) {
+      throw new Error('Kata sandi baru tidak boleh sama dengan kata sandi saat ini.');
     }
 
     const user = this.authService.currentUser();
